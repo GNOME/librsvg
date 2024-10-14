@@ -762,6 +762,36 @@ impl DrawingCtx {
         Ok(generic_surface.clone())
     }
 
+    fn draw_in_optional_new_viewport(
+        &mut self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        viewport: &Viewport,
+        layout_viewport: &Option<LayoutViewport>,
+        draw_fn: &mut dyn FnMut(
+            &mut AcquiredNodes<'_>,
+            &mut DrawingCtx,
+            &Viewport,
+        ) -> Result<BoundingBox, InternalRenderingError>,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        if let Some(layout_viewport) = layout_viewport.as_ref() {
+            // FIXME: here we ignore the Some() result of push_new_viewport().  We do that because
+            // the returned one is just a copy of the one that got passeed in, but with a changed
+            // transform.  However, we are in fact not using that transform anywhere!
+            //
+            // In case push_new_viewport() returns None, we just don't draw anything.
+            //
+            // Note that push_new_viewport() changes the cr's transform.  However it will be restored
+            // at the end of this function with set_matrix.
+            if let Some(new_viewport) = self.push_new_viewport(viewport, layout_viewport) {
+                draw_fn(acquired_nodes, self, &new_viewport)
+            } else {
+                Ok(self.empty_bbox())
+            }
+        } else {
+            draw_fn(acquired_nodes, self, viewport)
+        }
+    }
+
     fn draw_layer_internal(
         &mut self,
         stacking_ctx: &StackingContext,
@@ -779,28 +809,12 @@ impl DrawingCtx {
 
         let orig_transform = self.get_transform();
 
-        // See the comment below about "not using that transform anywhere" (the viewport's).
+        // See the comment above about "not using that transform anywhere" (the viewport's).
         let viewport = viewport.with_composed_transform(stacking_ctx.transform);
         self.cr.transform(stacking_ctx_transform.into());
 
         let res = if clipping {
-            if let Some(layout_viewport) = layout_viewport.as_ref() {
-                // FIXME: here we ignore the Some() result of push_new_viewport().  We do that because
-                // the returned one is just a copy of the one that got passeed in, but with a changed
-                // transform.  However, we are in fact not using that transform anywhere!
-                //
-                // In case push_new_viewport() returns None, we just don't draw anything.
-                //
-                // Note that push_new_viewport() changes the cr's transform.  However it will be restored
-                // at the end of this function with set_matrix.
-                if let Some(new_viewport) = self.push_new_viewport(&viewport, layout_viewport) {
-                    draw_fn(acquired_nodes, self, &new_viewport)
-                } else {
-                    Ok(self.empty_bbox())
-                }
-            } else {
-                draw_fn(acquired_nodes, self, &viewport)
-            }
+            self.draw_in_optional_new_viewport(acquired_nodes, &viewport, &layout_viewport, draw_fn)
         } else {
             with_saved_cr(&self.cr.clone(), || {
                 if let Some(ref link_target) = stacking_ctx.link_target {
@@ -854,22 +868,12 @@ impl DrawingCtx {
                         // Draw!
 
                         let res = with_saved_cr(&cr, || {
-                            if let Some(layout_viewport) = layout_viewport.as_ref() {
-                                // FIXME: here we ignore the Some() result of push_new_viewport().  We do that because
-                                // the returned one is just a copy of the one that got passeed in, but with a changed
-                                // transform.  However, we are in fact not using that transform anywhere!
-                                //
-                                // In case push_new_viewport() returns None, we just don't draw anything.
-                                if let Some(new_viewport) =
-                                    temporary_draw_ctx.push_new_viewport(&viewport, layout_viewport)
-                                {
-                                    draw_fn(acquired_nodes, &mut temporary_draw_ctx, &new_viewport)
-                                } else {
-                                    Ok(self.empty_bbox())
-                                }
-                            } else {
-                                draw_fn(acquired_nodes, &mut temporary_draw_ctx, &viewport)
-                            }
+                            temporary_draw_ctx.draw_in_optional_new_viewport(
+                                acquired_nodes,
+                                &viewport,
+                                &layout_viewport,
+                                draw_fn,
+                            )
                         });
 
                         let bbox = if let Ok(ref bbox) = res {
@@ -960,22 +964,13 @@ impl DrawingCtx {
 
                     self.cr.set_matrix(affine_at_start.into());
                     res
-                } else if let Some(layout_viewport) = layout_viewport.as_ref() {
-                    // FIXME: here we ignore the Some() result of push_new_viewport().  We do that because
-                    // the returned one is just a copy of the one that got passeed in, but with a changed
-                    // transform.  However, we are in fact not using that transform anywhere!
-                    //
-                    // In case push_new_viewport() returns None, we just don't draw anything.
-                    //
-                    // Note that push_new_viewport() changes the cr's transform.  However it will be restored
-                    // at the end of this function with set_matrix.
-                    if let Some(new_viewport) = self.push_new_viewport(&viewport, layout_viewport) {
-                        draw_fn(acquired_nodes, self, &new_viewport)
-                    } else {
-                        Ok(self.empty_bbox())
-                    }
                 } else {
-                    draw_fn(acquired_nodes, self, &viewport)
+                    self.draw_in_optional_new_viewport(
+                        acquired_nodes,
+                        &viewport,
+                        &layout_viewport,
+                        draw_fn,
+                    )
                 };
 
                 if stacking_ctx.link_target.is_some() {
