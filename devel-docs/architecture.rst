@@ -17,7 +17,7 @@ A bit of history
 ----------------
 
 Librsvg is an old library. It started around 2001, when Eazel (the
-original makers of GNOME’s file manager Nautilus) needed a library to
+original makers of GNOME’s file manager, Nautilus) needed a library to
 render SVG images. At that time the SVG format was being standardized,
 so librsvg grew along with the SVG specification. This is why you will
 sometimes see references to deprecated SVG features in the source code.
@@ -59,7 +59,7 @@ Introspection <https://gi.readthedocs.io/en/latest/>`__.
 The Rust API is a bit more lax in its API stability, but we try to stick
 to `semantic versioning <https://semver.org/>`__ as is common in Rust.
 
-The public Rust API is implemented in `src/api.rs
+The public Rust API is implemented in `rsvg/src/api.rs
 <https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/rsvg/src/api.rs>`_. This
 has all the primitives needed to load and render SVG documents or
 individual elements, and to configure loading/rendering options.
@@ -123,7 +123,7 @@ The Rust API starts by constructing an `SvgHandle
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/api/struct.SvgHandle.html>`_
 from a `Loader
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/api/struct.Loader.html>`_;
-both of those are public types. Internally the ``SvgHandle`` is just a
+both of those are public types. Internally, the ``SvgHandle`` is just a
 wrapper around a `Document
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/document/struct.Document.html>`_,
 which is a private type that stores an SVG document loaded in memory.
@@ -272,7 +272,7 @@ an implementation of the `DeclarationParser
 <https://docs.rs/cssparser/0.29.6/cssparser/trait.DeclarationParser.html>`_
 trait. Its `parse_value
 <https://docs.rs/cssparser/0.29.6/cssparser/trait.DeclarationParser.html#tymethod.parse_value>`_
-method takes the name of a CSS property name like ``fill``, plus a
+method takes the name of a CSS property like ``fill``, plus a
 value like ``rgb(255, 0, 0)``, and it must return a value that
 represents a parsed declaration. Librsvg uses the `Declaration
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/css/struct.Declaration.html>`_
