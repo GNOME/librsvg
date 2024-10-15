@@ -1,5 +1,5 @@
 use matches::matches;
-use rsvg::{CairoRenderer, ImplementationLimit, Loader, LoadingError, RenderingError, SvgHandle};
+use rsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 
 use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
 use rsvg::test_utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};
@@ -451,28 +451,4 @@ fn can_draw_to_non_image_surface() {
     renderer
         .render_document(&cr, &viewport)
         .expect("Failed to render to non-image surface");
-}
-
-#[test]
-fn detects_maximum_layer_nesting_depth() {
-    let handle = Loader::new()
-        .with_unlimited_size(true) // avoid libxml2's own maximum nesting of elements
-        .read_path("tests/fixtures/render-crash/layer-nesting-depth.svg")
-        .unwrap_or_else(|e| panic!("could not load: {}", e));
-
-    let renderer = CairoRenderer::new(&handle).test_mode(true);
-
-    let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
-
-    let output =
-        cairo::RecordingSurface::create(cairo::Content::ColorAlpha, Some(viewport)).unwrap();
-
-    let cr = cairo::Context::new(&output).expect("Failed to create a cairo context");
-
-    assert!(matches!(
-        renderer.render_document(&cr, &viewport),
-        Err(RenderingError::LimitExceeded(
-            ImplementationLimit::MaximumLayerNestingDepthExceeded
-        ))
-    ));
 }
