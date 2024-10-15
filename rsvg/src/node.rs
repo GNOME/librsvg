@@ -287,7 +287,15 @@ pub trait NodeCascade {
 
 impl NodeCascade for Node {
     fn cascade(&mut self, values: &ComputedValues) {
-        let mut values = values.clone();
+        // We box this because ComputedValues is a big structure.  Since this function is
+        // recursive, we want to minimize stack consumption during recursion.
+        //
+        // As of 2024/Oct/24, the unboxed versions uses 1792 bytes of stack between each
+        // recursive call to cascade(); with the boxed version it is just 8 bytes.
+        //
+        // We should probably change this to a non-recursive tree traversal at some point.
+
+        let mut values = Box::new(values.clone());
 
         {
             let mut elt = self.borrow_element_mut();

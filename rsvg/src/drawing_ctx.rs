@@ -28,6 +28,7 @@ use crate::layout::{
     Text, TextSpan,
 };
 use crate::length::*;
+use crate::limits;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
@@ -193,6 +194,12 @@ pub struct DrawingCtx {
     drawsub_stack: Vec<Node>,
 
     config: RenderingConfiguration,
+
+    /// Depth of nested layers while drawing.
+    ///
+    /// We use this to set a hard limit on how many nested layers there can be, to avoid
+    /// malicious SVGs that would cause unbounded stack consumption.
+    recursion_depth: u16,
 }
 
 pub enum DrawingMode {
@@ -326,6 +333,7 @@ impl DrawingCtx {
             cr: cr.clone(),
             drawsub_stack,
             config,
+            recursion_depth: 0,
         }
     }
 
@@ -335,19 +343,20 @@ impl DrawingCtx {
     /// would like to use that same state but on a different Cairo surface and context
     /// than the ones being used on `self`.  This function copies the `self` state into a
     /// new `DrawingCtx`, and ties the copied one to the supplied `cr`.
-    fn nested(&self, cr: cairo::Context) -> DrawingCtx {
+    fn nested(&self, cr: cairo::Context) -> Box<DrawingCtx> {
         let cr_stack = self.cr_stack.clone();
 
         cr_stack.borrow_mut().push(self.cr.clone());
 
-        DrawingCtx {
+        Box::new(DrawingCtx {
             session: self.session.clone(),
             initial_viewport: self.initial_viewport.clone(),
             cr_stack,
             cr,
             drawsub_stack: self.drawsub_stack.clone(),
             config: self.config.clone(),
-        }
+            recursion_depth: self.recursion_depth,
+        })
     }
 
     pub fn session(&self) -> &Session {
@@ -634,14 +643,14 @@ impl DrawingCtx {
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
-            let stacking_ctx = StackingContext::new(
+            let stacking_ctx = Box::new(StackingContext::new(
                 self.session(),
                 acquired_nodes,
                 &mask_element,
                 Transform::identity(),
                 None,
                 values,
-            );
+            ));
 
             rsvg_log!(self.session, "(mask {}", mask_element);
 
@@ -680,7 +689,110 @@ impl DrawingCtx {
         }
     }
 
-    pub fn with_discrete_layer(
+    /// Checks whether the rendering has been cancelled in the middle.
+    ///
+    /// If so, returns an Err.  This is used from [`DrawingCtx::with_discrete_layer`] to
+    /// exit early instead of proceeding with rendering.
+    fn check_cancellation(&self) -> Result<(), InternalRenderingError> {
+        if self.is_rendering_cancelled() {
+            return Err(InternalRenderingError::Cancelled);
+        }
+
+        Ok(())
+    }
+
+    fn check_layer_nesting_depth(&mut self) -> Result<(), InternalRenderingError> {
+        if self.recursion_depth > limits::MAX_LAYER_NESTING_DEPTH {
+            return Err(InternalRenderingError::LimitExceeded(
+                ImplementationLimit::MaximumLayerNestingDepthExceeded,
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn filter_current_surface(
+        &mut self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        filter: &Filter,
+        viewport: &Viewport,
+        element_name: &str,
+        bbox: &BoundingBox,
+    ) -> Result<cairo::Surface, InternalRenderingError> {
+        let surface_to_filter = SharedImageSurface::copy_from_surface(
+            &cairo::ImageSurface::try_from(self.cr.target()).unwrap(),
+        )?;
+
+        let stroke_paint_source = Rc::new(filter.stroke_paint_source.to_user_space(
+            &bbox.rect,
+            viewport,
+            &filter.normalize_values,
+        ));
+        let fill_paint_source = Rc::new(filter.fill_paint_source.to_user_space(
+            &bbox.rect,
+            viewport,
+            &filter.normalize_values,
+        ));
+
+        // Filter functions (like "blend()", not the <filter> element) require
+        // being resolved in userSpaceonUse units, since that is the default
+        // for primitive_units.  So, get the corresponding NormalizeParams
+        // here and pass them down.
+        let user_space_params = NormalizeParams::from_values(
+            &filter.normalize_values,
+            &viewport.with_units(CoordUnits::UserSpaceOnUse),
+        );
+
+        let filtered_surface = self
+            .run_filters(
+                viewport,
+                surface_to_filter,
+                filter,
+                acquired_nodes,
+                element_name,
+                &user_space_params,
+                stroke_paint_source,
+                fill_paint_source,
+                bbox,
+            )?
+            .into_image_surface()?;
+
+        let generic_surface: &cairo::Surface = &filtered_surface; // deref to Surface
+
+        Ok(generic_surface.clone())
+    }
+
+    fn draw_in_optional_new_viewport(
+        &mut self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        viewport: &Viewport,
+        layout_viewport: &Option<LayoutViewport>,
+        draw_fn: &mut dyn FnMut(
+            &mut AcquiredNodes<'_>,
+            &mut DrawingCtx,
+            &Viewport,
+        ) -> Result<BoundingBox, InternalRenderingError>,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        if let Some(layout_viewport) = layout_viewport.as_ref() {
+            // FIXME: here we ignore the Some() result of push_new_viewport().  We do that because
+            // the returned one is just a copy of the one that got passeed in, but with a changed
+            // transform.  However, we are in fact not using that transform anywhere!
+            //
+            // In case push_new_viewport() returns None, we just don't draw anything.
+            //
+            // Note that push_new_viewport() changes the cr's transform.  However it will be restored
+            // at the end of this function with set_matrix.
+            if let Some(new_viewport) = self.push_new_viewport(viewport, layout_viewport) {
+                draw_fn(acquired_nodes, self, &new_viewport)
+            } else {
+                Ok(self.empty_bbox())
+            }
+        } else {
+            draw_fn(acquired_nodes, self, viewport)
+        }
+    }
+
+    fn draw_layer_internal(
         &mut self,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -693,36 +805,16 @@ impl DrawingCtx {
             &Viewport,
         ) -> Result<BoundingBox, InternalRenderingError>,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        if self.is_rendering_cancelled() {
-            return Err(InternalRenderingError::Cancelled);
-        }
-
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
         let orig_transform = self.get_transform();
 
-        // See the comment below about "not using that transform anywhere" (the viewport's).
+        // See the comment above about "not using that transform anywhere" (the viewport's).
         let viewport = viewport.with_composed_transform(stacking_ctx.transform);
         self.cr.transform(stacking_ctx_transform.into());
 
         let res = if clipping {
-            if let Some(layout_viewport) = layout_viewport.as_ref() {
-                // FIXME: here we ignore the Some() result of push_new_viewport().  We do that because
-                // the returned one is just a copy of the one that got passeed in, but with a changed
-                // transform.  However, we are in fact not using that transform anywhere!
-                //
-                // In case push_new_viewport() returns None, we just don't draw anything.
-                //
-                // Note that push_new_viewport() changes the cr's transform.  However it will be restored
-                // at the end of this function with set_matrix.
-                if let Some(new_viewport) = self.push_new_viewport(&viewport, layout_viewport) {
-                    draw_fn(acquired_nodes, self, &new_viewport)
-                } else {
-                    Ok(self.empty_bbox())
-                }
-            } else {
-                draw_fn(acquired_nodes, self, &viewport)
-            }
+            self.draw_in_optional_new_viewport(acquired_nodes, &viewport, &layout_viewport, draw_fn)
         } else {
             with_saved_cr(&self.cr.clone(), || {
                 if let Some(ref link_target) = stacking_ctx.link_target {
@@ -750,11 +842,11 @@ impl DrawingCtx {
                 let res = if should_isolate {
                     // Compute our assortment of affines
 
-                    let affines = CompositingAffines::new(
+                    let affines = Box::new(CompositingAffines::new(
                         *affine_at_start,
                         self.initial_viewport.transform,
                         self.cr_stack.borrow().len(),
-                    );
+                    ));
 
                     // Create temporary surface and its cr
 
@@ -776,22 +868,12 @@ impl DrawingCtx {
                         // Draw!
 
                         let res = with_saved_cr(&cr, || {
-                            if let Some(layout_viewport) = layout_viewport.as_ref() {
-                                // FIXME: here we ignore the Some() result of push_new_viewport().  We do that because
-                                // the returned one is just a copy of the one that got passeed in, but with a changed
-                                // transform.  However, we are in fact not using that transform anywhere!
-                                //
-                                // In case push_new_viewport() returns None, we just don't draw anything.
-                                if let Some(new_viewport) =
-                                    temporary_draw_ctx.push_new_viewport(&viewport, layout_viewport)
-                                {
-                                    draw_fn(acquired_nodes, &mut temporary_draw_ctx, &new_viewport)
-                                } else {
-                                    Ok(self.empty_bbox())
-                                }
-                            } else {
-                                draw_fn(acquired_nodes, &mut temporary_draw_ctx, &viewport)
-                            }
+                            temporary_draw_ctx.draw_in_optional_new_viewport(
+                                acquired_nodes,
+                                &viewport,
+                                &layout_viewport,
+                                draw_fn,
+                            )
                         });
 
                         let bbox = if let Ok(ref bbox) = res {
@@ -801,50 +883,19 @@ impl DrawingCtx {
                         };
 
                         if let Some(ref filter) = stacking_ctx.filter {
-                            let surface_to_filter = SharedImageSurface::copy_from_surface(
-                                &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target())
-                                    .unwrap(),
+                            let filtered_surface = temporary_draw_ctx.filter_current_surface(
+                                acquired_nodes,
+                                filter,
+                                &viewport,
+                                &stacking_ctx.element_name,
+                                &bbox,
                             )?;
 
-                            let stroke_paint_source =
-                                Rc::new(filter.stroke_paint_source.to_user_space(
-                                    &bbox.rect,
-                                    &viewport,
-                                    &filter.normalize_values,
-                                ));
-                            let fill_paint_source =
-                                Rc::new(filter.fill_paint_source.to_user_space(
-                                    &bbox.rect,
-                                    &viewport,
-                                    &filter.normalize_values,
-                                ));
-
-                            // Filter functions (like "blend()", not the <filter> element) require
-                            // being resolved in userSpaceonUse units, since that is the default
-                            // for primitive_units.  So, get the corresponding NormalizeParams
-                            // here and pass them down.
-                            let user_space_params = NormalizeParams::from_values(
-                                &filter.normalize_values,
-                                &viewport.with_units(CoordUnits::UserSpaceOnUse),
-                            );
-
-                            let filtered_surface = temporary_draw_ctx
-                                .run_filters(
-                                    &viewport,
-                                    surface_to_filter,
-                                    filter,
-                                    acquired_nodes,
-                                    &stacking_ctx.element_name,
-                                    &user_space_params,
-                                    stroke_paint_source,
-                                    fill_paint_source,
-                                    bbox,
-                                )?
-                                .into_image_surface()?;
-
-                            let generic_surface: &cairo::Surface = &filtered_surface; // deref to Surface
-
-                            (generic_surface.clone(), res, bbox)
+                            // FIXME: "res" was declared mutable above so that we could overwrite it
+                            // with the result of filtering, so that if filtering produces an error,
+                            // then the masking below wouldn't take place.  Test for that and fix this;
+                            // we are *not* modifying res in case of error.
+                            (filtered_surface, res, bbox)
                         } else {
                             (temporary_draw_ctx.cr.target(), res, bbox)
                         }
@@ -913,23 +964,13 @@ impl DrawingCtx {
 
                     self.cr.set_matrix(affine_at_start.into());
                     res
-                } else if let Some(layout_viewport) = layout_viewport.as_ref() {
-                    // FIXME: here we ignore the Some() result of push_new_viewport().  We do that because
-                    // the returned one is just a copy of the one that got passeed in, but with a changed
-                    // transform.  However, we are in fact not using that transform anywhere!
-                    //
-                    // In case push_new_viewport() returns None, we just don't draw anything.
-                    //
-                    // Note that push_new_viewport() changes the cr's transform.  However it will be restored
-                    // at the end of this function with set_matrix.
-                    if let Some(new_viewport) = self.push_new_viewport(&viewport, layout_viewport) {
-                        draw_fn(acquired_nodes, self, &new_viewport)
-                    } else {
-                        self.cr.set_matrix(orig_transform.into());
-                        Ok(self.empty_bbox())
-                    }
                 } else {
-                    draw_fn(acquired_nodes, self, &viewport)
+                    self.draw_in_optional_new_viewport(
+                        acquired_nodes,
+                        &viewport,
+                        &layout_viewport,
+                        draw_fn,
+                    )
                 };
 
                 if stacking_ctx.link_target.is_some() {
@@ -942,6 +983,42 @@ impl DrawingCtx {
 
         self.cr.set_matrix(orig_transform.into());
         res
+    }
+
+    pub fn with_discrete_layer(
+        &mut self,
+        stacking_ctx: &StackingContext,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        viewport: &Viewport,
+        layout_viewport: Option<LayoutViewport>,
+        clipping: bool,
+        draw_fn: &mut dyn FnMut(
+            &mut AcquiredNodes<'_>,
+            &mut DrawingCtx,
+            &Viewport,
+        ) -> Result<BoundingBox, InternalRenderingError>,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        self.check_cancellation()?;
+
+        self.recursion_depth += 1;
+
+        match self.check_layer_nesting_depth() {
+            Ok(()) => {
+                let res = self.draw_layer_internal(
+                    stacking_ctx,
+                    acquired_nodes,
+                    viewport,
+                    layout_viewport,
+                    clipping,
+                    draw_fn,
+                );
+
+                self.recursion_depth -= 1;
+                res
+            }
+
+            Err(e) => Err(e),
+        }
     }
 
     /// Run the drawing function with the specified opacity
@@ -987,7 +1064,7 @@ impl DrawingCtx {
         user_space_params: &NormalizeParams,
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
-        node_bbox: BoundingBox,
+        node_bbox: &BoundingBox,
     ) -> Result<SharedImageSurface, InternalRenderingError> {
         let session = self.session();
 
@@ -1163,14 +1240,14 @@ impl DrawingCtx {
 
                     let elt = pattern_node.borrow_element();
 
-                    let stacking_ctx = StackingContext::new(
+                    let stacking_ctx = Box::new(StackingContext::new(
                         self.session(),
                         acquired_nodes,
                         &elt,
                         Transform::identity(),
                         None,
                         pattern_values,
-                    );
+                    ));
 
                     dc.with_discrete_layer(
                         &stacking_ctx,
@@ -1856,14 +1933,14 @@ impl DrawingCtx {
 
             let child_values = elt.get_computed_values();
 
-            let stacking_ctx = StackingContext::new(
+            let stacking_ctx = Box::new(StackingContext::new(
                 self.session(),
                 acquired_nodes,
                 &use_element,
                 Transform::identity(),
                 None,
                 values,
-            );
+            ));
 
             let layout_viewport = LayoutViewport {
                 vbox,
@@ -1896,14 +1973,14 @@ impl DrawingCtx {
         } else {
             // otherwise the referenced node is not a <symbol>; process it generically
 
-            let stacking_ctx = StackingContext::new(
+            let stacking_ctx = Box::new(StackingContext::new(
                 self.session(),
                 acquired_nodes,
                 &use_element,
                 Transform::new_translate(use_rect.x0, use_rect.y0),
                 None,
                 values,
-            );
+            ));
 
             self.with_discrete_layer(
                 &stacking_ctx,

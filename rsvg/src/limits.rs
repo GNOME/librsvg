@@ -48,3 +48,9 @@ pub const MAX_LOADED_ATTRIBUTES: usize = u16::MAX as usize;
 /// where the base document is included within itself, or when two
 /// documents recursively include each other.
 pub const MAX_XINCLUDE_DEPTH: usize = 20;
+
+/// Maximum level of nesting for layers during rendering.
+///
+/// This is a mitigation for malicious SVGs which try to have layers that are nested
+/// extremely deep, as this could cause stack exhaustion.
+pub const MAX_LAYER_NESTING_DEPTH: u16 = 50;

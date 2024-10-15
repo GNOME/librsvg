@@ -480,6 +480,13 @@ pub enum ImplementationLimit {
     /// number of attributes that the SVG standard ascribes meaning to are
     /// lower than this limit.
     TooManyAttributes,
+
+    /// Document exceeded the maximum nesting level while rendering.
+    ///
+    /// Rendering is a recursive process, and there is a limit of how deep layers can
+    /// nest.  This is to avoid malicious SVGs which try to have layers that are nested
+    /// extremely deep, as this could cause stack exhaustion.
+    MaximumLayerNestingDepthExceeded,
 }
 
 impl error::Error for LoadingError {}
@@ -535,6 +542,12 @@ impl fmt::Display for ImplementationLimit {
                 f,
                 "cannot load more than {} XML attributes",
                 limits::MAX_LOADED_ATTRIBUTES
+            ),
+
+            ImplementationLimit::MaximumLayerNestingDepthExceeded => write!(
+                f,
+                "maximum depth of {} nested layers has been exceeded",
+                limits::MAX_LAYER_NESTING_DEPTH,
             ),
         }
     }

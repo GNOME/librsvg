@@ -68,6 +68,7 @@ mod tests {
     t!(bug1062_feturbulence_limit_numoctaves,           "bug1062-feTurbulence-limit-numOctaves.svg");
     t!(bug1088_fuzz_cairo_out_of_bounds,                "bug1088-fuzz-cairo-out-of-bounds.svg");
     t!(bug1092_fuzz_recursive_use_stack_overflow,       "bug1092-fuzz-recursive-use-stack-overflow.svg");
+    t!(bug1100_fuzz_layer_nesting_depth,                "bug1100-fuzz-layer-nesting-depth.svg");
     t!(bug1115_feturbulence_overflow,                   "bug1115-feTurbulence-overflow.svg");
     t!(bug1118_fuzz_large_transform_and_recursive_use,  "bug1118-fuzz-large-transform-and-recursive-use.svg");
     t!(femerge_color_interpolation_srgb_svg,            "feMerge-color-interpolation-srgb.svg");
