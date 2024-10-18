@@ -1,11 +1,9 @@
-RSVG-BENCH COMMAND-LINE OPTIONS
-===============================
+rsvg-bench
+==========
 
-The `rsvg-bench <https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/rsvg-bench>`_ program is a simple benchmarking tool for librsvg.
-
-It is a small utility for benchmarking `librsvg <https://gitlab.gnome.org/GNOME/librsvg>`_ which 
-is `Gnome <https://gitlab.gnome.org/GNOME>`_'s library for rendering
-Scalable Vector Graphics (`SVG <https://en.wikipedia.org/wiki/Scalable_Vector_Graphics>`_)
+The `rsvg-bench
+<https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/rsvg-bench>`_
+program is a small utility for benchmarking librsvg.
 
 GOALS
 =====
