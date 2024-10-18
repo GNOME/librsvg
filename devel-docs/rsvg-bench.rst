@@ -33,12 +33,14 @@ Compiling
 ---------
 
 This benchmark is compiled along with `librsvg`. 
-To compile the benchmark, you need to setup you development or test environment 
-for the `librsvg` library. You can follow the instructions in 
-the `setup development environment page <https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/devel_environment.html>`_.
+To compile the benchmark, you need to setup your development or test environment
+for the ``librsvg`` library. You can follow the instructions in
+:doc:`devel_environment`.
 
-you can also simply run `cargo build --workspace` in the root of the `librsvg` source tree. 
-This command will compile but the `librsvg` library and the `rsvg-bench` benchmark.
+You can also simply run `cargo build --release -p rsvg-bench` in the
+root of the `librsvg` source tree.  This command will compile but the
+`librsvg` library and the `rsvg-bench` benchmark, linked together in a
+static binary.  You can run this binary from `./target/releasersvg-bench`.
 
 Usage / benchmarking
 --------------------
