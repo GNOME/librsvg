@@ -79,7 +79,7 @@ Benchmarking files
 
 .. code-block:: bash
 
-    target/debug/rsvg-bench /path/to/svg/files
+    target/release/rsvg-bench /path/to/svg/files
 
 This command will benchmark the rendering of all the SVG files in the directory ``/path/to/svg/files``.
 The benchmark will parse each file once and render it once.
@@ -116,7 +116,7 @@ The output will show the time taken to render each file. The time is in seconds,
 the number of times each files are parsed and rendered, and the number of files that were processed.
 
 .. code-block:: bash
-    target/debug/rsvg-bench /path/to/svg/files/file.svg
+    target/release/rsvg-bench /path/to/svg/files/file.svg
 
 This command will benchmark the rendering of a single SVG file ``/path/to/svg/files/file.svg``.
 The benchmark will parse the file once and render it once.
@@ -124,7 +124,7 @@ The benchmark will parse the file once and render it once.
 while you can also specify multiple files to benchmark by providing the path to each file as an argument to the ``target/release/rsvg-bench`` command.
 
 .. code-block:: bash
-    target/debug/rsvg-bench /path/to/svg/files/file1.svg /path/to/svg/files/file2.svg /path/to/svg/files/file3.svg
+    target/release/rsvg-bench /path/to/svg/files/file1.svg /path/to/svg/files/file2.svg /path/to/svg/files/file3.svg
 
 This command will benchmark the rendering of the SVG files ``/path/to/svg/files/file1.svg``, ``/path/to/svg/files/file2.svg``,
 and ``/path/to/svg/files/file3.svg``. The benchmark will parse each file once and render it once.
@@ -148,7 +148,7 @@ Benchmarking with options
 -------------------------
 
 The ``rsvg-bench`` binary has several command line options that can be used to customize the benchmarking process.
-They are listed above when we ran the `--help` option with the `target/debug/rsvg-bench` command.
+They are listed above when we ran the `--help` option with the `target/release/rsvg-bench` command.
 These options are:
 
 - ``--sleep <sleep>``: Number of seconds to sleep before starting to process SVGs [default: 0]
@@ -163,7 +163,7 @@ to it.  For example, ``sysprof <https://blogs.gnome.org/chergert/2016/04/19/how-
 lets you choose an already-running process to monitor.
 
 .. code-block:: bash
-    target/debug/rsvg-bench --sleep 5 /path/to/svg/files
+    target/release/rsvg-bench --sleep 5 /path/to/svg/files
 
 This command will benchmark the rendering of all the SVG files in the directory ``/path/to/svg/files``.
 The benchmark will parse each file once and render it once.
@@ -200,7 +200,7 @@ The benchmark will sleep for 5 seconds before processing the SVG files.
 
 .. code-block:: bash
 
-    target/debug/rsvg-bench --num-parse 2 --num-render 2 /path/to/svg/files
+    target/release/rsvg-bench --num-parse 2 --num-render 2 /path/to/svg/files
 
 This command will benchmark the rendering of all the SVG files in the directory ``/path/to/svg/files``.
 The benchmark will parse each file twice and render it twice.
