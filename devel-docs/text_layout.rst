@@ -268,9 +268,8 @@ nested levels of embedding **if the whole text is in a single
 ``pango::Layout``**.  Per the previous section, librsvg doesn't do
 this yet.
 
-`!621 <https://gitlab.gnome.org/GNOME/librsvg/-/merge_requests/621>`_
-implemented the SVG2 values for the ``unicode-bidi`` property.  You
-may want to read the detailed commit messages there, and the
+:pr:`621` implemented the SVG2 values for the ``unicode-bidi`` property.
+You may want to read the detailed commit messages there, and the
 discussion in the merge request, to see details of future development.
 
 
