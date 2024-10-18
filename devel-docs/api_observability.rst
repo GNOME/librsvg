@@ -164,10 +164,10 @@ gdk-pixbuf?
 Implementation
 --------------
 
-There is currently the start of a `Session
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/session/struct.Session.html>`_
+There is currently the start of a :internals:struct:`rsvg::session::Session`
 type woven throughout the source code, with the idea of it being the
-thing that records logging events, it may be better to plug into the ``tracing`` ecosystem:
+thing that records logging events, it may be better to plug into the
+``tracing`` ecosystem:
 
 https://crates.io/crates/tracing
 

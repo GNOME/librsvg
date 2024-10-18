@@ -189,8 +189,7 @@ transparent, temporary surface:
 - Blend/composite the temporary surface onto the result.
 
 The most critical function in librsvg is probably
-`DrawingCtx::with_discrete_layer
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/drawing_ctx/struct.DrawingCtx.html#method.with_discrete_layer>`_;
+:internals:struct-method:`rsvg::drawing_ctx::DrawingCtx::with_discrete_layer`;
 it implements this drawing model.
 
 Current state (2023/03/30)

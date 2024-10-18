@@ -152,33 +152,33 @@ When a ``tspan`` explicitly lists ``x`` or ``y`` attributes, it
 creates a new *chunk*.  A text chunk defines an absolutely-positioned
 sequence of spans.
 
-This is why you'll see that the code does this; start at ``Text::draw``:
+This is why you'll see that the code does this; start at
+:internals:struct-method:`rsvg::text::Text::draw`:
 
-- Start with an empty list of chunks (`Text::make_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.Text.html#method.make_chunks>`_).
+- Start with an empty list of chunks
+  (:internals:struct-method:`rsvg::text::Text::make_chunks`).
   Push an empty initial chunk defined by the ``x`` and ``y``
   coordinates of the ``<text>`` element.
 
-- Recursively call `children_to_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/fn.children_to_chunks.html>`_
+- Recursively call :internals:fn:`rsvg::text::children_to_chunks`
   on the children of the ``<text>`` element, to create chunks and
   spans for them.
 
-- `TSpan::to_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.TSpan.html#method.to_chunks>`_
+- :internals:struct-method:`rsvg::text::TSpan::to_chunks`
   sees if the span has ``x`` or ``y`` attributes; if so, it pushes a
   new empty chunk with those coordinates.  Then it recursively calls
   ``children_to_chunks`` to grab its character content and children.
 
 - Later, ``Text::draw`` takes the list of chunks and their spans, and
-  converts them into a list of ``MeasuredChunk``.  This process turns
-  each span into a ``MeasuredSpan``.  The key element here is to
+  converts them into a list of :internals:struct:`rsvg::text::MeasuredChunk`.
+  This process turns each span into a
+  :internals:struct:`rsvg::text::MeasuredSpan`.  The key element here is to
   create a ``pango::Layout`` for each span, and ask it for its size.
 
-- Then, ``Text::draw`` takes the list of ``MeasuredChunk`` and turns
-  them into a list of ``PositionedChunk``.  Each of those builds a
-  list of ``PositionedSpan`` based on the span's own text advance,
-  plus the span's ``dx``/``dy`` attributes.
+- Then, ``Text::draw`` takes the list of ``MeasuredChunk`` and turns them
+  into a list of :internals:struct:`rsvg::text::PositionedChunk`.  Each of
+  those builds a list of :internals:struct:`rsvg::text::PositionedSpan` based
+  on the span's own text advance, plus the span's ``dx``/``dy`` attributes.
 
 **Note about SVG2:** The `text layout algorithm for SVG2
 <https://www.w3.org/TR/SVG2/text.html#TextLayoutAlgorithm>`_ is very
@@ -256,8 +256,7 @@ Bidi handling
 ~~~~~~~~~~~~~
 
 The ``unicode-bidi`` and ``direction`` properties get handled
-together.  The `BidiControl
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.BidiControl.html>`_
+together.  The :internals:struct:`rsvg::text::BidiControl`
 struct computes which Unicode control characters need to be inserted
 at the start and end of a ``<tspan>``'s text; SVG authors use these
 properties to override text direction when inserting LTR or RTL text
