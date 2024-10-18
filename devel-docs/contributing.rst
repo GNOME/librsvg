@@ -202,6 +202,12 @@ benchmark librsvg.  For example, you can ask rsvg-bench to render one
 or more SVGs hundreds of times in a row, so you can take accurate
 timings or run a sampling profiler and get enough samples.
 
+To fully read on and understand the usage of 
+``rsvg-bench``, please refer to the :doc:`rsvg_bench` chapter.
+
+It has a comprehensive detail on how to use the tool, and how to
+interpret the results.
+
 Included benchmarks
 ~~~~~~~~~~~~~~~~~~~
 
