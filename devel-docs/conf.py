@@ -33,6 +33,9 @@ extensions = [
     # Used to reference entities in the internals documentation.
     # ./_extensions/internals.py
     "internals",
+    # Used to reference entries in the source tree.
+    # ./_extensions/source.py
+    "source",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
