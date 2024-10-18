@@ -77,9 +77,13 @@ Running ``target/release/rsvg-bench --help`` will display the help message.
 Benchmarking files
 ------------------
 
+Rsvg-bench does not extract timings by itself.  You can use other
+tools to do it.  ``/usr/bin/time`` is a simple and accurate way (note
+that this is different from the ``time`` command in most shells).
+
 .. code-block:: bash
 
-    target/release/rsvg-bench /path/to/svg/files
+    /usr/bin/time target/release/rsvg-bench /path/to/svg/files
 
 This command will benchmark the rendering of all the SVG files in the directory ``/path/to/svg/files``.
 The benchmark will parse each file once and render it once.
