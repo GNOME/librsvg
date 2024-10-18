@@ -40,7 +40,7 @@ for the ``librsvg`` library. You can follow the instructions in
 You can also simply run ``cargo build --release -p rsvg-bench`` in the
 root of the ``librsvg`` source tree.  This command will compile but the
 ``librsvg`` library and the ``rsvg-bench`` benchmark, linked together in a
-static binary.  You can run this binary from ``./target/releasersvg-bench``.
+static binary.  You can run this binary from ``./target/release/rsvg-bench``.
 
 Usage / benchmarking
 --------------------
