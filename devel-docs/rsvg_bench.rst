@@ -126,6 +126,7 @@ Benchmarking specific files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
+
     target/release/rsvg-bench /path/to/svg/files/file.svg
 
 This command will benchmark the rendering of a single SVG file ``/path/to/svg/files/file.svg``.
@@ -134,6 +135,7 @@ The benchmark will parse the file once and render it once.
 You can also benchmark multiple files by passing their names:
 
 .. code-block:: bash
+
     target/release/rsvg-bench /path/to/svg/files/file1.svg /path/to/svg/files/file2.svg /path/to/svg/files/file3.svg
 
 This command will benchmark the rendering of the SVG files ``/path/to/svg/files/file1.svg``, ``/path/to/svg/files/file2.svg``,
@@ -173,6 +175,7 @@ to it.  For example, ``sysprof <https://blogs.gnome.org/chergert/2016/04/19/how-
 lets you choose an already-running process to monitor.
 
 .. code-block:: bash
+
     target/release/rsvg-bench --sleep 5 /path/to/svg/files
 
 This command will benchmark the rendering of all the SVG files in the directory ``/path/to/svg/files``.
