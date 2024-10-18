@@ -81,6 +81,9 @@ Rsvg-bench does not extract timings by itself.  You can use other
 tools to do it.  ``/usr/bin/time`` is a simple and accurate way (note
 that this is different from the ``time`` command in most shells).
 
+Benchmarking all the SVG files in a directory tree
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. code-block:: bash
 
     /usr/bin/time target/release/rsvg-bench /path/to/svg/files
@@ -119,13 +122,16 @@ The benchmark will parse each file once and render it once.
 The output will show the time taken to render each file. The time is in seconds,
 the number of times each files are parsed and rendered, and the number of files that were processed.
 
+Benchmarking specific files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. code-block:: bash
     target/release/rsvg-bench /path/to/svg/files/file.svg
 
 This command will benchmark the rendering of a single SVG file ``/path/to/svg/files/file.svg``.
 The benchmark will parse the file once and render it once.
 
-while you can also specify multiple files to benchmark by providing the path to each file as an argument to the ``target/release/rsvg-bench`` command.
+You can also benchmark multiple files by passing their names:
 
 .. code-block:: bash
     target/release/rsvg-bench /path/to/svg/files/file1.svg /path/to/svg/files/file2.svg /path/to/svg/files/file3.svg
