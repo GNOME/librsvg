@@ -79,6 +79,12 @@ test_svg_reference!(
     "tests/fixtures/text/bounds-ref.svg"
 );
 
+test_svg_reference!(
+    bug1109_scaled_text_anchor_middle,
+    "tests/fixtures/text/bug1109-scaled-text-anchor-middle.svg",
+    "tests/fixtures/text/bug1109-scaled-text-anchor-middle-ref.svg"
+);
+
 fn rect(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle {
     cairo::Rectangle::new(x, y, width, height)
 }
