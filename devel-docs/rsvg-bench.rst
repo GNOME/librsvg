@@ -197,39 +197,3 @@ The benchmark will sleep for 5 seconds before processing the SVG files.
 
 This command will benchmark the rendering of all the SVG files in the directory `/path/to/svg/files`. 
 The benchmark will parse each file twice and render it twice.
-
-CODE OF CONDUCT
-===============
-
-There is a code of conduct for contributors to rsvg-bench; 
-please see the file code-of-conduct.md.
-Please report bugs in gitlab.gnome.org's issue tracker. 
-You can also fork the repository and create merge requests there.
-`code-of-conduct <https://gitlab.gnome.org/federico/rsvg-bench/-/blob/master/code-of-conduct.md>`_
-
-Please report bugs in `gitlab.gnome.org's issue tracker <https://gitlab.gnome.org/GNOME/librsvg/-/issues>`_. 
-You can also fork the repository and create merge requests there.
-
-MAINTAINERS
-===========
-
-The maintainer of librsvg is `Federico Mena Quintero <https://gitlab.gnome.org/federico>`_.  Feel
-free to contact me for any questions you may have about librsvg, both
-its usage and its development.  You can contact me in the following
-ways: 
-
-- Email him at federico@gnome.org.
-
-- Matrix: He is `@federico` on the `GNOME Hackers <https://matrix.to/#/#gnome-hackers:gnome.org>`_ and
-`Rust ❤️ GNOME <https://matrix.to/#/#rust:gnome.org>`_ channels on gnome.org's Matrix.  He is
-there most weekdays (Mon-Fri) starting at about UTC 14:00 (that's
-08:00 my time; I am in the UTC-6 timezone).  If this is not a
-convenient time for you, feel free to mail him and he can
-arrange a time.
-
-- He frequently `blog about librsvg <https://viruta.org/tag/librsvg.html>`_.  You may be interested in
-the articles about porting librsvg from C to Rust, which happened
-between 2016 and 2020.
-
-Documentation is written by `Adetoye Anointing <https://gitlab.gnome.org/Yorubad-Dev>`_ and
-`Yorubad-Dev <https://x.com/yorubad-dev>`_ on X (formerly known as twitter). you can also email me at yorubaddev@duck.com
