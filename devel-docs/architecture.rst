@@ -59,18 +59,15 @@ Introspection <https://gi.readthedocs.io/en/latest/>`__.
 The Rust API is a bit more lax in its API stability, but we try to stick
 to `semantic versioning <https://semver.org/>`__ as is common in Rust.
 
-The public Rust API is implemented in `rsvg/src/api.rs
-<https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/rsvg/src/api.rs>`_. This
+The public Rust API is implemented in :source:`rsvg/src/api.rs`. This
 has all the primitives needed to load and render SVG documents or
 individual elements, and to configure loading/rendering options.
 
-The public C API is implemented in `librsvg-c/src
-<https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/librsvg-c/src>`_, and
+The public C API is implemented in :source:`librsvg-c/src/`, and
 it is implemented in terms of the public Rust API. Note that as of
 2021/Feb the corresponding C header files are hand-written in
-`include/librsvg/
-<https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/include/librsvg>`_;
-maybe in the future they will be generated automatically with
+:source:`include/librsvg/`; maybe in the future they will be generated
+automatically with
 `cbindgen <https://github.com/mozilla/cbindgen/blob/master/docs.md>`__.
 
 We consider it good practice to provide simple and clean primitives in
@@ -106,8 +103,7 @@ Rust API calls into the library's internals.
 The test suite
 --------------
 
-The test suite is documented in `rsvg/tests/README.md
-<https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/rsvg/tests/README.md>`_.
+The test suite is documented in :source:`rsvg/tests/README.md`.
 
 Code flow
 ---------

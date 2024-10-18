@@ -15,8 +15,7 @@ produce these artifacts (see :doc:`product` for details):
 Some of the artifacts above are optional; please see the section
 :ref:`compile_time_options` below for details.
 
-It is perfectly fine to `ask the maintainer
-<https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/README.md#maintainers>`_
+It is perfectly fine to :source:`ask the maintainer <README.md#maintainers>`
 if you have questions about the meson setup; it’s a tricky bit of
 machinery, and we are glad to help.
 
