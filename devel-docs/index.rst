@@ -48,6 +48,12 @@ Development guide for librsvg
    ci
    oss_fuzz
 
+.. toctree::
+   :caption: Tools
+   :maxdepth: 1
+
+   rsvg_bench
+
 Welcome to the developer's guide for librsvg.  This is for people who
 want to work on the development of librsvg itself, not for users of
 the library or the `rsvg-convert` program.
