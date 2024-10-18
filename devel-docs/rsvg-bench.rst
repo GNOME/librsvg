@@ -5,8 +5,8 @@ The `rsvg-bench
 <https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/rsvg-bench>`_
 program is a small utility for benchmarking librsvg.
 
-GOALS
-=====
+Goals
+-----
 
 To benchmark librsvg, we would like to do several things:
 
@@ -29,8 +29,9 @@ To benchmark librsvg, we would like to do several things:
   parser but not the renderer; or we may want to parse SVGs only once
   but render them many times after that.
 
-COMPILING
-=========
+Compiling
+---------
+
 This benchmark is compiled along with `librsvg`. 
 To compile the benchmark, you need to setup you development or test environment 
 for the `librsvg` library. You can follow the instructions in 
@@ -39,8 +40,9 @@ the `setup development environment page <https://gnome.pages.gitlab.gnome.org/li
 you can also simply run `cargo build --workspace` in the root of the `librsvg` source tree. 
 This command will compile but the `librsvg` library and the `rsvg-bench` benchmark.
 
-USAGE / BENCHMARKING
-====================
+Usage / benchmarking
+--------------------
+
 After compiling `librsvg`, the `rsvg-bench` binary will be available in the `target/debug` 
 directory of the `librsvg` source tree. 
 You can run the `rsvg-bench` binary with the following command line options:
@@ -66,8 +68,9 @@ Running `target/debug/rsvg-bench --help` will display the help message.
 
 
 
-BENCHMARKING FILES
-==================
+Benchmarking files
+------------------
+
 .. code-block:: bash
 
     target/debug/rsvg-bench /path/to/svg/files
@@ -135,8 +138,8 @@ and `/path/to/svg/files/file3.svg`. The benchmark will parse each file once and 
     136inputs+0outputs (2major+1941minor)pagefaults 0swaps
 
 
-BENCHMARKING WITH OPTIONS
-=========================
+Benchmarking with options
+-------------------------
 
 The `rsvg-bench` binary has several command line options that can be used to customize the benchmarking process. 
 They are listed above when we ran the `--help` option with the `target/debug/rsvg-bench` command.
