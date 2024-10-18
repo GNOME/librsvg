@@ -45,8 +45,12 @@ static binary.  You can run this binary from `./target/releasersvg-bench`.
 Usage / benchmarking
 --------------------
 
-After compiling `librsvg`, the `rsvg-bench` binary will be available in the `target/debug` 
-directory of the `librsvg` source tree. 
+After compiling `librsvg`, the `rsvg-bench` binary will be available
+in the `target/release` directory of the `librsvg` source tree.
+Please make sure you compiled with ``-release``; when librsvg is
+installed normally it gets built in release mode (with optimizations),
+so this will get you meaningful timings.
+
 You can run the `rsvg-bench` binary with the following command line options:
 
 Running `target/debug/rsvg-bench --help` will display the help message.
