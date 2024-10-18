@@ -32,28 +32,28 @@ To benchmark librsvg, we would like to do several things:
 Compiling
 ---------
 
-This benchmark is compiled along with `librsvg`. 
+This benchmark is compiled along with ``librsvg``.
 To compile the benchmark, you need to setup your development or test environment
 for the ``librsvg`` library. You can follow the instructions in
 :doc:`devel_environment`.
 
-You can also simply run `cargo build --release -p rsvg-bench` in the
-root of the `librsvg` source tree.  This command will compile but the
-`librsvg` library and the `rsvg-bench` benchmark, linked together in a
-static binary.  You can run this binary from `./target/releasersvg-bench`.
+You can also simply run ``cargo build --release -p rsvg-bench`` in the
+root of the ``librsvg`` source tree.  This command will compile but the
+``librsvg`` library and the ``rsvg-bench`` benchmark, linked together in a
+static binary.  You can run this binary from ``./target/releasersvg-bench``.
 
 Usage / benchmarking
 --------------------
 
-After compiling `librsvg`, the `rsvg-bench` binary will be available
-in the `target/release` directory of the `librsvg` source tree.
+After compiling it, the ``rsvg-bench`` binary will be available
+in the ``target/release`` directory of the ``librsvg`` source tree.
 Please make sure you compiled with ``-release``; when librsvg is
 installed normally it gets built in release mode (with optimizations),
 so this will get you meaningful timings.
 
-You can run the `rsvg-bench` binary with the following command line options:
+You can run the ``rsvg-bench`` binary with the following command line options:
 
-Running `target/debug/rsvg-bench --help` will display the help message.
+Running ``target/release/rsvg-bench --help`` will display the help message.
 
 .. code-block:: bash
 
@@ -81,9 +81,9 @@ Benchmarking files
 
     target/debug/rsvg-bench /path/to/svg/files
 
-This command will benchmark the rendering of all the SVG files in the directory `/path/to/svg/files`. 
+This command will benchmark the rendering of all the SVG files in the directory ``/path/to/svg/files``.
 The benchmark will parse each file once and render it once.
-    
+
 .. code-block:: bash
 
     hard_failures: false
@@ -112,22 +112,22 @@ The benchmark will parse each file once and render it once.
     0.28user 0.05system 0:00.29elapsed 114%CPU (0avgtext+0avgdata 31912maxresident)k
     136inputs+0outputs (2major+1941minor)pagefaults 0swaps
 
-The output will show the time taken to render each file. The time is in seconds, 
+The output will show the time taken to render each file. The time is in seconds,
 the number of times each files are parsed and rendered, and the number of files that were processed.
 
 .. code-block:: bash
     target/debug/rsvg-bench /path/to/svg/files/file.svg
 
-This command will benchmark the rendering of a single SVG file `/path/to/svg/files/file.svg`. 
+This command will benchmark the rendering of a single SVG file ``/path/to/svg/files/file.svg``.
 The benchmark will parse the file once and render it once.
 
-while you can also specify multiple files to benchmark by providing the path to each file as an argument to the `target/debug/rsvg-bench` command.
+while you can also specify multiple files to benchmark by providing the path to each file as an argument to the ``target/release/rsvg-bench`` command.
 
 .. code-block:: bash
     target/debug/rsvg-bench /path/to/svg/files/file1.svg /path/to/svg/files/file2.svg /path/to/svg/files/file3.svg
 
-This command will benchmark the rendering of the SVG files `/path/to/svg/files/file1.svg`, `/path/to/svg/files/file2.svg`, 
-and `/path/to/svg/files/file3.svg`. The benchmark will parse each file once and render it once.
+This command will benchmark the rendering of the SVG files ``/path/to/svg/files/file1.svg``, ``/path/to/svg/files/file2.svg``,
+and ``/path/to/svg/files/file3.svg``. The benchmark will parse each file once and render it once.
 
 .. code-block:: bash
 
@@ -147,26 +147,26 @@ and `/path/to/svg/files/file3.svg`. The benchmark will parse each file once and 
 Benchmarking with options
 -------------------------
 
-The `rsvg-bench` binary has several command line options that can be used to customize the benchmarking process. 
+The ``rsvg-bench`` binary has several command line options that can be used to customize the benchmarking process.
 They are listed above when we ran the `--help` option with the `target/debug/rsvg-bench` command.
 These options are:
 
-- `--sleep <sleep>`: Number of seconds to sleep before starting to process SVGs [default: 0]
-- `--num-parse <num-parse>`: Number of times to parse each file [default: 1]
-- `--num-render <num-render>`: Number of times to render each file [default: 1]
-- `--hard-failures`: Stop all processing when a file cannot be rendered
+- ``--sleep <sleep>``: Number of seconds to sleep before starting to process SVGs [default: 0]
+- ``--num-parse <num-parse>``: Number of times to parse each file [default: 1]
+- ``--num-render <num-render>``: Number of times to render each file [default: 1]
+- ``--hard-failures``: Stop all processing when a file cannot be rendered
 
-You can ask the `rsvg-bench` to sleep for a number of seconds before processing the SVG files. 
-This is useful when you want to give the system some time to settle before 
+You can ask ``rsvg-bench`` to sleep for a number of seconds before processing the SVG files.
+This is useful when you want to give the system some time to settle before
 starting the benchmarking process and also so that you can attach a profiler
-to it.  For example, `sysprof <https://blogs.gnome.org/chergert/2016/04/19/how-to-sysprof/>_` 
+to it.  For example, ``sysprof <https://blogs.gnome.org/chergert/2016/04/19/how-to-sysprof/>_``
 lets you choose an already-running process to monitor.
 
 .. code-block:: bash
     target/debug/rsvg-bench --sleep 5 /path/to/svg/files
 
-This command will benchmark the rendering of all the SVG files in the directory `/path/to/svg/files`.
-The benchmark will parse each file once and render it once. 
+This command will benchmark the rendering of all the SVG files in the directory ``/path/to/svg/files``.
+The benchmark will parse each file once and render it once.
 The benchmark will sleep for 5 seconds before processing the SVG files.
 
 .. code-block:: bash
@@ -202,5 +202,5 @@ The benchmark will sleep for 5 seconds before processing the SVG files.
 
     target/debug/rsvg-bench --num-parse 2 --num-render 2 /path/to/svg/files
 
-This command will benchmark the rendering of all the SVG files in the directory `/path/to/svg/files`. 
+This command will benchmark the rendering of all the SVG files in the directory ``/path/to/svg/files``.
 The benchmark will parse each file twice and render it twice.
