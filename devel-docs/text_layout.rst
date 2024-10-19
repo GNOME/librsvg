@@ -653,3 +653,9 @@ the expected layout.  Regretfully, the original SVG1.1 test suite only
 has very high level tests for text layout, which don't make it easy to
 automatically test if the building blocks of the code are correct.
 
+In the Ahem font, for each glyph 4/5 of the heigth are above the
+baseline, and 1/5 of the height is below the baseline.  This means
+that to get whole-pixel-exact rendering, your glyphs should have a
+size that is a multiple of 5.  In the examples above, we used font
+heights of 40px and 50px, which are of course multiples of 5.
+
