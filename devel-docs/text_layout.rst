@@ -534,3 +534,47 @@ font map.  We want to make the fonts available from
 what will be used while rendering test files.  There's also a custom
 ``fonts.conf`` there for Fontconfig, to set up some minimal
 substitutions.
+
+
+Ahem font for tests
+-------------------
+
+A big problem when writing tests for a text layout engine is that font
+rendering can change in extremely subtle ways depending on the
+underlying font-rendering libraries, the available fonts, the
+rendering options, etc.  If a few pixels change in the antialiasing
+around glyphs, or if glyphs shift around by sub-pixel distances, is
+that a failed test or not?
+
+To make it easy to write reproducible tests, there is the `Ahem font
+<https://web-platform-tests.org/writing-tests/ahem.html>`_.  It is
+useless for human-readable text, but **most glyphs are 100% simple
+squares** or simple rectangles that you can compare easily to
+reference images.
+
+This is the string ``A`` rendered in the Ahem font, with red lines
+that cross at its anchor point and baseline:
+
+.. image:: ahem-a.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+     <text style="font: 50px Ahem;" x="100" y="100" fill="black">A</text>
+   
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="100" x2="200" y2="100"/>
+       <line x1="100" y1="0" x2="100" y2="200"/>
+     </g>
+   </svg>
+
+Note the following:
+
+* This is a single glyph ``A`` that renders as a square.
+
+* The square is exactly 50 pixels tall and wide, since we specified
+  ``50px`` in the ``font:`` property.
+
+* The ascent is 40 pixels, above the horizontal red line, and the
+  descent is 10 pixels below it.
+
