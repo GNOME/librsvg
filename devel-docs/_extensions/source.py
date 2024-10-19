@@ -45,8 +45,8 @@ class SourceRole(ReferenceRole):
             self.rawtext,
             (
                 self.title if self.has_explicit_title
-                else path if ref == "main"
-                else f"{path} (@ {short_ref})"
+                else path or 'the source tree' if ref == "main"
+                else f"{path or 'the source tree'} (@ {short_ref})"
             ),
             refuri=f"{BASE_URL}/{ref}/{path}",
             **self.options,
