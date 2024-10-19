@@ -1,6 +1,9 @@
 """Custom reStructuredText entities/helpers for referencing entries in the
 librsvg source tree.
 
+For any changes made in this module, please ensure
+``devel-docs/devel_docs_mod_guide.rst`` is updated accordingly, if necessary.
+
 For help/reference on modifying these, see:
 
 - https://www.sphinx-doc.org/en/master/development/tutorials/extending_syntax.html

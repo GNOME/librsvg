@@ -1,6 +1,9 @@
 """Custom reStructuredText entities/helpers for referencing entities in the
 librsvg internals documentation.
 
+For any changes made in this module, please ensure
+``devel-docs/devel_docs_mod_guide.rst`` is updated accordingly, if necessary.
+
 For help/reference on modifying these, see:
 
 - https://www.sphinx-doc.org/en/master/development/tutorials/extending_syntax.html
@@ -180,6 +183,8 @@ class InternalsDomain(Domain):
     roles = {
         "crate": CrateRole(),
         "module": ModuleRole(),
+
+        # Top-level entities
         "struct": TopLevelRole("struct"),
         "enum": TopLevelRole("enum"),
         "trait": TopLevelRole("trait"),
@@ -188,6 +193,8 @@ class InternalsDomain(Domain):
         "macro": TopLevelRole("macro"),
         "constant": TopLevelRole("constant"),
         "static": TopLevelRole("static"),
+
+        # Member entities
         "struct-field": MemberRole("struct field", "struct", "structfield"),
         "struct-method": MemberRole(
             "struct method", "struct", "method", target_is_callable=True

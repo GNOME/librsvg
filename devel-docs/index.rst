@@ -65,7 +65,7 @@ want to work on the development of librsvg itself, not for users of
 the library or the ``rsvg-convert`` program.
 
 If you want to modify this document, please see :source:`its source code
-<devel-docs>`.
+<devel-docs>` and :doc:`this guide <devel_docs_mod_guide>`.
 
 Introduction
 ------------
