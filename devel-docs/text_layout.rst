@@ -578,3 +578,63 @@ Note the following:
 * The ascent is 40 pixels, above the horizontal red line, and the
   descent is 10 pixels below it.
 
+Now let's render two glyphs ``AB``, centered:
+
+.. image:: ahem-ab.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" fill="black">AB</text>
+   
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
+
+Now the same as before, but with each glyph in a separate ``tspan`` of a different color:
+
+.. image:: ahem-ab-color.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%">
+       <tspan fill="lime">A</tspan><tspan fill="blue">B</tspan>
+     </text>
+   
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
+
+What if we need to test some things but actually be able to
+differentiate glyphs?  Here, the glyphs for ``A``, ``p`` and ``É`` are
+rendered different.  `See the available glyphs
+<https://hydrock.github.io/AhemFont/>`_.
+
+.. image:: ahem-different-glyphs.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+     <text style="font: 40px Ahem;" x="50%" y="50%">ApÉ</text>
+   
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
+
+
+Details on the Ahem font
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* `Ahem font, main page <https://web-platform-tests.org/writing-tests/ahem.html>`_
+* `Rendered glyphs for easy reference <https://hydrock.github.io/AhemFont/>`_
+* `Source for the previous link, with interesting examples <https://github.com/Hydrock/AhemFont?tab=readme-ov-file>`_
+* `Ahem font README with list of glyphs <https://www.w3.org/Style/CSS/Test/Fonts/Ahem/README>`_
+* `Fonts for CSS testing <https://www.w3.org/Style/CSS/Test/Fonts/>`_
+  
