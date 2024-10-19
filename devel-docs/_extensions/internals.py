@@ -187,6 +187,7 @@ class InternalsDomain(Domain):
         "fn": TopLevelRole("fn", target_is_callable=True),
         "macro": TopLevelRole("macro"),
         "constant": TopLevelRole("constant"),
+        "static": TopLevelRole("static"),
         "struct-field": MemberRole("struct field", "struct", "structfield"),
         "struct-method": MemberRole(
             "struct method", "struct", "method", target_is_callable=True
