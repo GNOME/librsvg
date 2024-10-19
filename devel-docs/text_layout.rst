@@ -203,7 +203,7 @@ a start/end index based on the byte offsets for the corresponding
 characters.  Currently, **all the attributes for a span occupy the whole text span**.  So, for something like
 
 .. code-block:: xml
-   
+
   <text>
     Hello
     <tspan font-weight="bold">
@@ -561,7 +561,7 @@ that cross at its anchor point and baseline:
 
    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
      <text style="font: 50px Ahem;" x="50%" y="50%" fill="black">A</text>
-   
+
      <g stroke-width="2" stroke="red">
        <line x1="0" y1="50%" x2="100%" y2="50%"/>
        <line x1="50%" y1="0" x2="50%" y2="100%"/>
@@ -586,7 +586,7 @@ Now let's render two glyphs ``AB``, centered:
 
    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
      <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" fill="black">AB</text>
-   
+
      <g stroke-width="2" stroke="red">
        <line x1="0" y1="50%" x2="100%" y2="50%"/>
        <line x1="50%" y1="0" x2="50%" y2="100%"/>
@@ -603,7 +603,7 @@ Now the same as before, but with each glyph in a separate ``tspan`` of a differe
      <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%">
        <tspan fill="lime">A</tspan><tspan fill="blue">B</tspan>
      </text>
-   
+
      <g stroke-width="2" stroke="red">
        <line x1="0" y1="50%" x2="100%" y2="50%"/>
        <line x1="50%" y1="0" x2="50%" y2="100%"/>
@@ -613,7 +613,9 @@ Now the same as before, but with each glyph in a separate ``tspan`` of a differe
 What if we need to test some things but actually be able to
 differentiate glyphs?  Here, the glyphs for ``A``, ``p`` and ``É`` are
 rendered different.  `See the available glyphs
-<https://hydrock.github.io/AhemFont/>`_.
+<https://hydrock.github.io/AhemFont/>`_.  In any case, all the glyphs
+fit in the em-square and are just rectangles that cover different
+parts of that area.
 
 .. image:: ahem-different-glyphs.png
 
@@ -621,7 +623,7 @@ rendered different.  `See the available glyphs
 
    <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
      <text style="font: 40px Ahem;" x="50%" y="50%">ApÉ</text>
-   
+
      <g stroke-width="2" stroke="red">
        <line x1="0" y1="50%" x2="100%" y2="50%"/>
        <line x1="50%" y1="0" x2="50%" y2="100%"/>
@@ -637,4 +639,17 @@ Details on the Ahem font
 * `Source for the previous link, with interesting examples <https://github.com/Hydrock/AhemFont?tab=readme-ov-file>`_
 * `Ahem font README with list of glyphs <https://www.w3.org/Style/CSS/Test/Fonts/Ahem/README>`_
 * `Fonts for CSS testing <https://www.w3.org/Style/CSS/Test/Fonts/>`_
-  
+
+How librsvg's test suite uses Ahem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you grep for ``Ahem`` in the test files (``rsvg/tests/``), you will
+find how it is used to test the layout of various aspects of the
+``<text>`` element.
+
+When implementing the SVG2 text layout algorithm, we should have
+fine-grained tests for each little feature, to ensure that it produces
+the expected layout.  Regretfully, the original SVG1.1 test suite only
+has very high level tests for text layout, which don't make it easy to
+automatically test if the building blocks of the code are correct.
+
