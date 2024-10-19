@@ -171,7 +171,7 @@ This is why you'll see that the code does this; start at ``Text::draw``:
   ``children_to_chunks`` to grab its character content and children.
 
 - Later, ``Text::draw`` takes the list of chunks and their spans, and
-  converts them into a list of ``MeasuredChunk`.  This process turns
+  converts them into a list of ``MeasuredChunk``.  This process turns
   each span into a ``MeasuredSpan``.  The key element here is to
   create a ``pango::Layout`` for each span, and ask it for its size.
 
@@ -215,13 +215,18 @@ characters.  Currently, **all the attributes for a span occupy the whole text sp
 three ``pango::Layout`` objects get created, with ``Hello``, ``BOLD``,
 and ``World``, and the second one has a ``pango::AttrList`` that spans
 its entire 4 bytes.  (There's probably some whitespace in the span,
-and the attribute list would include it — I'm saying "4" since it is easy
-to visualize for example purposes.)
+and the attribute list would include it — I'm saying "4" since it is
+easy to visualize for example purposes.)  So, currently there are
+three ``PangoLayout`` and each with a ``PangoAttrList``:
+
+.. image:: multiple-layouts.jpg
 
 However, this is sub-optimal.  Ideally there should be a *single*
 ``pango::Layout`` for a single string, ``Hello BOLD World``, and the
 attribute list should have a boldface attribute just for the word in
 the middle.
+
+.. image:: single-layout.jpg
 
 Why?  Two reasons: shaping needs to happen across spans (it doesn't
 right now), and the handling for ``unicode-bidi`` and ``direction``
