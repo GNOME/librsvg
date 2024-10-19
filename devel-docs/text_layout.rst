@@ -501,3 +501,36 @@ I think the third scheme is the best one to follow for internships:
 * Eventually we can remove the old implementation, rename ``text2`` to
   ``text`` everywhere, and just leave the new implementation in place.
 
+
+Reproducible text rendering for the test suite
+----------------------------------------------
+
+Librsvg uses the pango/harfbuzz/freetype/fontconfig stack, so it
+assumes that fonts are installed in some system-wide location, and
+perhaps the user's own ``~/.fonts``.  However, for the test suite we
+would like to have a 100% predictable set of available fonts, and a
+reproducible configuration for things which even *have* configuration
+like fontconfig.
+
+Briefly:
+
+* Pango - does high-level text layout for GTK and librsvg; uses all
+  the following libraries.  You give it a Unicode string, and it will
+  do bidi/shaping/layout and render it for you.
+
+* Harfbuzz - Does text shaping.
+
+* Freetype - Renders glyphs.
+
+* Fontconfig - Does "font enumeration", or finding the fonts that are
+  installed on the system, and substitues missing fonts; if you ask
+  for "Times New Roman" but don't have it installed, fontconfig can
+  give you another serif font instead.
+
+Librsvg mostly only uses Pango directly, with one exception.  The code
+to set up the test suite calls Fontconfig to set up a minimal, custom
+font map.  We want to make the fonts available from
+``rsvg/tests/resources/`` *and nothing else* so that we know exactly
+what will be used while rendering test files.  There's also a custom
+``fonts.conf`` there for Fontconfig, to set up some minimal
+substitutions.
