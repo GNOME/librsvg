@@ -458,3 +458,46 @@ PangoGlyphString - The glyphs generated for a single PangoItem.
 
 PangoGravityHint - Defines how horizontal scripts should behave in a
 vertical context.
+
+
+Development plan
+----------------
+
+There's a few of ways of implementing the SVG2 text algorithm, while
+keeping the existing SVG1.1 code working:
+
+* Try to refactor ``rsvg/src/text.rs`` gradually to SVG2.  This is probably
+  overkill; the SVG1.1 algorithm there is very much oriented towards
+  just thinking of chunks ans spans, and the SVG2 algorithm subsumes
+  those.
+
+* Disable all the tests that use text, and write a new implementation.
+  Enable the tests gradually as features appear.
+
+* Implement a ``<text2>`` element with all the new code for SVG2.
+  Don't disable existing tests; rather, write a test suite based on
+  the Ahem font just for ``<text2>`` that lets us build things from
+  the ground up.
+
+There is code in ``rsvg/src/text.rs`` that will still be useful: the
+conversions between SVG types and Pango types, the tables with Unicode
+directional formatting characters, and some of the utility functions
+for Pango.
+
+I think the third scheme is the best one to follow for internships:
+
+* We can preserve the current code as it is; it works fine for many purposes.
+
+* We can write a new test suite for text that we *know* is
+  comprehensive, instead of relying on the sketchy tests from the
+  SVG1.1 test suite.  The Ahem font should make it easy to have
+  reftest-style tests and let us implement things in a "constructive"
+  fashion from the ground up.
+
+* We can compare the output of ``<text2>`` and ``<text>`` without
+  hackery or conditional compilation, to ensure that new new
+  implementation produces as reasonable results as the old one.
+
+* Eventually we can remove the old implementation, rename ``text2`` to
+  ``text`` everywhere, and just leave the new implementation in place.
+
