@@ -242,13 +242,7 @@ with the whole layout right now.
 gather all the character content inside a ``<text>`` into a single
 string, while keeping track of the offsets of each span.  Make the
 ``pango::AttrList`` taking those offsets into account.  Then, feed
-that single string to a ``pango::Layout``, with the attributes.  Due
-to the current code's use of ``Chunk``, ``MeasuredChunk``, etc., it
-may be better to create a ``pango::Layout`` for each chunk, instead of
-the whole ``<text>`` (i.e. one layout for each absolutely-positioned
-sequence of spans).  The SVG2 text layout algorithm will compute
-chunks completely differently, but it will still require per-span
-offsets and cross-span shaping.
+that single string to a ``pango::Layout``, with the attributes.
 
 **Further work:** Don't just paint the layout, but iterate it / break
 it up into individual ``pango::GlyphString``, so librsvg can lay out
@@ -278,6 +272,7 @@ this yet.
 implemented the SVG2 values for the ``unicode-bidi`` property.  You
 may want to read the detailed commit messages there, and the
 discussion in the merge request, to see details of future development.
+
 
 
 Detailed roadmap
@@ -327,15 +322,55 @@ to ignore the control characters.
 
 **SVG2 text layout algorithm:** This is the big one. The spec has
 pseudocode. It depends on the shaping results from Pango, and involves
-correlating “typographic characters” (Pango clusters) with the un-shaped
-string in logical order from the “Shaping”, and the information about
-discarded white-space characters. The complete text layout algorithm
-would take care of supporting multi-valued ``x/y/dx/dy/rotate``,
-``textPath`` (see below), plus bidi and vertical text.
+correlating “typographic characters” (Pango clusters) with the
+un-shaped string in logical order from the “Shaping”, and the
+information about `discarded white-space characters
+<https://www.w3.org/TR/css-text-3/#white-space-processing>`_. The
+complete text layout algorithm would take care of supporting
+multi-valued ``x/y/dx/dy/rotate``, ``textPath`` (see below), plus bidi
+and vertical text.
 
 Do look at the issues in the `svgwg repository at GitHub
 <https://github.com/w3c/svgwg/tree/master>`_ - there are a couple that
 mention bugs in the spec's pseudocode for the text layout algorithm.
+
+Bidi embedding
+~~~~~~~~~~~~~~
+
+When there are nested left-to-right (LTR) and right-to-left (RTL) languages in a text element, this must happen:
+
+1. Extract the text content from the spans, but...
+
+2. Insert Unicode control characters at each embedding level (at each span boundary)...
+
+3. So that Pango/Harfbuzz/etc. will know when text direction must change.
+
+For example, consider this SVG from ``rsvg/tests/fixtures/text/unicode-bidi-override.svg``:
+
+.. code:: xml
+
+   <?xml version="1.0" encoding="utf-8"?>
+   <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+     <rect x="0" y="0" width="100%" height="100%" fill="white"/>
+   
+     <text x="100" y="100" font-family="Ahem" font-size="20">ÉAp<tspan direction="rtl" unicode-bidi="bidi-override">ÉAp</tspan>ÉAp</text>
+   </svg>
+
+It gets rendered like this (see the description of the Ahem font below to make sense of this):
+
+.. image:: unicode-bidi.jpg
+
+Let's break it up part by part:
+
+* The ``<text>`` element starts by default in left-to-right (LTR) direction.
+
+* The first ``ÉAp`` gets laid out trivially, from left to right.
+
+* The second ``ÉAp`` is in a ``tspan`` with ``direction="rtl"`` and ``unicode-bidi="bidi-override"``.  It gets laid out right-to-left, and looks like ``pAÉ``, but for the platform libraries to know this, it needs to be surrounded with Unicode control characters "Right to Left Override (RLO)" and "Pop Directional Formatting (PDF)".  This is done in `from_unicode_bidi_and_direction() <https://gitlab.gnome.org/GNOME/librsvg/-/blob/5d43d27adec414515669a817e015832c85ec7232/rsvg/src/text.rs?page=2#L1177-1198>`_ and `wrap_with_direction_control_chars() <https://gitlab.gnome.org/GNOME/librsvg/-/blob/5d43d27adec414515669a817e015832c85ec7232/rsvg/src/text.rs?page=2#L1200-1216>`_.
+
+* The third ``ÉAp`` gets laid out again from left-to-right.
+
+
 
 Text rendering
 ~~~~~~~~~~~~~~
@@ -354,7 +389,7 @@ algorithm.
 
 Although currently Pango deals with underlining, it may be necessary to
 do that in librsvg instead - I am not sure yet how ``textPath`` or
-individually-positioned ``x/y/dx/dy/rotate`` interact with underlining.
+individually-positioned ``x/y/dx/dy/rotate`` interact with underlining.  See also 
 
 Pango internals
 ~~~~~~~~~~~~~~~
