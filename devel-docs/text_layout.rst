@@ -659,3 +659,27 @@ that to get whole-pixel-exact rendering, your glyphs should have a
 size that is a multiple of 5.  In the examples above, we used font
 heights of 40px and 50px, which are of course multiples of 5.
 
+Some ideas for the ``<text2>`` tests with Ahem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Testing general layout and ``text-anchor``.
+
+* Testing bounding boxes.
+
+* Use different glyphs and colors to test bidi embedding.  For
+  example, here ``RGB`` renders as ``BGR`` due to ``direction="rtl"``:
+
+.. image:: ahem-rtl.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" direction="rtl">
+       <tspan fill="red">R</tspan><tspan fill="green">G</tspan><tspan fill="blue">B</tspan>
+     </text>
+   
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
