@@ -28,10 +28,14 @@ The following list is only for stable release streams.
 2.56.3
 ~~~~~~
 
+.. The CVE URL is used directly here because Sphinx's `cve` role can't be
+   used in a substitution since it generates a target for an index entry.
+
 .. |CVE-2023-38633| replace::
 
-   :cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
-   xinclude href has special characters.
+   `CVE-2023-38633 <https://www.cve.org/CVERecord?id=CVE-2023-38633>`__ -
+   :issue:`996` - Arbitrary file read when xinclude href has special
+   characters.
 
 |CVE-2023-38633|
 
@@ -68,20 +72,19 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 2.48.10
 ~~~~~~~
 
-:cve:`CVE-2020-35905` - RUSTSEC-2020-0059 - data race in futures-util.
+:cve:`2020-35905` - RUSTSEC-2020-0059 - data race in futures-util.
 
-:cve:`CVE-2020-35906` - RUSTSEC-2020-0060 - use-after-free in
-futures-task.
+:cve:`2020-35906` - RUSTSEC-2020-0060 - use-after-free in futures-task.
 
-:cve:`CVE-2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
+:cve:`2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
 RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 
 2.48.0
 ~~~~~~
 
-:cve:`CVE-2019-20446` - guard against exponential growth of CPU time
-from malicious SVGs.
+:cve:`2019-20446` - guard against exponential growth of CPU time from
+malicious SVGs.
 
 .. |see libcroco notes| replace::
 
@@ -104,7 +107,7 @@ from malicious SVGs.
 
 RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 
-:cve:`CVE-2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
+:cve:`2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
 |see libcroco notes|
 
@@ -113,51 +116,50 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 
 RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 
-:cve:`CVE-2019-15554` - RUSTSEC-2019-0012 - memory corruption in
-smallvec.
+:cve:`2019-15554` - RUSTSEC-2019-0012 - memory corruption in smallvec.
 
-:cve:`CVE-2019-15551` - RUSTSEC-2019-0009 - double-free and
-use-after-free in smallvec.
+:cve:`2019-15551` - RUSTSEC-2019-0009 - double-free and use-after-free
+in smallvec.
 
-:cve:`CVE-2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
+:cve:`2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
 |see libcroco notes|
 
 2.44.16
 ~~~~~~~
 
-:cve:`CVE-2019-20446` - guard against exponential growth of CPU time
-from malicious SVGs.
+:cve:`2019-20446` - guard against exponential growth of CPU time from
+malicious SVGs.
 
 |see libcroco notes|
 
 2.42.8
 ~~~~~~
 
-:cve:`CVE-2019-20446` - guard against exponential growth of CPU time
-from malicious SVGs.
+:cve:`2019-20446` - guard against exponential growth of CPU time from
+malicious SVGs.
 
 |see libcroco notes|
 
 2.42.9
 ~~~~~~
 
-:cve:`CVE-2018-20991` - RUSTSEC-2018-0003 - double-free in smallvec.
+:cve:`2018-20991` - RUSTSEC-2018-0003 - double-free in smallvec.
 
 |see libcroco notes|
 
 2.40.21
 ~~~~~~~
 
-:cve:`CVE-2019-20446` - guard against exponential growth of CPU time
-from malicious SVGs.
+:cve:`2019-20446` - guard against exponential growth of CPU time from
+malicious SVGs.
 
 |see libcroco notes|
 
 2.40.18
 ~~~~~~~
 
-:cve:`CVE-2017-11464` - Fix division-by-zero in the Gaussian blur code.
+:cve:`2017-11464` - Fix division-by-zero in the Gaussian blur code.
 
 |see libcroco notes|
 

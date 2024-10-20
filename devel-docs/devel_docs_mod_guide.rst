@@ -12,8 +12,8 @@ Aside, the `roles provided out-of-the box
 <https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html>`_,
 some 3rd-party and custom roles may also be used.
 
-Referencing issues, commits, users, CVEs, etc
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Referencing issues, commits, users, etc
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All roles provided by the `sphinx-issues
 <https://github.com/sloria/sphinx-issues>`_ extension may be used as
