@@ -27,6 +27,9 @@ author = 'Federico Mena Quintero'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    # Used to shorten external links.
+    # https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
+    "sphinx.ext.extlinks",
     # Used to link issues, merge requests, CVEs, etc.
     # https://github.com/sloria/sphinx-issues
     "sphinx_issues",
@@ -74,6 +77,13 @@ linkcheck_ignore = [
     r'https://gitlab.gnome.org/.*#.*',
     r'https://gitlab.freedesktop.org/.*#.*',
 ]
+
+
+# Options for the `sphinx.ext.extlinks` extension. See `extensions` above.
+
+extlinks = {
+}
+extlinks_detect_hardcoded_links = True
 
 
 # Options for the `sphinx-issues` extension. See `extensions` above.
