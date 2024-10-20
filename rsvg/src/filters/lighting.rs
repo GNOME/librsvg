@@ -20,10 +20,9 @@ use crate::filters::{
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
-use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
+use crate::parsers::{NonNegative, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
-use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
@@ -33,6 +32,8 @@ use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 use crate::util::clamp;
 use crate::xml::Attributes;
+
+use super::convolve_matrix::KernelUnitLength;
 
 /// The `feDiffuseLighting` filter primitives.
 #[derive(Default)]
@@ -45,7 +46,7 @@ pub struct FeDiffuseLighting {
 pub struct DiffuseLightingParams {
     in1: Input,
     surface_scale: f64,
-    kernel_unit_length: Option<(f64, f64)>,
+    kernel_unit_length: KernelUnitLength,
     diffuse_constant: NonNegative,
 }
 
@@ -54,7 +55,7 @@ impl Default for DiffuseLightingParams {
         Self {
             in1: Default::default(),
             surface_scale: 1.0,
-            kernel_unit_length: None,
+            kernel_unit_length: KernelUnitLength::default(),
             diffuse_constant: NonNegative(1.0),
         }
     }
@@ -71,7 +72,7 @@ pub struct FeSpecularLighting {
 pub struct SpecularLightingParams {
     in1: Input,
     surface_scale: f64,
-    kernel_unit_length: Option<(f64, f64)>,
+    kernel_unit_length: KernelUnitLength,
     specular_constant: NonNegative,
     specular_exponent: f64,
 }
@@ -81,7 +82,7 @@ impl Default for SpecularLightingParams {
         Self {
             in1: Default::default(),
             surface_scale: 1.0,
-            kernel_unit_length: None,
+            kernel_unit_length: KernelUnitLength::default(),
             specular_constant: NonNegative(1.0),
             specular_exponent: 1.0,
         }
@@ -357,16 +358,8 @@ impl ElementTrait for FeDiffuseLighting {
                     set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
-                    match v {
-                        Ok(NumberOptionalNumber(x, y)) => {
-                            self.params.kernel_unit_length = Some((x, y));
-                        }
-
-                        Err(e) => {
-                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
-                        }
-                    }
+                    self.params.kernel_unit_length =
+                        KernelUnitLength::from_attribute(&attr, value, session).unwrap_or_default();
                 }
                 expanded_name!("", "diffuseConstant") => {
                     set_attribute(
@@ -411,16 +404,8 @@ impl ElementTrait for FeSpecularLighting {
                     set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
-                    match v {
-                        Ok(NumberOptionalNumber(x, y)) => {
-                            self.params.kernel_unit_length = Some((x, y));
-                        }
-
-                        Err(e) => {
-                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
-                        }
-                    }
+                    self.params.kernel_unit_length =
+                        KernelUnitLength::from_attribute(&attr, value, session).unwrap_or_default();
                 }
                 expanded_name!("", "specularConstant") => {
                     set_attribute(
@@ -498,13 +483,7 @@ macro_rules! impl_lighting_filter {
                 let scale = self
                     .params
                     .kernel_unit_length
-                    .and_then(|(x, y)| {
-                        if x <= 0.0 || y <= 0.0 {
-                            None
-                        } else {
-                            Some((x, y))
-                        }
-                    })
+                    .0
                     .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
                 let mut input_surface = input_1.surface().clone();
