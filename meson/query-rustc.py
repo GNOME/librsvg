@@ -64,7 +64,6 @@ def retrive_version_info(output, query):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    dummy_out = tempfile.NamedTemporaryFile()
     query = args.query
     query_arg = None
     rustc_cmd = [Path(args.RUSTC).as_posix()]
@@ -85,17 +84,23 @@ if __name__ == "__main__":
     if args.target:
         rustc_cmd.extend(['--target', args.target])
 
-    # We need these for '--print=native-static-libs' on Windows
-    if query == 'native-static-libs':
-        rustc_cmd.extend(['--crate-type', 'staticlib'])
-        rustc_cmd.append(os.devnull)
-        rustc_cmd.extend(['-o', dummy_out.name])
+    fd, dummy_out = tempfile.mkstemp()
+    os.close(fd)
+    try:
+        # We need these for '--print=native-static-libs' on Windows
+        if query == 'native-static-libs':
+            rustc_cmd.extend(['--crate-type', 'staticlib'])
+            rustc_cmd.append(os.devnull)
+            rustc_cmd.extend(['-o', dummy_out])
 
-    query_results = subprocess.run(
-        rustc_cmd,
-        capture_output=True,
-        text=True,
-    )
+        query_results = subprocess.run(
+            rustc_cmd,
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        os.unlink(dummy_out)
+
     if query == 'native-static-libs':
         retrieve_native_static_libs_from_output(query_results.stderr)
     elif query == 'default-host-toolchain' or query == 'stable-actual-version':
