@@ -62,7 +62,7 @@ The following list is only for stable release streams.
 2.50.4
 ~~~~~~
 
-RUSTSEC-2020-0146 - lifetime erasure in generic-array.
+:rustsec:`2020-0146` - lifetime erasure in generic-array.
 
 2.48.12
 ~~~~~~~
@@ -72,13 +72,13 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 2.48.10
 ~~~~~~~
 
-:cve:`2020-35905` - RUSTSEC-2020-0059 - data race in futures-util.
+:cve:`2020-35905` - :rustsec:`2020-0059` - data race in futures-util.
 
-:cve:`2020-35906` - RUSTSEC-2020-0060 - use-after-free in futures-task.
+:cve:`2020-35906` - :rustsec:`2020-0060` - use-after-free in futures-task.
 
-:cve:`2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
+:cve:`2021-25900` - :rustsec:`2021-0003` - buffer overflow in smallvec.
 
-RUSTSEC-2020-0146 - lifetime erasure in generic-array.
+:rustsec:`2020-0146` - lifetime erasure in generic-array.
 
 2.48.0
 ~~~~~~
@@ -105,23 +105,23 @@ malicious SVGs.
 2.46.5
 ~~~~~~
 
-RUSTSEC-2020-0146 - lifetime erasure in generic-array.
+:rustsec:`2020-0146` - lifetime erasure in generic-array.
 
-:cve:`2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
+:cve:`2021-25900` - :rustsec:`2021-0003` - buffer overflow in smallvec.
 
 |see libcroco notes|
 
 2.44.17
 ~~~~~~~
 
-RUSTSEC-2020-0146 - lifetime erasure in generic-array.
+:rustsec:`2020-0146` - lifetime erasure in generic-array.
 
-:cve:`2019-15554` - RUSTSEC-2019-0012 - memory corruption in smallvec.
+:cve:`2019-15554` - :rustsec:`2019-0012` - memory corruption in smallvec.
 
-:cve:`2019-15551` - RUSTSEC-2019-0009 - double-free and use-after-free
+:cve:`2019-15551` - :rustsec:`2019-0009` - double-free and use-after-free
 in smallvec.
 
-:cve:`2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
+:cve:`2021-25900` - :rustsec:`2021-0003` - buffer overflow in smallvec.
 
 |see libcroco notes|
 
@@ -144,7 +144,7 @@ malicious SVGs.
 2.42.9
 ~~~~~~
 
-:cve:`2018-20991` - RUSTSEC-2018-0003 - double-free in smallvec.
+:cve:`2018-20991` - :rustsec:`2018-0003` - double-free in smallvec.
 
 |see libcroco notes|
 

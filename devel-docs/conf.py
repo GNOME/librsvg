@@ -82,6 +82,7 @@ linkcheck_ignore = [
 # Options for the `sphinx.ext.extlinks` extension. See `extensions` above.
 
 extlinks = {
+    "rustsec": ("https://rustsec.org/advisories/RUSTSEC-%s", "RUSTSEC-%s"),
 }
 extlinks_detect_hardcoded_links = True
 
