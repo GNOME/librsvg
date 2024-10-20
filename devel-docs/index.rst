@@ -57,6 +57,7 @@ Development guide for librsvg
 .. toctree::
    :caption: Tools
    :maxdepth: 1
+   :hidden:
 
    rsvg_bench
 
@@ -134,6 +135,11 @@ Information for maintainers
    - Marge-bot.
    - Documentation on the CI.
    - Documentation on the OSS-Fuzz integration and its maintenance.
+
+Tools
+-----
+
+- :doc:`rsvg_bench`
 
 References
 ----------
