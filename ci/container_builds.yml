@@ -5,7 +5,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2024-09-12.0-main"
+  BASE_TAG: "2024-10-20.0-AnonymouX47_devel_docs_update"
   RUST_STABLE: "1.81.0"
   RUST_MINIMUM: "1.77.2"
   RUST_NIGHTLY: "nightly-2024-07-14"
