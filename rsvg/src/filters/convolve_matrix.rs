@@ -57,7 +57,13 @@ impl KernelUnitLength {
     pub fn from_attribute(attr: &QualName, value: &str, session: &Session) -> Result<Self, ()> {
         let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
         match v {
-            Ok(NumberOptionalNumber(x, y)) => Ok(KernelUnitLength(Some((x, y)))),
+            Ok(NumberOptionalNumber(x, y)) if x > 0.0 && y > 0.0 => {
+                Ok(KernelUnitLength(Some((x, y))))
+            } // Only accept positive values
+            Ok(_) => {
+                rsvg_log!(session, "ignoring attribute with non-positive values");
+                Err(())
+            }
             Err(e) => {
                 rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
                 Err(())
@@ -182,13 +188,6 @@ impl ConvolveMatrix {
         let scale = self
             .kernel_unit_length
             .0
-            .and_then(|(x, y)| {
-                if x <= 0.0 || y <= 0.0 {
-                    None
-                } else {
-                    Some((x, y))
-                }
-            })
             .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
         if let Some((ox, oy)) = scale {

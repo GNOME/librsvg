@@ -484,13 +484,6 @@ macro_rules! impl_lighting_filter {
                     .params
                     .kernel_unit_length
                     .0
-                    .and_then(|(x, y)| {
-                        if x <= 0.0 || y <= 0.0 {
-                            None
-                        } else {
-                            Some((x, y))
-                        }
-                    })
                     .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
                 let mut input_surface = input_1.surface().clone();
