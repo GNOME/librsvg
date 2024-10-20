@@ -171,7 +171,7 @@ This is why you'll see that the code does this; start at ``Text::draw``:
   ``children_to_chunks`` to grab its character content and children.
 
 - Later, ``Text::draw`` takes the list of chunks and their spans, and
-  converts them into a list of ``MeasuredChunk`.  This process turns
+  converts them into a list of ``MeasuredChunk``.  This process turns
   each span into a ``MeasuredSpan``.  The key element here is to
   create a ``pango::Layout`` for each span, and ask it for its size.
 
@@ -203,7 +203,7 @@ a start/end index based on the byte offsets for the corresponding
 characters.  Currently, **all the attributes for a span occupy the whole text span**.  So, for something like
 
 .. code-block:: xml
-   
+
   <text>
     Hello
     <tspan font-weight="bold">
@@ -215,13 +215,18 @@ characters.  Currently, **all the attributes for a span occupy the whole text sp
 three ``pango::Layout`` objects get created, with ``Hello``, ``BOLD``,
 and ``World``, and the second one has a ``pango::AttrList`` that spans
 its entire 4 bytes.  (There's probably some whitespace in the span,
-and the attribute list would include it — I'm saying "4" since it is easy
-to visualize for example purposes.)
+and the attribute list would include it — I'm saying "4" since it is
+easy to visualize for example purposes.)  So, currently there are
+three ``PangoLayout`` and each with a ``PangoAttrList``:
+
+.. image:: multiple-layouts.jpg
 
 However, this is sub-optimal.  Ideally there should be a *single*
 ``pango::Layout`` for a single string, ``Hello BOLD World``, and the
 attribute list should have a boldface attribute just for the word in
 the middle.
+
+.. image:: single-layout.jpg
 
 Why?  Two reasons: shaping needs to happen across spans (it doesn't
 right now), and the handling for ``unicode-bidi`` and ``direction``
@@ -237,13 +242,7 @@ with the whole layout right now.
 gather all the character content inside a ``<text>`` into a single
 string, while keeping track of the offsets of each span.  Make the
 ``pango::AttrList`` taking those offsets into account.  Then, feed
-that single string to a ``pango::Layout``, with the attributes.  Due
-to the current code's use of ``Chunk``, ``MeasuredChunk``, etc., it
-may be better to create a ``pango::Layout`` for each chunk, instead of
-the whole ``<text>`` (i.e. one layout for each absolutely-positioned
-sequence of spans).  The SVG2 text layout algorithm will compute
-chunks completely differently, but it will still require per-span
-offsets and cross-span shaping.
+that single string to a ``pango::Layout``, with the attributes.
 
 **Further work:** Don't just paint the layout, but iterate it / break
 it up into individual ``pango::GlyphString``, so librsvg can lay out
@@ -273,6 +272,7 @@ this yet.
 implemented the SVG2 values for the ``unicode-bidi`` property.  You
 may want to read the detailed commit messages there, and the
 discussion in the merge request, to see details of future development.
+
 
 
 Detailed roadmap
@@ -322,15 +322,55 @@ to ignore the control characters.
 
 **SVG2 text layout algorithm:** This is the big one. The spec has
 pseudocode. It depends on the shaping results from Pango, and involves
-correlating “typographic characters” (Pango clusters) with the un-shaped
-string in logical order from the “Shaping”, and the information about
-discarded white-space characters. The complete text layout algorithm
-would take care of supporting multi-valued ``x/y/dx/dy/rotate``,
-``textPath`` (see below), plus bidi and vertical text.
+correlating “typographic characters” (Pango clusters) with the
+un-shaped string in logical order from the “Shaping”, and the
+information about `discarded white-space characters
+<https://www.w3.org/TR/css-text-3/#white-space-processing>`_. The
+complete text layout algorithm would take care of supporting
+multi-valued ``x/y/dx/dy/rotate``, ``textPath`` (see below), plus bidi
+and vertical text.
 
 Do look at the issues in the `svgwg repository at GitHub
 <https://github.com/w3c/svgwg/tree/master>`_ - there are a couple that
 mention bugs in the spec's pseudocode for the text layout algorithm.
+
+Bidi embedding
+~~~~~~~~~~~~~~
+
+When there are nested left-to-right (LTR) and right-to-left (RTL) languages in a text element, this must happen:
+
+1. Extract the text content from the spans, but...
+
+2. Insert Unicode control characters at each embedding level (at each span boundary)...
+
+3. So that Pango/Harfbuzz/etc. will know when text direction must change.
+
+For example, consider this SVG from ``rsvg/tests/fixtures/text/unicode-bidi-override.svg``:
+
+.. code:: xml
+
+   <?xml version="1.0" encoding="utf-8"?>
+   <svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+     <rect x="0" y="0" width="100%" height="100%" fill="white"/>
+   
+     <text x="100" y="100" font-family="Ahem" font-size="20">ÉAp<tspan direction="rtl" unicode-bidi="bidi-override">ÉAp</tspan>ÉAp</text>
+   </svg>
+
+It gets rendered like this (see the description of the Ahem font below to make sense of this):
+
+.. image:: unicode-bidi.jpg
+
+Let's break it up part by part:
+
+* The ``<text>`` element starts by default in left-to-right (LTR) direction.
+
+* The first ``ÉAp`` gets laid out trivially, from left to right.
+
+* The second ``ÉAp`` is in a ``tspan`` with ``direction="rtl"`` and ``unicode-bidi="bidi-override"``.  It gets laid out right-to-left, and looks like ``pAÉ``, but for the platform libraries to know this, it needs to be surrounded with Unicode control characters "Right to Left Override (RLO)" and "Pop Directional Formatting (PDF)".  This is done in `from_unicode_bidi_and_direction() <https://gitlab.gnome.org/GNOME/librsvg/-/blob/5d43d27adec414515669a817e015832c85ec7232/rsvg/src/text.rs?page=2#L1177-1198>`_ and `wrap_with_direction_control_chars() <https://gitlab.gnome.org/GNOME/librsvg/-/blob/5d43d27adec414515669a817e015832c85ec7232/rsvg/src/text.rs?page=2#L1200-1216>`_.
+
+* The third ``ÉAp`` gets laid out again from left-to-right.
+
+
 
 Text rendering
 ~~~~~~~~~~~~~~
@@ -349,7 +389,7 @@ algorithm.
 
 Although currently Pango deals with underlining, it may be necessary to
 do that in librsvg instead - I am not sure yet how ``textPath`` or
-individually-positioned ``x/y/dx/dy/rotate`` interact with underlining.
+individually-positioned ``x/y/dx/dy/rotate`` interact with underlining.  See also 
 
 Pango internals
 ~~~~~~~~~~~~~~~
@@ -458,3 +498,228 @@ PangoGlyphString - The glyphs generated for a single PangoItem.
 
 PangoGravityHint - Defines how horizontal scripts should behave in a
 vertical context.
+
+
+Development plan
+----------------
+
+There's a few of ways of implementing the SVG2 text algorithm, while
+keeping the existing SVG1.1 code working:
+
+* Try to refactor ``rsvg/src/text.rs`` gradually to SVG2.  This is probably
+  overkill; the SVG1.1 algorithm there is very much oriented towards
+  just thinking of chunks ans spans, and the SVG2 algorithm subsumes
+  those.
+
+* Disable all the tests that use text, and write a new implementation.
+  Enable the tests gradually as features appear.
+
+* Implement a ``<text2>`` element with all the new code for SVG2.
+  Don't disable existing tests; rather, write a test suite based on
+  the Ahem font just for ``<text2>`` that lets us build things from
+  the ground up.
+
+There is code in ``rsvg/src/text.rs`` that will still be useful: the
+conversions between SVG types and Pango types, the tables with Unicode
+directional formatting characters, and some of the utility functions
+for Pango.
+
+I think the third scheme is the best one to follow for internships:
+
+* We can preserve the current code as it is; it works fine for many purposes.
+
+* We can write a new test suite for text that we *know* is
+  comprehensive, instead of relying on the sketchy tests from the
+  SVG1.1 test suite.  The Ahem font should make it easy to have
+  reftest-style tests and let us implement things in a "constructive"
+  fashion from the ground up.
+
+* We can compare the output of ``<text2>`` and ``<text>`` without
+  hackery or conditional compilation, to ensure that new new
+  implementation produces as reasonable results as the old one.
+
+* Eventually we can remove the old implementation, rename ``text2`` to
+  ``text`` everywhere, and just leave the new implementation in place.
+
+
+Reproducible text rendering for the test suite
+----------------------------------------------
+
+Librsvg uses the pango/harfbuzz/freetype/fontconfig stack, so it
+assumes that fonts are installed in some system-wide location, and
+perhaps the user's own ``~/.fonts``.  However, for the test suite we
+would like to have a 100% predictable set of available fonts, and a
+reproducible configuration for things which even *have* configuration
+like fontconfig.
+
+Briefly:
+
+* Pango - does high-level text layout for GTK and librsvg; uses all
+  the following libraries.  You give it a Unicode string, and it will
+  do bidi/shaping/layout and render it for you.
+
+* Harfbuzz - Does text shaping.
+
+* Freetype - Renders glyphs.
+
+* Fontconfig - Does "font enumeration", or finding the fonts that are
+  installed on the system, and substitues missing fonts; if you ask
+  for "Times New Roman" but don't have it installed, fontconfig can
+  give you another serif font instead.
+
+Librsvg mostly only uses Pango directly, with one exception.  The code
+to set up the test suite calls Fontconfig to set up a minimal, custom
+font map.  We want to make the fonts available from
+``rsvg/tests/resources/`` *and nothing else* so that we know exactly
+what will be used while rendering test files.  There's also a custom
+``fonts.conf`` there for Fontconfig, to set up some minimal
+substitutions.
+
+
+Ahem font for tests
+-------------------
+
+A big problem when writing tests for a text layout engine is that font
+rendering can change in extremely subtle ways depending on the
+underlying font-rendering libraries, the available fonts, the
+rendering options, etc.  If a few pixels change in the antialiasing
+around glyphs, or if glyphs shift around by sub-pixel distances, is
+that a failed test or not?
+
+To make it easy to write reproducible tests, there is the `Ahem font
+<https://web-platform-tests.org/writing-tests/ahem.html>`_.  It is
+useless for human-readable text, but **most glyphs are 100% simple
+squares** or simple rectangles that you can compare easily to
+reference images.
+
+This is the string ``A`` rendered in the Ahem font, with red lines
+that cross at its anchor point and baseline:
+
+.. image:: ahem-a.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+     <text style="font: 50px Ahem;" x="50%" y="50%" fill="black">A</text>
+
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
+
+Note the following:
+
+* This is a single glyph ``A`` that renders as a square.
+
+* The square is exactly 50 pixels tall and wide, since we specified
+  ``50px`` in the ``font:`` property.
+
+* The ascent is 40 pixels, above the horizontal red line, and the
+  descent is 10 pixels below it.
+
+Now let's render two glyphs ``AB``, centered:
+
+.. image:: ahem-ab.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" fill="black">AB</text>
+
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
+
+Now the same as before, but with each glyph in a separate ``tspan`` of a different color:
+
+.. image:: ahem-ab-color.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%">
+       <tspan fill="lime">A</tspan><tspan fill="blue">B</tspan>
+     </text>
+
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
+
+What if we need to test some things but actually be able to
+differentiate glyphs?  Here, the glyphs for ``A``, ``p`` and ``É`` are
+rendered different.  `See the available glyphs
+<https://hydrock.github.io/AhemFont/>`_.  In any case, all the glyphs
+fit in the em-square and are just rectangles that cover different
+parts of that area.
+
+.. image:: ahem-different-glyphs.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+     <text style="font: 40px Ahem;" x="50%" y="50%">ApÉ</text>
+
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
+
+
+Details on the Ahem font
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* `Ahem font, main page <https://web-platform-tests.org/writing-tests/ahem.html>`_
+* `Rendered glyphs for easy reference <https://hydrock.github.io/AhemFont/>`_
+* `Source for the previous link, with interesting examples <https://github.com/Hydrock/AhemFont?tab=readme-ov-file>`_
+* `Ahem font README with list of glyphs <https://www.w3.org/Style/CSS/Test/Fonts/Ahem/README>`_
+* `Fonts for CSS testing <https://www.w3.org/Style/CSS/Test/Fonts/>`_
+
+How librsvg's test suite uses Ahem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you grep for ``Ahem`` in the test files (``rsvg/tests/``), you will
+find how it is used to test the layout of various aspects of the
+``<text>`` element.
+
+When implementing the SVG2 text layout algorithm, we should have
+fine-grained tests for each little feature, to ensure that it produces
+the expected layout.  Regretfully, the original SVG1.1 test suite only
+has very high level tests for text layout, which don't make it easy to
+automatically test if the building blocks of the code are correct.
+
+In the Ahem font, for each glyph 4/5 of the heigth are above the
+baseline, and 1/5 of the height is below the baseline.  This means
+that to get whole-pixel-exact rendering, your glyphs should have a
+size that is a multiple of 5.  In the examples above, we used font
+heights of 40px and 50px, which are of course multiples of 5.
+
+Some ideas for the ``<text2>`` tests with Ahem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Testing general layout and ``text-anchor``.
+
+* Testing bounding boxes.
+
+* Use different glyphs and colors to test bidi embedding.  For
+  example, here ``RGB`` renders as ``BGR`` due to ``direction="rtl"``:
+
+.. image:: ahem-rtl.png
+
+.. code:: xml
+
+   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" direction="rtl">
+       <tspan fill="red">R</tspan><tspan fill="green">G</tspan><tspan fill="blue">B</tspan>
+     </text>
+   
+     <g stroke-width="2" stroke="red">
+       <line x1="0" y1="50%" x2="100%" y2="50%"/>
+       <line x1="50%" y1="0" x2="50%" y2="100%"/>
+     </g>
+   </svg>
