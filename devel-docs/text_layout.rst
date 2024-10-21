@@ -219,14 +219,14 @@ and the attribute list would include it — I'm saying "4" since it is
 easy to visualize for example purposes.)  So, currently there are
 three ``PangoLayout`` and each with a ``PangoAttrList``:
 
-.. image:: multiple-layouts.jpg
+.. image:: assets/multiple-layouts.jpg
 
 However, this is sub-optimal.  Ideally there should be a *single*
 ``pango::Layout`` for a single string, ``Hello BOLD World``, and the
 attribute list should have a boldface attribute just for the word in
 the middle.
 
-.. image:: single-layout.jpg
+.. image:: assets/single-layout.jpg
 
 Why?  Two reasons: shaping needs to happen across spans (it doesn't
 right now), and the handling for ``unicode-bidi`` and ``direction``
@@ -356,7 +356,7 @@ For example, consider this SVG from ``rsvg/tests/fixtures/text/unicode-bidi-over
 
 It gets rendered like this (see the description of the Ahem font below to make sense of this):
 
-.. image:: unicode-bidi.jpg
+.. image:: assets/unicode-bidi.jpg
 
 Let's break it up part by part:
 
@@ -589,7 +589,7 @@ reference images.
 This is the string ``A`` rendered in the Ahem font, with red lines
 that cross at its anchor point and baseline:
 
-.. image:: ahem-a.png
+.. image:: assets/ahem-a.png
 
 .. code:: xml
 
@@ -614,7 +614,7 @@ Note the following:
 
 Now let's render two glyphs ``AB``, centered:
 
-.. image:: ahem-ab.png
+.. image:: assets/ahem-ab.png
 
 .. code:: xml
 
@@ -629,7 +629,7 @@ Now let's render two glyphs ``AB``, centered:
 
 Now the same as before, but with each glyph in a separate ``tspan`` of a different color:
 
-.. image:: ahem-ab-color.png
+.. image:: assets/ahem-ab-color.png
 
 .. code:: xml
 
@@ -651,7 +651,7 @@ rendered different.  `See the available glyphs
 fit in the em-square and are just rectangles that cover different
 parts of that area.
 
-.. image:: ahem-different-glyphs.png
+.. image:: assets/ahem-different-glyphs.png
 
 .. code:: xml
 
@@ -703,7 +703,7 @@ Some ideas for the ``<text2>`` tests with Ahem
 * Use different glyphs and colors to test bidi embedding.  For
   example, here ``RGB`` renders as ``BGR`` due to ``direction="rtl"``:
 
-.. image:: ahem-rtl.png
+.. image:: assets/ahem-rtl.png
 
 .. code:: xml
 
