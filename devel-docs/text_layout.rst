@@ -343,7 +343,8 @@ When there are nested left-to-right (LTR) and right-to-left (RTL) languages in a
 
 3. So that Pango/Harfbuzz/etc. will know when text direction must change.
 
-For example, consider this SVG from ``rsvg/tests/fixtures/text/unicode-bidi-override.svg``:
+For example, consider this SVG from
+:source:`rsvg/tests/fixtures/text/unicode-bidi-override.svg`:
 
 .. code:: xml
 
