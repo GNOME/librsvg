@@ -1,3 +1,6 @@
+# IMPORTANT: See
+# https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
+
 # Activate the Python virtual environment for CI scripts.
 #
 # We test for the presence of the file, since when first creating the container images for CI,

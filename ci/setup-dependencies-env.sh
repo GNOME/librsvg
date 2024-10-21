@@ -1,3 +1,6 @@
+# IMPORTANT: See
+# https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
+
 if [ -z "$PREFIX" ]; then
     echo "Using default prefix /usr/local/librsvg for dependencies."
     echo "If this is not what you want, set the PREFIX variable"
