@@ -145,3 +145,13 @@ The following reference entities in the library's internals documentation:
 
 To add to or modify these roles see
 :source:`devel-docs/_extensions/internals.py`.
+
+Referencing RUSTSEC advisories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. rst:role:: rustsec
+
+   References the official page of a RUSTSEC advisory.
+
+   The target should be the ID of the advisory e.g
+   ``:rustsec:`2020-0146``` -> :rustsec:`2020-0146`.
