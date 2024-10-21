@@ -591,16 +591,8 @@ that cross at its anchor point and baseline:
 
 .. image:: assets/ahem-a.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-     <text style="font: 50px Ahem;" x="50%" y="50%" fill="black">A</text>
-
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-a.svg
+   :language: xml
 
 Note the following:
 
@@ -616,33 +608,15 @@ Now let's render two glyphs ``AB``, centered:
 
 .. image:: assets/ahem-ab.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" fill="black">AB</text>
-
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-ab.svg
+   :language: xml
 
 Now the same as before, but with each glyph in a separate ``tspan`` of a different color:
 
 .. image:: assets/ahem-ab-color.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%">
-       <tspan fill="lime">A</tspan><tspan fill="blue">B</tspan>
-     </text>
-
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-ab-color.svg
+   :language: xml
 
 What if we need to test some things but actually be able to
 differentiate glyphs?  Here, the glyphs for ``A``, ``p`` and ``É`` are
@@ -653,16 +627,8 @@ parts of that area.
 
 .. image:: assets/ahem-different-glyphs.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
-     <text style="font: 40px Ahem;" x="50%" y="50%">ApÉ</text>
-
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-different-glyphs.svg
+   :language: xml
 
 
 Details on the Ahem font
@@ -705,15 +671,5 @@ Some ideas for the ``<text2>`` tests with Ahem
 
 .. image:: assets/ahem-rtl.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" direction="rtl">
-       <tspan fill="red">R</tspan><tspan fill="green">G</tspan><tspan fill="blue">B</tspan>
-     </text>
-   
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-rtl.svg
+   :language: xml
