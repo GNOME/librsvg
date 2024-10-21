@@ -150,6 +150,7 @@ mod angle;
 mod api;
 mod aspect_ratio;
 mod bbox;
+mod cairo_path;
 mod color;
 mod cond;
 mod coord_units;

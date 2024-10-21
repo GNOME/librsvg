@@ -7,8 +7,9 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
+use crate::cairo_path::compute_path_extents;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{compute_path_extents, DrawingCtx, Viewport};
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;

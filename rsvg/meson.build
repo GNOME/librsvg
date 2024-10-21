@@ -6,6 +6,7 @@ library_sources = files(
   'src/api.rs',
   'src/aspect_ratio.rs',
   'src/bbox.rs',
+  'src/cairo_path.rs',
   'src/color.rs',
   'src/cond.rs',
   'src/coord_units.rs',
