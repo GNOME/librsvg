@@ -375,7 +375,8 @@ corresponding presentation attribute. This means that you can do
 ``<mask mask-type="alpha">``, which is a presentation attribute.
 
 How did we find out that ``mask-type`` also exists as a presentation
-attribute? Well, `the spec <mask-type>`__ says:
+attribute? Well, `the spec
+<https://www.w3.org/TR/css-masking-1/#the-mask-type>`__ says:
 
    The mask-type property is a presentation attribute for SVG elements.
 
