@@ -51,24 +51,21 @@ incremental fashion.
 Roadmap for incremental support
 -------------------------------
 
-* Stage 1 (`issue #997
-  <https://gitlab.gnome.org/GNOME/librsvg/-/issues/997>`_): support
-  ``var(--blah, fallback)`` just for colors in properties that take
-  paint servers, plus properties like ``lightingColor`` (filters) and
-  ``stopColor`` (gradients).  Look in ``property_defs.rs`` for places
-  that use the ``Color`` type.  This should will make OpenType fonts
-  with color fallbacks work in minimal fashion.
+* Stage 1 (:issue:`997`): support ``var(--blah, fallback)`` just for
+  colors in properties that take paint servers, plus properties like
+  ``lightingColor`` (filters) and ``stopColor`` (gradients).  Look in
+  ``property_defs.rs`` for places that use the ``Color`` type.  This
+  should will make OpenType fonts with color fallbacks work in minimal
+  fashion.
 
-* Stage 2 (`issue #459
-  <https://gitlab.gnome.org/GNOME/librsvg/-/issues/459>`_): support
-  defining custom properties and referencing them.  I wanted to
-  cut&paste Servo's implementation of this, but it is a bit involved
-  and may require plenty of refactoring to accomodate it from
-  librsvg's code.  If it is too complex, maybe we can have a homegrown
-  implementation that just lets one define ``--foo: value;`` in a
-  ``:root`` selector, and that just substitutes whole values without
-  substitution into other tokens (e.g. ``width:
-  var(--some_number)px;`` wouldn't work).
+* Stage 2 (:issue:`459`): support defining custom properties and
+  referencing them.  I wanted to cut&paste Servo's implementation of
+  this, but it is a bit involved and may require plenty of refactoring
+  to accomodate it from librsvg's code.  If it is too complex, maybe
+  we can have a homegrown implementation that just lets one define
+  ``--foo: value;`` in a ``:root`` selector, and that just substitutes
+  whole values without substitution into other tokens
+  (e.g. ``width: var(--some_number)px;`` wouldn't work).
 
 * Stage 3, full support for custom properties with substitution into
   other values.

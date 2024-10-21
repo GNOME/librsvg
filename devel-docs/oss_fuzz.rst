@@ -6,7 +6,7 @@ Platform overview
 
 `OSS-Fuzz <https://google.github.io/oss-fuzz/>`_ is Google's free fuzzing platform for open source
 software.
-It runs librsvg's `fuzz targets <https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/fuzz>`_ to help
+It runs librsvg's :source:`fuzz targets <fuzz>` to help
 detect reliability issues.
 
 Google provides public `build logs <https://oss-fuzz-build-logs.storage.googleapis.com/index.html#librsvg>`_

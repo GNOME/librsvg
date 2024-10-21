@@ -41,8 +41,8 @@ parameters.  It gets used by Pango, GNOME's library for text rendering, and in t
 librsvg.
 
 Is the report above a leak in fontconfig?  No.  Let's look at
-`FcPatternObjectInsertElt()`, the function that called `realloc()` in the stack trace
-above.  `From fccpat.c
+``FcPatternObjectInsertElt()``, the function that called ``realloc()`` in the stack
+trace above.  `From fccpat.c
 <https://gitlab.freedesktop.org/fontconfig/fontconfig/-/blob/fd0753af/src/fcpat.c#L498-552>`_:
 
 .. code-block:: c

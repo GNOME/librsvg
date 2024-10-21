@@ -106,49 +106,19 @@ You can now skip to :ref:`build`.
 Setting up dependencies manually
 --------------------------------
 
-..
-  Please keep this in sync with compiling.rst in the "Build-time dependencies" section.
-  Please also check to see if OSS-Fuzz dependencies need to be changed (see oss_fuzz.rst).
-
-To compile librsvg, you need the following packages installed.  The
-minimum version is listed here; you may use a newer version instead.
-
-**Compilers and build tools:**
-
-* a C compiler
-* `rust <https://www.rust-lang.org/>`_ 1.77.2 or later
-* `cargo <https://www.rust-lang.org/>`_
-* ``cargo-cbuild`` from `cargo-c <https://github.com/lu-zero/cargo-c>`_
-* `meson <https://mesonbuild.com/>`_
-* `vala <https://vala.dev/>`_ (optional)
-
-**Mandatory dependencies:**
-
-* `Cairo <https://gitlab.freedesktop.org/cairo/cairo>`_ 1.18.0 with PNG support
-* `Freetype2 <https://gitlab.freedesktop.org/freetype/freetype>`_ 2.8.0
-* `GIO <https://gitlab.gnome.org/GNOME/glib/>`_ 2.24.0
-* `Libxml2 <https://gitlab.gnome.org/GNOME/libxml2>`_ 2.9.0
-* `Pango <https://gitlab.gnome.org/GNOME/pango/>`_ 1.46.0
-
-**Optional dependencies:**
-
-* `GDK-Pixbuf <https://gitlab.gnome.org/GNOME/gdk-pixbuf/>`_ 2.20.0
-* `GObject-Introspection <https://gitlab.gnome.org/GNOME/gobject-introspection>`_ 0.10.8
-* `gi-docgen <https://gitlab.gnome.org/GNOME/gi-docgen>`_
-* `python3-docutils <https://pypi.org/project/docutils/>`_
-* `dav1d <https://code.videolan.org/videolan/dav1d>`_ 1.3.0 (to support the AVIF image format)
+.. include:: _build_dependencies.rst
 
 The following sections describe how to install these dependencies on
 several systems.  For fully manual builds, you can try using the
-script in `ci/build-dependencies.sh`.  Librsvg's continuous
+script in ``ci/build-dependencies.sh``.  Librsvg's continuous
 integration (CI) infrastructure uses that script to install the
 dependencies before building.
 
 Debian based systems
 ~~~~~~~~~~~~~~~~~~~~
 
-As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
-`ubuntu 18.04`, as they have packages that are too old.
+As of 2018/Feb/22, librsvg cannot be built in ``debian stable`` and
+``ubuntu 18.04``, as they have packages that are too old.
 
 **Build dependencies on Debian Testing or Ubuntu 18.10:**
 
@@ -159,9 +129,8 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
    libgdk-pixbuf2.0-dev libgirepository1.0-dev \
    libxml2-dev libcairo2-dev libpango1.0-dev
 
-Additionally, as of September 2018 you need to add `gdk-pixbuf`
-utilities to your path, see `#331
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/331>`_ for details:
+Additionally, as of September 2018 you need to add ``gdk-pixbuf``
+utilities to your path, see :issue:`331` for details:
 
 .. code-block:: sh
 
@@ -216,8 +185,8 @@ binary to casually test rendering an SVG file, for example, one that
 has a feature that you are developing.  You can run
 ``target/debug/rsvg-convert -o output.png my_test_file.svg``.
 
-If you do a release build with `cargo build --release`, which includes
-optimizations, the binary will be in `target/release/rsvg-convert`.
+If you do a release build with ``cargo build --release``, which includes
+optimizations, the binary will be in ``target/release/rsvg-convert``.
 This version is *much* faster than the debug version.
 
 **Doing a full build:** You can use the following:

@@ -28,10 +28,9 @@ suboptimal for several reasons:
 - This is especially problematic for filters, since a Cairo surface
   needs to be created *before* rendering, and that surface should have
   a size relative to the bounding box of the element being filtered!
-  `Bug #1 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/1>`_ is
-  precisely about this: librsvg instead creates a temporary surface as
-  big as the document's toplevel viewport and filters it, but this
-  doesn't work well for filters like Gaussian blur that should
+  :issue:`Bug #1 <1>` is precisely about this: librsvg instead creates
+  a temporary surface as big as the document's toplevel viewport and filters
+  it, but this doesn't work well for filters like Gaussian blur that should
   actually reference pixels outside of the document's area (think of a
   shape that extends past the document's area, which then gets
   blurred).
@@ -190,8 +189,7 @@ transparent, temporary surface:
 - Blend/composite the temporary surface onto the result.
 
 The most critical function in librsvg is probably
-`DrawingCtx::with_discrete_layer
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/drawing_ctx/struct.DrawingCtx.html#method.with_discrete_layer>`_;
+:internals:struct-method:`rsvg::drawing_ctx::DrawingCtx::with_discrete_layer`;
 it implements this drawing model.
 
 Current state (2023/03/30)
@@ -199,15 +197,15 @@ Current state (2023/03/30)
 
 ``layout.rs`` has the beginnings of the render tree.  It's probably mis-named?  It contains this:
 
-- A `LayerKind` with primitives for path-based shapes, text, and images.
+- A ``LayerKind`` with primitives for path-based shapes, text, and images.
 
 - A `stacking context
   <https://www.w3.org/TR/SVG2/render.html#EstablishingStackingContex>`_,
   which indicates each layer's opacity/clip/mask/filters.
 
-- A `Layer` which composes the previous two.  The `StackingContext`
+- A ``Layer`` which composes the previous two.  The ``StackingContext``
   provides the compositing/masking/filtering parameters, while the
-  `LayerKind` determines the primitive contents of the layer.
+  ``LayerKind`` determines the primitive contents of the layer.
 
 - Various ancillary structures that try to have only user-space
   coordinates (e.g. a number of CSS pixels instead of ``5cm``) and no
@@ -245,10 +243,8 @@ yet).
 Elements that establish a viewport (``svg``, ``symbol``, ``image``,
 ``marker``, ``pattern``) need to carry information about this
 viewport, which is a ``viewBox`` plus ``preserveAspectRatio`` and
-``overflow``.  See `#298
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/298>`_ for a somewhat
-obsolete description of the refactoring work needed to unify this
-logic.
+``overflow``.  See :issue:`298` for a somewhat obsolete description
+of the refactoring work needed to unify this logic.
 
 The ``layout::StackingContext`` struct should contain another field,
 probably called ``layer``, with something like this:
@@ -271,9 +267,9 @@ That is, every stacking context should contain the thing that it will
 draw, and that thing may be a shape/text or another stacking context!
 
 As of 2023/03/30, the "current viewport" is no longer part of
-`DrawingCtx`'s mutable state.  Instead, a `Viewport` struct is passed
+``DrawingCtx``'s mutable state.  Instead, a ``Viewport`` struct is passed
 down the call chain via a function argument.  This is not complete
-yet, since the code modifies the current `cr`'s transform apart from
+yet, since the code modifies the current ``cr``'s transform apart from
 the current viewport's transform.  The goal is to have the current
 viewport actually have the full transform to be applied to the object
 being rendered.  This should simplify gnarly code paths like the one
@@ -286,8 +282,7 @@ SVG depends on the ``objectBoundingBox`` of an element in many places:
 to resolve a gradient's or pattern's units, to determine the size of
 masks and clips, to determine the size of the filter region.
 
-The current big bug to solve is `#778
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/>`_, which requires
+The current big bug to solve is :issue:`778`, which requires
 knowing the ``objectBoundingBox`` of an element **before** rendering
 it, so that a temporary surface of the appropriate size can be created
 for rendering the element if it has isolated opacity or masks/filters.
@@ -305,8 +300,7 @@ create a temporary surface to be able to render all of its children
 and then filter the surface).
 
 Being able to compute the ``objectBoundingBox`` of an element before
-rendering it would open the door to fixing bug `#1
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/1>`_ (yeah, really):
+rendering it would open the door to fixing bug :issue:`1` (yeah, really):
 currently, the temporary surface used for filtering has the size of
 the toplevel viewport, but this doesn't work well when one tries to
 Gaussian-blur an element that lies partially outside that viewport.

@@ -118,8 +118,7 @@ the last one that got logged - presumably that one caused the crash.
 Which dynamically-created SVG caused a problem?
 -----------------------------------------------
 
-Consider a bug like
-https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/5415 where an
+Consider a bug like :issue:`GNOME/gnome-shell#5415` where an
 application dynamically generates an SVG and feeds it to librsvg. That
 bug was not a crash; it was about incorrect values returned from an
 librsvg API function. For those cases it may be useful to be able to
@@ -148,9 +147,9 @@ Configuration format
 .. code:: toml
 
    [logging]
-   enabled=true
-   process=gnome-shell              # mandatory for global config - don't want to log all processes - warn to g_log if key is not set
-   output=/home/username/rsvg.log   # if missing, log to g_log only - or use a output_to_g_log=true instead?
+   enabled = true
+   process = "gnome-shell"              # mandatory for global config - don't want to log all processes - warn to g_log if key is not set
+   output = "/home/username/rsvg.log"   # if missing, log to g_log only - or use a output_to_g_log=true instead?
 
 API logging
 -----------
@@ -165,10 +164,10 @@ gdk-pixbuf?
 Implementation
 --------------
 
-There is currently the start of a `Session
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/session/struct.Session.html>`_
+There is currently the start of a :internals:struct:`rsvg::session::Session`
 type woven throughout the source code, with the idea of it being the
-thing that records logging events, it may be better to plug into the ``tracing`` ecosystem:
+thing that records logging events, it may be better to plug into the
+``tracing`` ecosystem:
 
 https://crates.io/crates/tracing
 

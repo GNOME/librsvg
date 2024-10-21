@@ -21,10 +21,10 @@ Generally, librsvg tries to keep up with features in the SVG2 Candidate
 Recommendation spec. It ignores features in the SVG2 drafts that are not
 finalized yet.
 
-Alternative versions of SVG (SVG Tiny, SVG Basic, `SVG
-Native <https://gitlab.gnome.org/GNOME/librsvg/-/issues/689>`__) are not
-explicitly supported. Their features which are a subset of SVG1.1 or
-SVG2 are supported if they are equivalent to the ones listed below.
+Alternative versions of SVG (SVG Tiny, SVG Basic, :issue:`SVG Native
+<689>`) are not explicitly supported. Their features which are a subset
+of SVG1.1 or SVG2 are supported if they are equivalent to the ones
+listed below.
 
 SVG2 offloads many of its features to the family of CSS3 specifications.
 Librsvg does not try to support them exhaustively (there are too many

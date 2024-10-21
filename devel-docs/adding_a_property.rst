@@ -2,15 +2,13 @@ How to add a new CSS property
 =============================
 
 This document is a little tour on how to add support for a CSS property
-to librsvg. We will implement the ```mask-type``
-property <https://www.w3.org/TR/css-masking-1/#the-mask-type>`__ from
-the **CSS Masking Module Level 1** specification.
+to librsvg. We will implement the |mask-type|_ property from the
+**CSS Masking Module Level 1** specification.
 
 What is ``mask-type``?
 ----------------------
 
-`The spec says about
-``mask-type`` <https://www.w3.org/TR/css-masking-1/#the-mask-type>`__:
+The spec says about |mask-type|_:
 
    The mask-type property defines whether the content of the mask
    element is treated as as luminance mask or alpha mask, as described
@@ -214,8 +212,7 @@ the way properties are represented, as librsvg evolves.
 Properties that use the same data type
 --------------------------------------
 
-Consider the ``stroke`` and ``fill`` properties; both store a
-```<paint>`` <https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint>`__
+Consider the ``stroke`` and ``fill`` properties; both store a |<paint>|_
 value, which librsvg represents with a type called ``PaintServer``. The
 ``make_property!`` macro has a case for properties like that, so in the
 librsvg source code you will find both of thsese:
@@ -378,8 +375,7 @@ corresponding presentation attribute. This means that you can do
 ``<mask mask-type="alpha">``, which is a presentation attribute.
 
 How did we find out that ``mask-type`` also exists as a presentation
-attribute? Well, `the
-spec <https://www.w3.org/TR/css-masking-1/#the-mask-type>`__ says:
+attribute? Well, `the spec <mask-type>`__ says:
 
    The mask-type property is a presentation attribute for SVG elements.
 
@@ -677,3 +673,13 @@ property that also has a presentation attribute (remember the
 extra information.
 
 And with that, we are done implementing ``mask-type``. Have fun!
+
+
+
+.. See https://docutils.sourceforge.net/FAQ.html#is-nested-inline-markup-possible
+
+.. |mask-type| replace:: ``mask-type``
+.. _mask-type: https://www.w3.org/TR/css-masking-1/#the-mask-type
+
+.. |<paint>| replace:: ``<paint>``
+.. _<paint>: https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint

@@ -9,10 +9,9 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('_extensions'))
 
 
 # -- Project information -----------------------------------------------------
@@ -28,6 +27,18 @@ author = 'Federico Mena Quintero'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    # Used to shorten external links.
+    # https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
+    "sphinx.ext.extlinks",
+    # Used to link issues, merge requests, CVEs, etc.
+    # https://github.com/sloria/sphinx-issues
+    "sphinx_issues",
+    # Used to reference entities in the internals documentation.
+    # ./_extensions/internals.py
+    "internals",
+    # Used to reference entries in the source tree.
+    # ./_extensions/source.py
+    "source",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -44,7 +55,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'furo'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -66,3 +77,24 @@ linkcheck_ignore = [
     r'https://gitlab.gnome.org/.*#.*',
     r'https://gitlab.freedesktop.org/.*#.*',
 ]
+
+
+# Options for the `sphinx.ext.extlinks` extension. See `extensions` above.
+
+extlinks = {
+    "rustsec": ("https://rustsec.org/advisories/RUSTSEC-%s", "RUSTSEC-%s"),
+}
+extlinks_detect_hardcoded_links = True
+
+
+# Options for the `sphinx-issues` extension. See `extensions` above.
+
+issues_default_group_project = "GNOME/librsvg"
+issues_uri = "https://gitlab.gnome.org/{group}/{project}/-/issues/{issue}"
+issues_prefix = "#"
+issues_pr_uri = "https://gitlab.gnome.org/{group}/{project}/-/merge_requests/{pr}"
+issues_pr_prefix = "!"
+issues_commit_uri = "https://gitlab.gnome.org/{group}/{project}/-/commit/{commit}"
+issues_commit_prefix = "@"
+issues_user_uri = "https://gitlab.gnome.org/{user}"
+issues_user_prefix = "@"

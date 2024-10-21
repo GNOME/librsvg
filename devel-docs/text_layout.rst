@@ -152,33 +152,33 @@ When a ``tspan`` explicitly lists ``x`` or ``y`` attributes, it
 creates a new *chunk*.  A text chunk defines an absolutely-positioned
 sequence of spans.
 
-This is why you'll see that the code does this; start at ``Text::draw``:
+This is why you'll see that the code does this; start at
+:internals:struct-method:`rsvg::text::Text::draw`:
 
-- Start with an empty list of chunks (`Text::make_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.Text.html#method.make_chunks>`_).
+- Start with an empty list of chunks
+  (:internals:struct-method:`rsvg::text::Text::make_chunks`).
   Push an empty initial chunk defined by the ``x`` and ``y``
   coordinates of the ``<text>`` element.
 
-- Recursively call `children_to_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/fn.children_to_chunks.html>`_
+- Recursively call :internals:fn:`rsvg::text::children_to_chunks`
   on the children of the ``<text>`` element, to create chunks and
   spans for them.
 
-- `TSpan::to_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.TSpan.html#method.to_chunks>`_
+- :internals:struct-method:`rsvg::text::TSpan::to_chunks`
   sees if the span has ``x`` or ``y`` attributes; if so, it pushes a
   new empty chunk with those coordinates.  Then it recursively calls
   ``children_to_chunks`` to grab its character content and children.
 
 - Later, ``Text::draw`` takes the list of chunks and their spans, and
-  converts them into a list of ``MeasuredChunk``.  This process turns
-  each span into a ``MeasuredSpan``.  The key element here is to
+  converts them into a list of :internals:struct:`rsvg::text::MeasuredChunk`.
+  This process turns each span into a
+  :internals:struct:`rsvg::text::MeasuredSpan`.  The key element here is to
   create a ``pango::Layout`` for each span, and ask it for its size.
 
-- Then, ``Text::draw`` takes the list of ``MeasuredChunk`` and turns
-  them into a list of ``PositionedChunk``.  Each of those builds a
-  list of ``PositionedSpan`` based on the span's own text advance,
-  plus the span's ``dx``/``dy`` attributes.
+- Then, ``Text::draw`` takes the list of ``MeasuredChunk`` and turns them
+  into a list of :internals:struct:`rsvg::text::PositionedChunk`.  Each of
+  those builds a list of :internals:struct:`rsvg::text::PositionedSpan` based
+  on the span's own text advance, plus the span's ``dx``/``dy`` attributes.
 
 **Note about SVG2:** The `text layout algorithm for SVG2
 <https://www.w3.org/TR/SVG2/text.html#TextLayoutAlgorithm>`_ is very
@@ -256,8 +256,7 @@ Bidi handling
 ~~~~~~~~~~~~~
 
 The ``unicode-bidi`` and ``direction`` properties get handled
-together.  The `BidiControl
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.BidiControl.html>`_
+together.  The :internals:struct:`rsvg::text::BidiControl`
 struct computes which Unicode control characters need to be inserted
 at the start and end of a ``<tspan>``'s text; SVG authors use these
 properties to override text direction when inserting LTR or RTL text
@@ -268,9 +267,8 @@ nested levels of embedding **if the whole text is in a single
 ``pango::Layout``**.  Per the previous section, librsvg doesn't do
 this yet.
 
-`!621 <https://gitlab.gnome.org/GNOME/librsvg/-/merge_requests/621>`_
-implemented the SVG2 values for the ``unicode-bidi`` property.  You
-may want to read the detailed commit messages there, and the
+:pr:`621` implemented the SVG2 values for the ``unicode-bidi`` property.
+You may want to read the detailed commit messages there, and the
 discussion in the merge request, to see details of future development.
 
 
@@ -431,22 +429,20 @@ at-rule. Librsvg would also have to obtain the font and feed it to
 FontConfig. I am not sure if FontConfig can deal with WOFF just like
 with normal ``.ttf`` files.
 
-See the issue on the `Future of the pango dependency
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/876>`_ for lots of
-goodies which may come in handy.
+See the issue on the :issue:`Future of the pango dependency <876>`
+for lots of goodies which may come in handy.
 
 Emoji is broken
 ~~~~~~~~~~~~~~~
 
-`#599 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/599>`_ is a
-terrible bug in Pango, which causes it to report incorrect metrics
-when text is scaled non-proportionally (e.g. different scale factors
-for the X/Y dimensions).  Librsvg works around this by converting all
-text to Bézier paths, then scaling the paths, and then stroking/filling them.
+:issue:`599` is a terrible bug in Pango, which causes it to report
+incorrect metrics when text is scaled non-proportionally (e.g. different
+scale factors for the X/Y dimensions).  Librsvg works around this by
+converting all text to Bézier paths, then scaling the paths, and then
+stroking/filling them.
 
-However, `this breaks emoji - #911
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/911>`_, since
-converting its glyphs to paths loses the color information.
+However, this breaks emoji - :issue:`911`, since converting its glyphs
+to paths loses the color information.
 
 Two strategies to fix this; there may be more:
 
@@ -464,8 +460,7 @@ Two strategies to fix this; there may be more:
 Issues
 ------
 
-https://gitlab.gnome.org/GNOME/librsvg/-/issues/795 - Implement SVG2
-white-space behavior.
+:issue:`795` - Implement SVG2 white-space behavior.
 
 
 Issues that have not been filed yet
@@ -473,13 +468,12 @@ Issues that have not been filed yet
 
 From the spec: “It is possible to apply a gradient, pattern, clipping
 path, mask or filter to text.” We need better tests for the
-objectBoundingBox of the whole ``<text>``; I think `they are wrong for
-vertical text <https://gitlab.gnome.org/GNOME/librsvg/-/issues/55>`_,
-and this shows up when filling its spans with gradients or
-patterns.
+``objectBoundingBox`` of the whole ``<text>``; I think :issue:`they are
+wrong for vertical text <55>`, and this shows up when filling its spans
+with gradients or patterns.
 
 Clip/mask/filter do not work on individual spans yet.  I am not sure
-if their `objectBoundingBox` refers to the whole ``<text>`` or just
+if their ``objectBoundingBox`` refers to the whole ``<text>`` or just
 the span.
 
 Multiply-nested changes of text direction / bidi overrides; see the

@@ -1,8 +1,7 @@
 Building dependencies in CI
 ===========================
 
-**Status as of 2024/Sep/11:** implemented in `!896
-<https://gitlab.gnome.org/GNOME/librsvg/-/merge_requests/896>`_.
+**Status as of 2024/Sep/11:** implemented in :pr:`896`.
 Non-Rust dependencies are built from git tags and installed in the CI
 container image.  See the ``ci/build-dependencies.sh`` script that
 does this.
