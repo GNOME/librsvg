@@ -74,12 +74,13 @@ fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingEr
 }
 
 impl Path {
-    pub fn to_cairo(
+    pub fn to_cairo_path(
         &self,
-        cr: &cairo::Context,
         is_square_linecap: bool,
-    ) -> Result<(), InternalRenderingError> {
+    ) -> Result<CairoPath, InternalRenderingError> {
         assert!(!self.is_empty());
+
+        let mut segments = Vec::new();
 
         for subpath in self.iter_subpath() {
             // If a subpath is empty and the linecap is a square, then draw a square centered on
@@ -89,25 +90,26 @@ impl Path {
                 if subpath.is_zero_length() {
                     let stroke_size = 0.002;
 
-                    cr.move_to(x - stroke_size / 2., y);
-                    cr.line_to(x + stroke_size / 2., y);
+                    segments.push(PathSegment::MoveTo((x - stroke_size / 2., y)));
+                    segments.push(PathSegment::LineTo((x + stroke_size / 2., y)));
                 }
             }
 
             for cmd in subpath.iter_commands() {
-                cmd.to_cairo(cr);
+                cmd.to_path_segments(&mut segments);
             }
         }
 
-        // We check the cr's status right after feeding it a new path for a few reasons:
-        //
-        // * Any of the individual path commands may cause the cr to enter an error state, for
-        //   example, if they come with coordinates outside of Cairo's supported range.
-        //
-        // * The *next* call to the cr will probably be something that actually checks the status
-        //   (i.e. in cairo-rs), and we don't want to panic there.
+        Ok(CairoPath(segments))
+    }
 
-        cr.status().map_err(|e| e.into())
+    pub fn to_cairo(
+        &self,
+        cr: &cairo::Context,
+        is_square_linecap: bool,
+    ) -> Result<(), InternalRenderingError> {
+        let cairo_path = self.to_cairo_path(is_square_linecap)?;
+        cairo_path.to_cairo_context(cr)
     }
 
     /// Converts a `cairo::Path` to a librsvg `Path`.
@@ -141,19 +143,19 @@ fn cairo_path_is_only_move_tos(path: &cairo::Path) -> bool {
 }
 
 impl PathCommand {
-    fn to_cairo(&self, cr: &cairo::Context) {
+    fn to_path_segments(&self, segments: &mut Vec<PathSegment>) {
         match *self {
-            PathCommand::MoveTo(x, y) => cr.move_to(x, y),
-            PathCommand::LineTo(x, y) => cr.line_to(x, y),
-            PathCommand::CurveTo(ref curve) => curve.to_cairo(cr),
-            PathCommand::Arc(ref arc) => arc.to_cairo(cr),
-            PathCommand::ClosePath => cr.close_path(),
+            PathCommand::MoveTo(x, y) => segments.push(PathSegment::MoveTo((x, y))),
+            PathCommand::LineTo(x, y) => segments.push(PathSegment::LineTo((x, y))),
+            PathCommand::CurveTo(ref curve) => curve.to_path_segments(segments),
+            PathCommand::Arc(ref arc) => arc.to_path_segments(segments),
+            PathCommand::ClosePath => segments.push(PathSegment::ClosePath),
         }
     }
 }
 
 impl EllipticalArc {
-    fn to_cairo(&self, cr: &cairo::Context) {
+    fn to_path_segments(&self, segments: &mut Vec<PathSegment>) {
         match self.center_parameterization() {
             ArcParameterization::CenterParameters {
                 center,
@@ -167,13 +169,13 @@ impl EllipticalArc {
                 let mut theta = theta1;
                 for _ in 0..n_segs {
                     arc_segment(center, radii, self.x_axis_rotation, theta, theta + d_theta)
-                        .to_cairo(cr);
+                        .to_path_segments(segments);
                     theta += d_theta;
                 }
             }
             ArcParameterization::LineTo => {
                 let (x2, y2) = self.to;
-                cr.line_to(x2, y2);
+                segments.push(PathSegment::LineTo((x2, y2)));
             }
             ArcParameterization::Omit => {}
         }
@@ -181,9 +183,13 @@ impl EllipticalArc {
 }
 
 impl CubicBezierCurve {
-    fn to_cairo(&self, cr: &cairo::Context) {
+    fn to_path_segments(&self, segments: &mut Vec<PathSegment>) {
         let Self { pt1, pt2, to } = *self;
-        cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
+        segments.push(PathSegment::CurveTo(
+            (pt1.0, pt1.1),
+            (pt2.0, pt2.1),
+            (to.0, to.1),
+        ));
     }
 }
 
