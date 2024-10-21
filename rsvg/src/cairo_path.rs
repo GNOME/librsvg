@@ -5,15 +5,20 @@
 //! to convert between librsvg paths and Cairo paths.
 
 use std::f64::consts::PI;
+use std::rc::Rc;
 
+use crate::drawing_ctx::Viewport;
 use crate::error::InternalRenderingError;
+use crate::layout;
+use crate::length::NormalizeValues;
+use crate::paint_server::PaintSource;
 use crate::path_builder::{
     arc_segment, ArcParameterization, CubicBezierCurve, EllipticalArc, Path, PathBuilder,
     PathCommand,
 };
 use crate::rect::Rect;
 
-pub fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingError> {
+fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingError> {
     if path.is_empty() {
         return Ok(None);
     }
@@ -141,3 +146,27 @@ impl CubicBezierCurve {
     }
 }
 
+pub fn validate_path(
+    path: &Rc<Path>,
+    viewport: &Viewport,
+    normalize_values: &NormalizeValues,
+    stroke_paint: &PaintSource,
+    fill_paint: &PaintSource,
+) -> Result<layout::Path, InternalRenderingError> {
+    if path.has_unsuitable_coordinates(&viewport.transform) {
+        return Ok(layout::Path::Invalid(String::from(
+            "path has coordinates that are unsuitable for Cairo",
+        )));
+    }
+
+    let extents = compute_path_extents(path)?;
+    let stroke_paint = stroke_paint.to_user_space(&extents, viewport, normalize_values);
+    let fill_paint = fill_paint.to_user_space(&extents, viewport, normalize_values);
+
+    Ok(layout::Path::Validated {
+        path: Rc::clone(path),
+        extents,
+        stroke_paint,
+        fill_paint,
+    })
+}
