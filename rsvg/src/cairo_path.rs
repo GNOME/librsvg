@@ -18,6 +18,47 @@ use crate::path_builder::{
 };
 use crate::rect::Rect;
 
+use cairo::PathSegment;
+
+/// Our own version of a Cairo path, lower-level than [layout::Path].
+///
+/// Cairo paths can only represent move_to/line_to/curve_to/close_path, unlike
+/// librsvg's, which also have elliptical arcs.  Moreover, not all candidate paths
+/// can be represented by Cairo, due to limitations on its fixed-point coordinates.
+///
+/// This struct represents a path that we have done our best to ensure that Cairo
+/// can represent.
+///
+/// This struct is not just a [cairo::Path] since that type is read-only; it cannot
+/// be constructed from raw data and must be first obtained from a [cairo::Context].
+/// However, we can reuse [cairo::PathSegment] here which is just a path command.
+pub struct CairoPath(Vec<PathSegment>);
+
+impl CairoPath {
+    pub fn to_cairo_context(&self, cr: &cairo::Context) -> Result<(), InternalRenderingError> {
+        for segment in &self.0 {
+            match *segment {
+                PathSegment::MoveTo((x, y)) => cr.move_to(x, y),
+                PathSegment::LineTo((x, y)) => cr.line_to(x, y),
+                PathSegment::CurveTo((x1, y1), (x2, y2), (x3, y3)) => {
+                    cr.curve_to(x1, y1, x2, y2, x3, y3)
+                }
+                PathSegment::ClosePath => cr.close_path(),
+            }
+        }
+
+        // We check the cr's status right after feeding it a new path for a few reasons:
+        //
+        // * Any of the individual path commands may cause the cr to enter an error state, for
+        //   example, if they come with coordinates outside of Cairo's supported range.
+        //
+        // * The *next* call to the cr will probably be something that actually checks the status
+        //   (i.e. in cairo-rs), and we don't want to panic there.
+
+        cr.status().map_err(|e| e.into())
+    }
+}
+
 fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingError> {
     if path.is_empty() {
         return Ok(None);
