@@ -13,6 +13,7 @@ use std::{borrow::Cow, sync::OnceLock};
 
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
+use crate::cairo_path::CairoPath;
 use crate::color::color_to_rgba;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
@@ -1607,7 +1608,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        let path = pango_layout_to_path(span.x, span.y, &span.layout, span.gravity)?;
+        let path = pango_layout_to_cairo_path(span.x, span.y, &span.layout, span.gravity)?;
         if path.is_empty() {
             // Empty strings, or only-whitespace text, get turned into empty paths.
             // In that case, we really want to return "no bounds" rather than an
@@ -1627,11 +1628,11 @@ impl DrawingCtx {
             setup_cr_for_stroke(&self.cr, &span.stroke);
 
             if clipping {
-                path.to_cairo(&self.cr, false)?;
+                path.to_cairo_context(&self.cr)?;
                 return Ok(self.empty_bbox());
             }
 
-            path.to_cairo(&self.cr, false)?;
+            path.to_cairo_context(&self.cr)?;
             let bbox = compute_stroke_and_fill_box(
                 &self.cr,
                 &span.stroke,
@@ -1653,7 +1654,7 @@ impl DrawingCtx {
 
                             if had_paint_server {
                                 if can_use_text_as_path {
-                                    path.to_cairo(&self.cr, false)?;
+                                    path.to_cairo_context(&self.cr)?;
                                     self.cr.fill()?;
                                     self.cr.new_path();
                                 } else {
@@ -1679,7 +1680,7 @@ impl DrawingCtx {
                                 self.set_paint_source(&span.stroke_paint, acquired_nodes)?;
 
                             if had_paint_server {
-                                path.to_cairo(&self.cr, false)?;
+                                path.to_cairo_context(&self.cr)?;
                                 self.cr.stroke()?;
                                 self.cr.new_path();
                             }
@@ -2129,20 +2130,20 @@ fn pango_layout_to_cairo(
     cr.set_matrix(matrix);
 }
 
-/// Converts a Pango layout to a Path starting at (x, y).
-pub fn pango_layout_to_path(
+/// Converts a Pango layout to a CairoPath starting at (x, y).
+fn pango_layout_to_cairo_path(
     x: f64,
     y: f64,
     layout: &pango::Layout,
     gravity: pango::Gravity,
-) -> Result<Path, InternalRenderingError> {
+) -> Result<CairoPath, InternalRenderingError> {
     let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
     let cr = cairo::Context::new(&surface)?;
 
     pango_layout_to_cairo(x, y, layout, gravity, &cr);
 
     let cairo_path = cr.copy_path()?;
-    Ok(Path::from_cairo(cairo_path))
+    Ok(CairoPath::from_cairo(cairo_path))
 }
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
@@ -2481,38 +2482,4 @@ pub struct PathExtents {
 
     /// Extents for the stroked path, or `None` if the path is empty or zero-width.
     pub stroke: Option<Rect>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn rsvg_path_from_cairo_path() {
-        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 10, 10).unwrap();
-        let cr = cairo::Context::new(&surface).unwrap();
-
-        cr.move_to(1.0, 2.0);
-        cr.line_to(3.0, 4.0);
-        cr.curve_to(5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
-        cr.close_path();
-
-        let cairo_path = cr.copy_path().unwrap();
-        let path = Path::from_cairo(cairo_path);
-
-        assert_eq!(
-            path.iter().collect::<Vec<PathCommand>>(),
-            vec![
-                PathCommand::MoveTo(1.0, 2.0),
-                PathCommand::LineTo(3.0, 4.0),
-                PathCommand::CurveTo(CubicBezierCurve {
-                    pt1: (5.0, 6.0),
-                    pt2: (7.0, 8.0),
-                    to: (9.0, 10.0),
-                }),
-                PathCommand::ClosePath,
-                PathCommand::MoveTo(1.0, 2.0), // cairo inserts a MoveTo after ClosePath
-            ],
-        );
-    }
 }

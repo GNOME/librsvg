@@ -13,8 +13,7 @@ use crate::layout;
 use crate::length::NormalizeValues;
 use crate::paint_server::PaintSource;
 use crate::path_builder::{
-    arc_segment, ArcParameterization, CubicBezierCurve, EllipticalArc, Path, PathBuilder,
-    PathCommand,
+    arc_segment, ArcParameterization, CubicBezierCurve, EllipticalArc, Path, PathCommand,
 };
 use crate::rect::Rect;
 
@@ -56,6 +55,23 @@ impl CairoPath {
         //   (i.e. in cairo-rs), and we don't want to panic there.
 
         cr.status().map_err(|e| e.into())
+    }
+
+    /// Converts a `cairo::Path` to a librsvg `CairoPath`.
+    pub fn from_cairo(cairo_path: cairo::Path) -> Self {
+        // Cairo has the habit of appending a MoveTo to some paths, but we don't want a
+        // path for empty text to generate that lone point.  So, strip out paths composed
+        // only of MoveTo.
+
+        if cairo_path_is_only_move_tos(&cairo_path) {
+            Self(Vec::new())
+        } else {
+            Self(cairo_path.iter().collect())
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 
@@ -110,30 +126,6 @@ impl Path {
     ) -> Result<(), InternalRenderingError> {
         let cairo_path = self.to_cairo_path(is_square_linecap)?;
         cairo_path.to_cairo_context(cr)
-    }
-
-    /// Converts a `cairo::Path` to a librsvg `Path`.
-    pub fn from_cairo(cairo_path: cairo::Path) -> Path {
-        let mut builder = PathBuilder::default();
-
-        // Cairo has the habit of appending a MoveTo to some paths, but we don't want a
-        // path for empty text to generate that lone point.  So, strip out paths composed
-        // only of MoveTo.
-
-        if !cairo_path_is_only_move_tos(&cairo_path) {
-            for segment in cairo_path.iter() {
-                match segment {
-                    cairo::PathSegment::MoveTo((x, y)) => builder.move_to(x, y),
-                    cairo::PathSegment::LineTo((x, y)) => builder.line_to(x, y),
-                    cairo::PathSegment::CurveTo((x2, y2), (x3, y3), (x4, y4)) => {
-                        builder.curve_to(x2, y2, x3, y3, x4, y4)
-                    }
-                    cairo::PathSegment::ClosePath => builder.close_path(),
-                }
-            }
-        }
-
-        builder.into_path()
     }
 }
 
@@ -216,4 +208,34 @@ pub fn validate_path(
         stroke_paint,
         fill_paint,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rsvg_path_from_cairo_path() {
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 10, 10).unwrap();
+        let cr = cairo::Context::new(&surface).unwrap();
+
+        cr.move_to(1.0, 2.0);
+        cr.line_to(3.0, 4.0);
+        cr.curve_to(5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
+        cr.close_path();
+
+        let cr_path = cr.copy_path().unwrap();
+        let cairo_path = CairoPath::from_cairo(cr_path);
+
+        assert_eq!(
+            cairo_path.0,
+            vec![
+                PathSegment::MoveTo((1.0, 2.0)),
+                PathSegment::LineTo((3.0, 4.0)),
+                PathSegment::CurveTo((5.0, 6.0), (7.0, 8.0), (9.0, 10.0)),
+                PathSegment::ClosePath,
+                PathSegment::MoveTo((1.0, 2.0)), // cairo inserts a MoveTo after ClosePath
+            ],
+        );
+    }
 }
