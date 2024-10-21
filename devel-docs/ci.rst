@@ -76,6 +76,58 @@ See the section below on the "Full test suite and different
 environments" for details on what gets tested on the different
 container images produced by this stage.
 
+.. NOTE: The target below is used outside this development guide.
+
+.. _container-image-version:
+
+.. important::
+
+   Whenever changes are made to the CI environments (such as updating
+   dependencies or CI tools, or their versions), the container image
+   version tag defined as ``BASE_TAG`` in :source:`ci/container_builds.yml`
+   should be incremented appropriately.
+
+   The tag name is (by convention) of the format
+  
+   .. code::
+
+      <date>.<version>-[<user_name>_]<branch_name>
+
+   where:
+
+   - *date* is the current date when incrementing the version tag and is
+     of the format ``YYYY-MM-DD``.
+   - *version* is an index number (starting from zero) to differentiate
+     images built on the same day for the same branch.
+   - *branch_name* is the name of the branch on which the CI changes are
+     being made.
+   - *user_name* is the user name of the branch's owner and is optional
+     but recommended for branches on forks, in order to avoid tag name
+     clashes with equally-named branches on other forks.
+
+   For example:
+
+   - ``2024-10-20.0-main`` ->
+     first iteration for ``GNOME/librsvg:main`` on 2024-10-20
+   - ``2025-09-01.1-foo_bar`` ->
+     second iteration for ``GNOME/librsvg:foo-bar`` on 2025-09-01
+   - ``2099-12-31.3-federico_bar_foo`` ->
+     third iteration for ``federico/librsvg:bar-foo`` on 2099-12-31
+
+   For any branch that is **not** :source:`GNOME/librsvg:main <main:>` and
+   is intended **to be merged** into it: Once the new container images are
+   confirmed to be working as expected, the version tag should be
+   incremented again **before merging** into ``main``, this time without
+   *user_name* and with ``main`` as *branch_name*.
+   This is always best done **when the branch is ready to be merged**, in
+   order to avoid unnecessary tag name conflicts and CI surprises.
+   In the case of conflicting tag names with ``main``, be sure to increment
+   the *version* number if the tag name on ``main`` has the current date.
+  
+   If unsure whether a change you made is concerned or for any further
+   clarification, please ask the
+   :source:`maintainers <README.md#maintainers>`.
+
 
 Quick checks
 ------------
