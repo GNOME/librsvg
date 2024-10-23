@@ -120,6 +120,7 @@ fn draw_basic_shape(
 
     let path = validate_path(
         &shape_def.path,
+        &stroke,
         viewport,
         &normalize_values,
         &stroke_paint,

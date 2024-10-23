@@ -679,11 +679,7 @@ pub fn render_markers_for_shape(
             extents: Some(_),
             ..
         } => path,
-        layout::Path::Validated {
-            path: _,
-            extents: None,
-            ..
-        } => return Ok(draw_ctx.empty_bbox()),
+        layout::Path::Validated { extents: None, .. } => return Ok(draw_ctx.empty_bbox()),
         layout::Path::Invalid(_) => return Ok(draw_ctx.empty_bbox()),
     };
 

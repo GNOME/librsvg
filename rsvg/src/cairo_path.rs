@@ -9,12 +9,13 @@ use std::rc::Rc;
 
 use crate::drawing_ctx::Viewport;
 use crate::error::InternalRenderingError;
-use crate::layout;
+use crate::layout::{self, Stroke};
 use crate::length::NormalizeValues;
 use crate::paint_server::PaintSource;
 use crate::path_builder::{
     arc_segment, ArcParameterization, CubicBezierCurve, EllipticalArc, Path, PathCommand,
 };
+use crate::properties::StrokeLinecap;
 use crate::rect::Rect;
 
 use cairo::PathSegment;
@@ -94,8 +95,6 @@ impl Path {
         &self,
         is_square_linecap: bool,
     ) -> Result<CairoPath, InternalRenderingError> {
-        assert!(!self.is_empty());
-
         let mut segments = Vec::new();
 
         for subpath in self.iter_subpath() {
@@ -187,11 +186,15 @@ impl CubicBezierCurve {
 
 pub fn validate_path(
     path: &Rc<Path>,
+    stroke: &Stroke,
     viewport: &Viewport,
     normalize_values: &NormalizeValues,
     stroke_paint: &PaintSource,
     fill_paint: &PaintSource,
 ) -> Result<layout::Path, InternalRenderingError> {
+    let is_square_linecap = stroke.line_cap == StrokeLinecap::Square;
+    let cairo_path = path.to_cairo_path(is_square_linecap)?;
+
     if path.has_unsuitable_coordinates(&viewport.transform) {
         return Ok(layout::Path::Invalid(String::from(
             "path has coordinates that are unsuitable for Cairo",
@@ -203,6 +206,7 @@ pub fn validate_path(
     let fill_paint = fill_paint.to_user_space(&extents, viewport, normalize_values);
 
     Ok(layout::Path::Validated {
+        cairo_path,
         path: Rc::clone(path),
         extents,
         stroke_paint,

@@ -32,7 +32,6 @@ use crate::limits;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
-use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
     ClipRule, ComputedValues, FillRule, ImageRendering, MaskType, MixBlendMode, Opacity,
@@ -62,8 +61,7 @@ pub struct FontOptions {
 struct PathHelper<'a> {
     cr: &'a cairo::Context,
     transform: ValidTransform,
-    path: &'a Path,
-    is_square_linecap: bool,
+    cairo_path: &'a CairoPath,
     has_path: Option<bool>,
 }
 
@@ -71,14 +69,12 @@ impl<'a> PathHelper<'a> {
     pub fn new(
         cr: &'a cairo::Context,
         transform: ValidTransform,
-        path: &'a Path,
-        linecap: StrokeLinecap,
+        cairo_path: &'a CairoPath,
     ) -> Self {
         PathHelper {
             cr,
             transform,
-            path,
-            is_square_linecap: linecap == StrokeLinecap::Square,
+            cairo_path,
             has_path: None,
         }
     }
@@ -88,7 +84,7 @@ impl<'a> PathHelper<'a> {
             Some(false) | None => {
                 self.has_path = Some(true);
                 self.cr.set_matrix(self.transform.into());
-                self.path.to_cairo(self.cr, self.is_square_linecap)
+                self.cairo_path.to_cairo_context(self.cr)
             }
             Some(true) => Ok(()),
         }
@@ -1412,18 +1408,15 @@ impl DrawingCtx {
         clipping: bool,
         viewport: &Viewport,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        let (path, stroke_paint, fill_paint) = match &shape.path {
+        let (cairo_path, stroke_paint, fill_paint) = match &shape.path {
             layout::Path::Validated {
-                path,
+                cairo_path,
                 extents: Some(_),
                 stroke_paint,
                 fill_paint,
-            } => (path, stroke_paint, fill_paint),
-            layout::Path::Validated {
-                path: _,
-                extents: None,
                 ..
-            } => return Ok(self.empty_bbox()),
+            } => (cairo_path, stroke_paint, fill_paint),
+            layout::Path::Validated { extents: None, .. } => return Ok(self.empty_bbox()),
             layout::Path::Invalid(_) => return Ok(self.empty_bbox()),
         };
 
@@ -1437,7 +1430,7 @@ impl DrawingCtx {
                 let cr = dc.cr.clone();
 
                 let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
-                let mut path_helper = PathHelper::new(&cr, transform, path, shape.stroke.line_cap);
+                let mut path_helper = PathHelper::new(&cr, transform, cairo_path);
 
                 if clipping {
                     if shape.is_visible {
