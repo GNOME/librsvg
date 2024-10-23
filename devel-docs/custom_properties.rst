@@ -102,6 +102,6 @@ References
   <https://drafts.csswg.org/css-variables/#changes>`_
 
 * OpenType specification for `Colors and Color Palettes
-  <https://learn.microsoft.com/en-us/typography/opentype/spec/svg#colors-and-color-palettes>`_
+  <https://learn.microsoft.com/en-us/typography/opentype/spec/svg#color-and-color-palettes>`_
 
 
