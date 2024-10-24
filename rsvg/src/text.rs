@@ -773,7 +773,7 @@ impl ElementTrait for Text {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
+        _clipping: bool,
     ) -> Result<Option<Layer>, InternalRenderingError> {
         let values = cascaded.get();
         let params = NormalizeParams::new(values, viewport);
