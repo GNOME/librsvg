@@ -792,7 +792,7 @@ impl ElementTrait for Text {
         );
 
         let layout_text = {
-            let transform = draw_ctx.get_transform_for_stacking_ctx(&stacking_ctx, clipping)?;
+            let transform = ValidTransform::try_from(Transform::identity()).unwrap();
 
             let layout_context = LayoutContext {
                 writing_mode: values.writing_mode(),
