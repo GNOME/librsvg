@@ -192,6 +192,9 @@ impl PositionedChunk {
 
         let mut chunk_bounds: Option<Rect> = None;
 
+        // Find the bounding box of the entire chunk by taking the union of the bounding boxes
+        // of each individual span.
+
         for mspan in &measured.spans {
             let params = NormalizeParams::new(&mspan.values, &layout_context.viewport);
 
@@ -222,6 +225,8 @@ impl PositionedChunk {
 
             let span_bounds =
                 Rect::from_size(layout_size.0, layout_size.1).translate(rendered_position);
+
+            // We take the union here
 
             if let Some(bounds) = chunk_bounds {
                 chunk_bounds = Some(bounds.union(&span_bounds));
@@ -768,7 +773,7 @@ impl ElementTrait for Text {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
+        _clipping: bool,
     ) -> Result<Option<Layer>, InternalRenderingError> {
         let values = cascaded.get();
         let params = NormalizeParams::new(values, viewport);
@@ -787,7 +792,7 @@ impl ElementTrait for Text {
         );
 
         let layout_text = {
-            let transform = draw_ctx.get_transform_for_stacking_ctx(&stacking_ctx, clipping)?;
+            let transform = ValidTransform::try_from(Transform::identity()).unwrap();
 
             let layout_context = LayoutContext {
                 writing_mode: values.writing_mode(),
