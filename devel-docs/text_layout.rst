@@ -219,14 +219,14 @@ and the attribute list would include it — I'm saying "4" since it is
 easy to visualize for example purposes.)  So, currently there are
 three ``PangoLayout`` and each with a ``PangoAttrList``:
 
-.. image:: multiple-layouts.jpg
+.. image:: assets/multiple-layouts.jpg
 
 However, this is sub-optimal.  Ideally there should be a *single*
 ``pango::Layout`` for a single string, ``Hello BOLD World``, and the
 attribute list should have a boldface attribute just for the word in
 the middle.
 
-.. image:: single-layout.jpg
+.. image:: assets/single-layout.jpg
 
 Why?  Two reasons: shaping needs to happen across spans (it doesn't
 right now), and the handling for ``unicode-bidi`` and ``direction``
@@ -343,7 +343,8 @@ When there are nested left-to-right (LTR) and right-to-left (RTL) languages in a
 
 3. So that Pango/Harfbuzz/etc. will know when text direction must change.
 
-For example, consider this SVG from ``rsvg/tests/fixtures/text/unicode-bidi-override.svg``:
+For example, consider this SVG from
+:source:`rsvg/tests/fixtures/text/unicode-bidi-override.svg`:
 
 .. code:: xml
 
@@ -356,7 +357,7 @@ For example, consider this SVG from ``rsvg/tests/fixtures/text/unicode-bidi-over
 
 It gets rendered like this (see the description of the Ahem font below to make sense of this):
 
-.. image:: unicode-bidi.jpg
+.. image:: assets/unicode-bidi.jpg
 
 Let's break it up part by part:
 
@@ -589,18 +590,10 @@ reference images.
 This is the string ``A`` rendered in the Ahem font, with red lines
 that cross at its anchor point and baseline:
 
-.. image:: ahem-a.png
+.. image:: assets/ahem-a.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-     <text style="font: 50px Ahem;" x="50%" y="50%" fill="black">A</text>
-
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-a.svg
+   :language: xml
 
 Note the following:
 
@@ -614,35 +607,17 @@ Note the following:
 
 Now let's render two glyphs ``AB``, centered:
 
-.. image:: ahem-ab.png
+.. image:: assets/ahem-ab.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" fill="black">AB</text>
-
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-ab.svg
+   :language: xml
 
 Now the same as before, but with each glyph in a separate ``tspan`` of a different color:
 
-.. image:: ahem-ab-color.png
+.. image:: assets/ahem-ab-color.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%">
-       <tspan fill="lime">A</tspan><tspan fill="blue">B</tspan>
-     </text>
-
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-ab-color.svg
+   :language: xml
 
 What if we need to test some things but actually be able to
 differentiate glyphs?  Here, the glyphs for ``A``, ``p`` and ``É`` are
@@ -651,18 +626,10 @@ rendered different.  `See the available glyphs
 fit in the em-square and are just rectangles that cover different
 parts of that area.
 
-.. image:: ahem-different-glyphs.png
+.. image:: assets/ahem-different-glyphs.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
-     <text style="font: 40px Ahem;" x="50%" y="50%">ApÉ</text>
-
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-different-glyphs.svg
+   :language: xml
 
 
 Details on the Ahem font
@@ -703,17 +670,7 @@ Some ideas for the ``<text2>`` tests with Ahem
 * Use different glyphs and colors to test bidi embedding.  For
   example, here ``RGB`` renders as ``BGR`` due to ``direction="rtl"``:
 
-.. image:: ahem-rtl.png
+.. image:: assets/ahem-rtl.png
 
-.. code:: xml
-
-   <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-     <text style="font: 50px Ahem;" text-anchor="middle" x="50%" y="50%" direction="rtl">
-       <tspan fill="red">R</tspan><tspan fill="green">G</tspan><tspan fill="blue">B</tspan>
-     </text>
-   
-     <g stroke-width="2" stroke="red">
-       <line x1="0" y1="50%" x2="100%" y2="50%"/>
-       <line x1="50%" y1="0" x2="50%" y2="100%"/>
-     </g>
-   </svg>
+.. literalinclude:: assets/ahem-rtl.svg
+   :language: xml
