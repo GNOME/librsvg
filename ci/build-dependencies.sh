@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# IMPORTANT: See
+# https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
 
 set -o errexit -o pipefail -o noclobber -o nounset
 
