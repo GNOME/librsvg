@@ -194,11 +194,11 @@ impl Item {
 ///
 /// RFC 5664: <https://www.rfc-editor.org/info/rfc5664>
 #[derive(Debug, Clone, PartialEq)]
-pub struct LanguageTags(Vec<LanguageTag>);
+pub struct LanguageTags(Box<[LanguageTag]>);
 
 impl LanguageTags {
     pub fn empty() -> Self {
-        LanguageTags(Vec::new())
+        LanguageTags(Box::new([]))
     }
 
     /// Converts a `Locale` to a set of language tags.
@@ -225,11 +225,11 @@ impl LanguageTags {
             tags.push(locale_tag);
         }
 
-        Ok(LanguageTags(tags))
+        Ok(LanguageTags(Box::from(tags)))
     }
 
     pub fn from(tags: Vec<LanguageTag>) -> LanguageTags {
-        LanguageTags(tags)
+        LanguageTags(Box::from(tags))
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &LanguageTag> {
