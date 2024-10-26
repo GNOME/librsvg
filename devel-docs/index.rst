@@ -21,6 +21,7 @@ Development guide for librsvg
 
    devel_environment
    contributing
+   learning
 
 .. toctree::
    :caption: Understand the Code
@@ -91,6 +92,7 @@ Getting started
 
 - :doc:`devel_environment`
 - :doc:`contributing`
+- :doc:`learning`
 
 Understand the code
 -------------------
