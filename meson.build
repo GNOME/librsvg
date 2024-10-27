@@ -257,9 +257,7 @@ if host_system == 'windows'
   if is_msvc_style
     rustc_toolchain_cc = 'msvc'
   elif cc.get_id() == 'clang'
-    # https://github.com/msys2/MINGW-packages/issues/13388
-    is_msys2 = cc.get_define('__MINGW32__') == '1' and host_machine.cpu_family() != 'aarch64' and host_machine.system() in ['windows', 'cygwin']
-    rustc_toolchain_cc = is_msys2 ? 'gnu' : 'gnullvm'
+    rustc_toolchain_cc = 'gnullvm'
   else
     rustc_toolchain_cc = 'gnu'
   endif
