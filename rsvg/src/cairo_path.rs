@@ -9,6 +9,7 @@ use std::rc::Rc;
 
 use crate::drawing_ctx::Viewport;
 use crate::error::InternalRenderingError;
+use crate::float_eq_cairo::{CAIRO_FIXED_MAX_DOUBLE, CAIRO_FIXED_MIN_DOUBLE};
 use crate::layout::{self, Stroke};
 use crate::length::NormalizeValues;
 use crate::paint_server::PaintSource;
@@ -17,8 +18,33 @@ use crate::path_builder::{
 };
 use crate::properties::StrokeLinecap;
 use crate::rect::Rect;
+use crate::transform::Transform;
 
 use cairo::PathSegment;
+
+/// Sees if any of the coordinates in the segment is not representable in Cairo's fixed-point numbers.
+///
+/// See the documentation for [`CairoPath::has_unsuitable_coordinates`].
+fn segment_has_unsuitable_coordinates(segment: &PathSegment, transform: &Transform) -> bool {
+    match *segment {
+        PathSegment::MoveTo((x, y)) => coordinates_are_unsuitable(x, y, transform),
+        PathSegment::LineTo((x, y)) => coordinates_are_unsuitable(x, y, transform),
+        PathSegment::CurveTo((x1, y1), (x2, y2), (x3, y3)) => {
+            coordinates_are_unsuitable(x1, y1, transform)
+                || coordinates_are_unsuitable(x2, y2, transform)
+                || coordinates_are_unsuitable(x3, y3, transform)
+        }
+        PathSegment::ClosePath => false,
+    }
+}
+
+fn coordinates_are_unsuitable(x: f64, y: f64, transform: &Transform) -> bool {
+    let fixed_point_range = CAIRO_FIXED_MIN_DOUBLE..=CAIRO_FIXED_MAX_DOUBLE;
+
+    let (x, y) = transform.transform_point(x, y);
+
+    !(fixed_point_range.contains(&x) && fixed_point_range.contains(&y))
+}
 
 /// Our own version of a Cairo path, lower-level than [layout::Path].
 ///
