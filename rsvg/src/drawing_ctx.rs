@@ -8,12 +8,12 @@ use pango::prelude::FontMapExt;
 use regex::{Captures, Regex};
 use std::cell::RefCell;
 use std::convert::TryFrom;
-use std::f64::consts::*;
 use std::rc::Rc;
 use std::{borrow::Cow, sync::OnceLock};
 
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
+use crate::cairo_path::CairoPath;
 use crate::color::color_to_rgba;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
@@ -32,7 +32,6 @@ use crate::limits;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
-use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
     ClipRule, ComputedValues, FillRule, ImageRendering, MaskType, MixBlendMode, Opacity,
@@ -62,8 +61,7 @@ pub struct FontOptions {
 struct PathHelper<'a> {
     cr: &'a cairo::Context,
     transform: ValidTransform,
-    path: &'a Path,
-    is_square_linecap: bool,
+    cairo_path: &'a CairoPath,
     has_path: Option<bool>,
 }
 
@@ -71,14 +69,12 @@ impl<'a> PathHelper<'a> {
     pub fn new(
         cr: &'a cairo::Context,
         transform: ValidTransform,
-        path: &'a Path,
-        linecap: StrokeLinecap,
+        cairo_path: &'a CairoPath,
     ) -> Self {
         PathHelper {
             cr,
             transform,
-            path,
-            is_square_linecap: linecap == StrokeLinecap::Square,
+            cairo_path,
             has_path: None,
         }
     }
@@ -88,7 +84,7 @@ impl<'a> PathHelper<'a> {
             Some(false) | None => {
                 self.has_path = Some(true);
                 self.cr.set_matrix(self.transform.into());
-                self.path.to_cairo(self.cr, self.is_square_linecap)
+                self.cairo_path.to_cairo_context(self.cr)
             }
             Some(true) => Ok(()),
         }
@@ -1412,18 +1408,15 @@ impl DrawingCtx {
         clipping: bool,
         viewport: &Viewport,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        let (path, stroke_paint, fill_paint) = match &shape.path {
+        let (cairo_path, stroke_paint, fill_paint) = match &shape.path {
             layout::Path::Validated {
-                path,
+                cairo_path,
                 extents: Some(_),
                 stroke_paint,
                 fill_paint,
-            } => (path, stroke_paint, fill_paint),
-            layout::Path::Validated {
-                path: _,
-                extents: None,
                 ..
-            } => return Ok(self.empty_bbox()),
+            } => (cairo_path, stroke_paint, fill_paint),
+            layout::Path::Validated { extents: None, .. } => return Ok(self.empty_bbox()),
             layout::Path::Invalid(_) => return Ok(self.empty_bbox()),
         };
 
@@ -1437,7 +1430,7 @@ impl DrawingCtx {
                 let cr = dc.cr.clone();
 
                 let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
-                let mut path_helper = PathHelper::new(&cr, transform, path, shape.stroke.line_cap);
+                let mut path_helper = PathHelper::new(&cr, transform, cairo_path);
 
                 if clipping {
                     if shape.is_visible {
@@ -1608,7 +1601,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        let path = pango_layout_to_path(span.x, span.y, &span.layout, span.gravity)?;
+        let path = pango_layout_to_cairo_path(span.x, span.y, &span.layout, span.gravity)?;
         if path.is_empty() {
             // Empty strings, or only-whitespace text, get turned into empty paths.
             // In that case, we really want to return "no bounds" rather than an
@@ -1628,11 +1621,11 @@ impl DrawingCtx {
             setup_cr_for_stroke(&self.cr, &span.stroke);
 
             if clipping {
-                path.to_cairo(&self.cr, false)?;
+                path.to_cairo_context(&self.cr)?;
                 return Ok(self.empty_bbox());
             }
 
-            path.to_cairo(&self.cr, false)?;
+            path.to_cairo_context(&self.cr)?;
             let bbox = compute_stroke_and_fill_box(
                 &self.cr,
                 &span.stroke,
@@ -1654,7 +1647,7 @@ impl DrawingCtx {
 
                             if had_paint_server {
                                 if can_use_text_as_path {
-                                    path.to_cairo(&self.cr, false)?;
+                                    path.to_cairo_context(&self.cr)?;
                                     self.cr.fill()?;
                                     self.cr.new_path();
                                 } else {
@@ -1680,7 +1673,7 @@ impl DrawingCtx {
                                 self.set_paint_source(&span.stroke_paint, acquired_nodes)?;
 
                             if had_paint_server {
-                                path.to_cairo(&self.cr, false)?;
+                                path.to_cairo_context(&self.cr)?;
                                 self.cr.stroke()?;
                                 self.cr.new_path();
                             }
@@ -2047,20 +2040,6 @@ impl From<ImageRendering> for Interpolation {
     }
 }
 
-pub fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingError> {
-    if path.is_empty() {
-        return Ok(None);
-    }
-
-    let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
-    let cr = cairo::Context::new(&surface)?;
-
-    path.to_cairo(&cr, false)?;
-    let (x0, y0, x1, y1) = cr.path_extents()?;
-
-    Ok(Some(Rect::new(x0, y0, x1, y1)))
-}
-
 /// Create a Pango context with a particular configuration.
 pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -> pango::Context {
     let font_map = pangocairo::FontMap::default();
@@ -2144,20 +2123,20 @@ fn pango_layout_to_cairo(
     cr.set_matrix(matrix);
 }
 
-/// Converts a Pango layout to a Path starting at (x, y).
-pub fn pango_layout_to_path(
+/// Converts a Pango layout to a CairoPath starting at (x, y).
+fn pango_layout_to_cairo_path(
     x: f64,
     y: f64,
     layout: &pango::Layout,
     gravity: pango::Gravity,
-) -> Result<Path, InternalRenderingError> {
+) -> Result<CairoPath, InternalRenderingError> {
     let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
     let cr = cairo::Context::new(&surface)?;
 
     pango_layout_to_cairo(x, y, layout, gravity, &cr);
 
     let cairo_path = cr.copy_path()?;
-    Ok(Path::from_cairo(cairo_path))
+    Ok(CairoPath::from_cairo(cairo_path))
 }
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
@@ -2496,152 +2475,4 @@ pub struct PathExtents {
 
     /// Extents for the stroked path, or `None` if the path is empty or zero-width.
     pub stroke: Option<Rect>,
-}
-
-impl Path {
-    pub fn to_cairo(
-        &self,
-        cr: &cairo::Context,
-        is_square_linecap: bool,
-    ) -> Result<(), InternalRenderingError> {
-        assert!(!self.is_empty());
-
-        for subpath in self.iter_subpath() {
-            // If a subpath is empty and the linecap is a square, then draw a square centered on
-            // the origin of the subpath. See #165.
-            if is_square_linecap {
-                let (x, y) = subpath.origin();
-                if subpath.is_zero_length() {
-                    let stroke_size = 0.002;
-
-                    cr.move_to(x - stroke_size / 2., y);
-                    cr.line_to(x + stroke_size / 2., y);
-                }
-            }
-
-            for cmd in subpath.iter_commands() {
-                cmd.to_cairo(cr);
-            }
-        }
-
-        // We check the cr's status right after feeding it a new path for a few reasons:
-        //
-        // * Any of the individual path commands may cause the cr to enter an error state, for
-        //   example, if they come with coordinates outside of Cairo's supported range.
-        //
-        // * The *next* call to the cr will probably be something that actually checks the status
-        //   (i.e. in cairo-rs), and we don't want to panic there.
-
-        cr.status().map_err(|e| e.into())
-    }
-
-    /// Converts a `cairo::Path` to a librsvg `Path`.
-    fn from_cairo(cairo_path: cairo::Path) -> Path {
-        let mut builder = PathBuilder::default();
-
-        // Cairo has the habit of appending a MoveTo to some paths, but we don't want a
-        // path for empty text to generate that lone point.  So, strip out paths composed
-        // only of MoveTo.
-
-        if !cairo_path_is_only_move_tos(&cairo_path) {
-            for segment in cairo_path.iter() {
-                match segment {
-                    cairo::PathSegment::MoveTo((x, y)) => builder.move_to(x, y),
-                    cairo::PathSegment::LineTo((x, y)) => builder.line_to(x, y),
-                    cairo::PathSegment::CurveTo((x2, y2), (x3, y3), (x4, y4)) => {
-                        builder.curve_to(x2, y2, x3, y3, x4, y4)
-                    }
-                    cairo::PathSegment::ClosePath => builder.close_path(),
-                }
-            }
-        }
-
-        builder.into_path()
-    }
-}
-
-fn cairo_path_is_only_move_tos(path: &cairo::Path) -> bool {
-    path.iter()
-        .all(|seg| matches!(seg, cairo::PathSegment::MoveTo((_, _))))
-}
-
-impl PathCommand {
-    fn to_cairo(&self, cr: &cairo::Context) {
-        match *self {
-            PathCommand::MoveTo(x, y) => cr.move_to(x, y),
-            PathCommand::LineTo(x, y) => cr.line_to(x, y),
-            PathCommand::CurveTo(ref curve) => curve.to_cairo(cr),
-            PathCommand::Arc(ref arc) => arc.to_cairo(cr),
-            PathCommand::ClosePath => cr.close_path(),
-        }
-    }
-}
-
-impl EllipticalArc {
-    fn to_cairo(&self, cr: &cairo::Context) {
-        match self.center_parameterization() {
-            ArcParameterization::CenterParameters {
-                center,
-                radii,
-                theta1,
-                delta_theta,
-            } => {
-                let n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as u32;
-                let d_theta = delta_theta / f64::from(n_segs);
-
-                let mut theta = theta1;
-                for _ in 0..n_segs {
-                    arc_segment(center, radii, self.x_axis_rotation, theta, theta + d_theta)
-                        .to_cairo(cr);
-                    theta += d_theta;
-                }
-            }
-            ArcParameterization::LineTo => {
-                let (x2, y2) = self.to;
-                cr.line_to(x2, y2);
-            }
-            ArcParameterization::Omit => {}
-        }
-    }
-}
-
-impl CubicBezierCurve {
-    fn to_cairo(&self, cr: &cairo::Context) {
-        let Self { pt1, pt2, to } = *self;
-        cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn rsvg_path_from_cairo_path() {
-        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 10, 10).unwrap();
-        let cr = cairo::Context::new(&surface).unwrap();
-
-        cr.move_to(1.0, 2.0);
-        cr.line_to(3.0, 4.0);
-        cr.curve_to(5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
-        cr.close_path();
-
-        let cairo_path = cr.copy_path().unwrap();
-        let path = Path::from_cairo(cairo_path);
-
-        assert_eq!(
-            path.iter().collect::<Vec<PathCommand>>(),
-            vec![
-                PathCommand::MoveTo(1.0, 2.0),
-                PathCommand::LineTo(3.0, 4.0),
-                PathCommand::CurveTo(CubicBezierCurve {
-                    pt1: (5.0, 6.0),
-                    pt2: (7.0, 8.0),
-                    to: (9.0, 10.0),
-                }),
-                PathCommand::ClosePath,
-                PathCommand::MoveTo(1.0, 2.0), // cairo inserts a MoveTo after ClosePath
-            ],
-        );
-    }
 }

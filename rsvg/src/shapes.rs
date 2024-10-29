@@ -7,8 +7,9 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
+use crate::cairo_path::validate_path;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{compute_path_extents, DrawingCtx, Viewport};
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
@@ -16,7 +17,6 @@ use crate::is_element_of_type;
 use crate::layout::{self, Layer, LayerKind, Marker, Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::paint_server::PaintSource;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::properties::ComputedValues;
@@ -43,31 +43,6 @@ impl ShapeDef {
 
 trait BasicShape {
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef;
-}
-
-fn validate_path(
-    path: &Rc<SvgPath>,
-    viewport: &Viewport,
-    normalize_values: &NormalizeValues,
-    stroke_paint: &PaintSource,
-    fill_paint: &PaintSource,
-) -> Result<layout::Path, InternalRenderingError> {
-    if path.has_unsuitable_coordinates(&viewport.transform) {
-        return Ok(layout::Path::Invalid(String::from(
-            "path has coordinates that are unsuitable for Cairo",
-        )));
-    }
-
-    let extents = compute_path_extents(path)?;
-    let stroke_paint = stroke_paint.to_user_space(&extents, viewport, normalize_values);
-    let fill_paint = fill_paint.to_user_space(&extents, viewport, normalize_values);
-
-    Ok(layout::Path::Validated {
-        path: Rc::clone(path),
-        extents,
-        stroke_paint,
-        fill_paint,
-    })
 }
 
 fn draw_basic_shape(
@@ -145,6 +120,7 @@ fn draw_basic_shape(
 
     let path = validate_path(
         &shape_def.path,
+        &stroke,
         viewport,
         &normalize_values,
         &stroke_paint,

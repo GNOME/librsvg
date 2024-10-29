@@ -9,6 +9,7 @@ use float_cmp::approx_eq;
 
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
+use crate::cairo_path::CairoPath;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
@@ -126,7 +127,11 @@ pub struct Stroke {
 /// early and not passing them on to Cairo.
 pub enum Path {
     /// Path that has been checked for being suitable for Cairo.
+    ///
+    /// Note that this also keeps a reference to the original [SvgPath], in addition to
+    /// the lowered [CairoPath].  This is because the markers code still needs the former.
     Validated {
+        cairo_path: CairoPath,
         path: Rc<SvgPath>,
         extents: Option<Rect>,
         stroke_paint: UserSpacePaintSource,
