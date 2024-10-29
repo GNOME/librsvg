@@ -100,6 +100,27 @@ impl CairoPath {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    /// Sees if any of the coordinates in the path is not representable in Cairo's fixed-point numbers.
+    ///
+    /// See https://gitlab.gnome.org/GNOME/librsvg/-/issues/1088 and
+    /// for the root cause
+    /// https://gitlab.freedesktop.org/cairo/cairo/-/issues/852.
+    ///
+    /// This function does a poor job, but a hopefully serviceable one, of seeing if a path's coordinates
+    /// are prone to causing trouble when passed to Cairo.  The caller of this function takes note of
+    /// that situation and in the end avoids rendering the path altogether.
+    ///
+    /// Cairo has trouble when given path coordinates that are outside of the range it can represent
+    /// in cairo_fixed_t: 24 bits integer part, and 8 bits fractional part.  Coordinates outside
+    /// of ±8 million get clamped.  These, or valid coordinates that are close to the limits,
+    /// subsequently cause integer overflow while Cairo does arithmetic on the path's points.
+    /// Fixing this in Cairo is a long-term project.
+    pub fn has_unsuitable_coordinates(&self, transform: &Transform) -> bool {
+        self.0
+            .iter()
+            .any(|segment| segment_has_unsuitable_coordinates(segment, transform))
+    }
 }
 
 fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingError> {
@@ -221,7 +242,7 @@ pub fn validate_path(
     let is_square_linecap = stroke.line_cap == StrokeLinecap::Square;
     let cairo_path = path.to_cairo_path(is_square_linecap)?;
 
-    if path.has_unsuitable_coordinates(&viewport.transform) {
+    if cairo_path.has_unsuitable_coordinates(&viewport.transform) {
         return Ok(layout::Path::Invalid(String::from(
             "path has coordinates that are unsuitable for Cairo",
         )));
