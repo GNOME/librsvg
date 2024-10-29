@@ -264,6 +264,7 @@ pub fn validate_path(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::path_builder::PathBuilder;
 
     #[test]
     fn rsvg_path_from_cairo_path() {
@@ -288,5 +289,27 @@ mod tests {
                 PathSegment::MoveTo((1.0, 2.0)), // cairo inserts a MoveTo after ClosePath
             ],
         );
+    }
+
+    #[test]
+    fn detects_suitable_coordinates() {
+        let mut builder = PathBuilder::default();
+        builder.move_to(900000.0, 33.0);
+        builder.line_to(-900000.0, 3.0);
+
+        let path = builder.into_path();
+        let cairo_path = path.to_cairo_path(false).map_err(|_| ()).unwrap();
+        assert!(!cairo_path.has_unsuitable_coordinates(&Transform::identity()));
+    }
+
+    #[test]
+    fn detects_unsuitable_coordinates() {
+        let mut builder = PathBuilder::default();
+        builder.move_to(9000000.0, 33.0);
+        builder.line_to(-9000000.0, 3.0);
+
+        let path = builder.into_path();
+        let cairo_path = path.to_cairo_path(false).map_err(|_| ()).unwrap();
+        assert!(cairo_path.has_unsuitable_coordinates(&Transform::identity()));
     }
 }
