@@ -762,6 +762,7 @@ mod tests {
     t!(bugs_bug776297_marker_on_non_path_elements_svg,              "bugs/bug776297-marker-on-non-path-elements.svg");
     t!(bugs_bug786372_default_style_type_svg,                       "bugs/bug786372-default-style-type.svg");
     t!(bugs_bug788_inner_svg_viewbox_svg,                           "bugs/bug788-inner-svg-viewbox.svg");
+    t!(bugs_bug1128_elliptical_arcs_big_radius_svg,                 "bugs/bug1128-elliptical-arcs-big-radius.svg");
     t!(bugs_ignore_577_multiple_font_families_svg,                  "bugs/ignore-577-multiple-font-families.svg");
     t!(svg1_1_coords_trans_01_b_svg,                                "svg1.1/coords-trans-01-b.svg");
     t!(svg1_1_coords_trans_02_t_svg,                                "svg1.1/coords-trans-02-t.svg");
