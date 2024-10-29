@@ -9,7 +9,7 @@
 <!--
   run `rsvg-convert -v` in your terminal to see the current version.
   
-  Note that only librsvg 2.58.x and 2.59.x are supported.
+  Note that only 2.59.x versions are supported.
 -->
 ## Platform
 <!--
