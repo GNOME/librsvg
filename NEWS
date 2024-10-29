@@ -1,3 +1,39 @@
+Version 2.59.2
+==============
+
+- #1100 - Fix stack overflow due to unbounded recursion.  Now there is
+  a hard limit on the number of nested layers that an SVG document may
+  have.  This is not a hard limit on the amount of stack space
+  consumed, but it is a general mitigation.
+
+- #1128 - Fix regression when rendering paths with very flat
+  elliptical arcs.  This bug was introduced in 2.59.1 as part of the
+  mitigation for paths with coordinates that Cairo is unable to
+  handle.
+
+- #1109 - Fix centering and text-anchor in general for scaled text.
+
+- #1134 - Fix building with Rust 1.82 on Windows (Christoph Reiter).
+
+Changes thanks to the ongoing Outreachy internship:
+
+- #1127 - Make cancellation work for all the resource loading
+  functions (Adetoye Anointing).
+
+- #1071 - Add documentation for rsvg-bench to the development guide
+  (Adetoye Anointing).
+
+- #892 - Slight improvement in memory consumption for language tags
+  (Adetoye Anointing).
+
+- Many updates to the developer's documentation, for Outreachy
+  interns.
+
+Special thanks to Toluwaleke Ogundipe for refreshing the style and
+content of the development guide, and greatly improving its build
+process.
+
+
 Version 2.59.1
 ==============
 
