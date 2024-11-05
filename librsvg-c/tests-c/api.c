@@ -756,6 +756,8 @@ reset_size_callback (void)
 static void
 zero_size_func (gint *width, gint *height, gpointer user_data)
 {
+    (void) user_data;
+
     *width = 0;
     *height = 0;
 }
@@ -792,6 +794,8 @@ render_with_zero_size_callback (void)
 static void
 pixbuf_size_func (gint *width, gint *height, gpointer user_data)
 {
+    (void) user_data;
+
     *width = 420;
     *height = 430;
 }
