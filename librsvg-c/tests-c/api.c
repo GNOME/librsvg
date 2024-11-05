@@ -1615,8 +1615,9 @@ typedef struct
 } DimensionsFixtureData;
 
 static void
-test_dimensions (DimensionsFixtureData *fixture)
+test_dimensions (gconstpointer user_data)
 {
+    const DimensionsFixtureData *fixture = user_data;
     RsvgHandle *handle;
     RsvgPositionData position;
     RsvgDimensionData dimension;
@@ -1839,7 +1840,7 @@ add_geometry_tests (void)
     gsize i;
 
     for (i = 0; i < G_N_ELEMENTS (dimensions_fixtures); i++)
-        g_test_add_data_func (dimensions_fixtures[i].test_name, &dimensions_fixtures[i], (void*)test_dimensions);
+        g_test_add_data_func (dimensions_fixtures[i].test_name, &dimensions_fixtures[i], test_dimensions);
 }
 
 /* Tests for the deprecated API for loading bytes at a time */
