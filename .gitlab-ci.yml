@@ -106,7 +106,7 @@ cargo_test:
     TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
     PREFIX: "/usr/local/librsvg"
   script:
-    - meson setup _build --prefix=$PREFIX -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled
+    - meson setup _build --prefix=$PREFIX -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled -Dwarning_level=3
     - meson compile -C _build
     - meson test -C _build --print-errorlogs
   artifacts:
