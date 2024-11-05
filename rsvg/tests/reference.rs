@@ -1191,6 +1191,12 @@ test_svg_reference!(
 );
 
 test_svg_reference!(
+    xinclude_non_utf8,
+    "tests/fixtures/reftests/xinclude-non-utf8.svg",
+    "tests/fixtures/reftests/xinclude-non-utf8-ref.svg"
+);
+
+test_svg_reference!(
     markers_arc_segments,
     "tests/fixtures/reftests/markers-arc-segments.svg",
     "tests/fixtures/reftests/markers-arc-segments-ref.svg"
