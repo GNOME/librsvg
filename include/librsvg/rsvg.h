@@ -1328,7 +1328,7 @@ G_END_DECLS
 #include <librsvg/rsvg-version.h>
 #include <librsvg/rsvg-cairo.h>
 
-#if LIBRSVG_CHECK_FEATURE(PIXBUF)
+#if LIBRSVG_HAVE_PIXBUF
 #include <librsvg/rsvg-pixbuf.h>
 #endif
 
