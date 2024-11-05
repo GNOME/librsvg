@@ -756,6 +756,8 @@ reset_size_callback (void)
 static void
 zero_size_func (gint *width, gint *height, gpointer user_data)
 {
+    (void) user_data;
+
     *width = 0;
     *height = 0;
 }
@@ -792,6 +794,8 @@ render_with_zero_size_callback (void)
 static void
 pixbuf_size_func (gint *width, gint *height, gpointer user_data)
 {
+    (void) user_data;
+
     *width = 420;
     *height = 430;
 }
@@ -1611,8 +1615,9 @@ typedef struct
 } DimensionsFixtureData;
 
 static void
-test_dimensions (DimensionsFixtureData *fixture)
+test_dimensions (gconstpointer user_data)
 {
+    const DimensionsFixtureData *fixture = user_data;
     RsvgHandle *handle;
     RsvgPositionData position;
     RsvgDimensionData dimension;
@@ -1753,7 +1758,7 @@ static LoadingTestData loading_tests[] = {
 static void
 add_pixbuf_tests (void)
 {
-    int i;
+    gsize i;
 
     /* Tests for rsvg_handle_get_pixbuf() and rsvg_handle_get_pixbuf_sub() */
     g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
@@ -1832,17 +1837,17 @@ add_api_tests (void)
 static void
 add_geometry_tests (void)
 {
-    int i;
+    gsize i;
 
     for (i = 0; i < G_N_ELEMENTS (dimensions_fixtures); i++)
-        g_test_add_data_func (dimensions_fixtures[i].test_name, &dimensions_fixtures[i], (void*)test_dimensions);
+        g_test_add_data_func (dimensions_fixtures[i].test_name, &dimensions_fixtures[i], test_dimensions);
 }
 
 /* Tests for the deprecated API for loading bytes at a time */
 static void
 add_loading_tests (void)
 {
-    int i;
+    gsize i;
 
     for (i = 0; i < G_N_ELEMENTS (loading_tests); i++) {
         g_test_add_data_func (loading_tests[i].test_name, &loading_tests[i], load_n_bytes_at_a_time);
