@@ -30,7 +30,6 @@ installed so that librsvg's compilation can find them via [system-deps][system-d
 
   * Cairo - used for the main rendering
   * FreeType2 - font renderer
-  * gdk-pixbuf - image decoder
   * gio/glib - I/O primitives and streams
   * Harfbuzz - text shaping
   * libxml2 - XML parser
@@ -43,6 +42,11 @@ libraries, which you may want to read.
 
 [system-deps]: https://github.com/gdesmott/system-deps
 [sec-libs]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html#librsvgs-dependencies
+
+**Rust dependencies:** Librsvg uses a bunch of Rust crates to handle
+the many aspects of SVG and CSS.  Of particular interest are the
+[image-rs][image-rs] crate and its dependencies, which librsvg uses to
+load raster images.
 
 **Bug tracking:** If you have found a bug, take a look at [our bug
 tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"
@@ -198,3 +202,4 @@ ways:
 [gnome-hackers]: https://matrix.to/#/#gnome-hackers:gnome.org
 [gnome-rust]: https://matrix.to/#/#rust:gnome.org
 [blog]: https://viruta.org/tag/librsvg.html
+[image-rs]: https://github.com/image-rs/image

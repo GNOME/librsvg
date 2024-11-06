@@ -23,6 +23,11 @@ Short term
 Medium term
 -----------
 
+- Once we have a :doc:`render_tree` in place (see above), it would be
+  convenient if librsvg could generate a tree of paintables for GTK,
+  so that GTK could in turn render the SVG with the GPU.  This needs
+  detailing in a design document; see :issue:`1140`.
+
 - :issue:`459` - Support CSS ``var()`` for custom colors and other SVG properties.
 
 - :issue:`843` - Support CSS ``calc()``.
