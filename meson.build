@@ -21,7 +21,7 @@ cc = meson.get_compiler('c')
 # MSRV - Minimum Supported Rust Version
 # If you change this, please update these:
 #   - the "rust-version" value in Cargo.toml
-#   - the "_manual_setup" section of devel-docs/devel_environment.rst
+#   - the "Compilers and build tools" section of devel-docs/_build_dependencies.rst
 #   - the "RUST_MINIMUM" variable in ci/container_builds.yml
 msrv = '1.77.2'
 cargo = find_program('cargo', version:'>= @0@'.format(msrv))
@@ -49,7 +49,7 @@ py = import('python')
 
 python = py.find_installation()
 
-# Required versions for dependencies - Please update devel_environment.rst with version numbers if these change
+# Required versions for dependencies - Please update _build_dependencies.rst with version numbers if these change
 cairo_required         = '>= 1.18.0'
 dav1d_required         = '>= 1.3.0'
 ft2_cmake_required     = '>= 2.8.0'   # Actual FreeType version required

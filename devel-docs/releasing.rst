@@ -180,9 +180,7 @@ Please update all of these values when increasing the MSRV:
 
 - ``RUST_MINIMUM`` in ``ci/container_builds.yml``.
 
-- The ``_manual_setup`` section in ``devel-docs/devel_environment.rst``.
-
-- The ``_build_time_dependencies`` section in ``devel-docs/compiling.rst``.
+- The ``Compilers and build tools`` section in ``devel-docs/_build_dependencies.rst``.
 
 Sometimes librsvg’s dependencies update their MSRV and librsvg may need
 to increase it as well. Please consider the following before doing this:
