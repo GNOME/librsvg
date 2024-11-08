@@ -19,7 +19,7 @@ minimum version is listed here; you may use a newer version instead.
 * `Freetype2 <https://gitlab.freedesktop.org/freetype/freetype>`_ 2.8.0
 * `GLib <https://gitlab.gnome.org/GNOME/glib/>`_ 2.50.0
 * `Libxml2 <https://gitlab.gnome.org/GNOME/libxml2>`_ 2.9.0
-* `Pango <https://gitlab.gnome.org/GNOME/pango/>`_ 1.46.0
+* `Pango <https://gitlab.gnome.org/GNOME/pango/>`_ 1.50.0
 
 **Optional dependencies:**
 
