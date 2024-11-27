@@ -156,11 +156,11 @@ if libxml_dep.type_name() == 'cmake'
 endif
 
 if host_system == 'windows'
-  build_gir = get_option('introspection').require(get_option('default_library') != 'static' and not meson.is_cross_build() and gi_dep.found())
+  build_gir = get_option('introspection').require(get_option('default_library') != 'static' and meson.can_run_host_binaries() and gi_dep.found())
 else
-  build_gir = get_option('introspection').require(not meson.is_cross_build() and gi_dep.found())
+  build_gir = get_option('introspection').require(meson.can_run_host_binaries() and gi_dep.found())
 endif
-build_vala = get_option('vala').require(not meson.is_cross_build() and vapigen_dep.found())
+build_vala = get_option('vala').require(meson.can_run_host_binaries() and vapigen_dep.found())
 
 build_pixbuf_loader = get_option('pixbuf-loader').require(pixbuf_dep.found())
 
