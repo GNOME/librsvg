@@ -36,7 +36,9 @@ pixbuf_thumbnailer = configure_file(
   install_dir: get_option('datadir') / 'thumbnailers'
 )
 
-gdk_pixbuf_query_loaders = find_program(pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_query_loaders', default_value: 'gdk-pixbuf-query-loaders'))
+if not meson.is_cross_build()
+  gdk_pixbuf_query_loaders = find_program(pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_query_loaders', default_value: 'gdk-pixbuf-query-loaders'))
+endif
 
 pixbufloader_svg_install_args = [
   '--gdk-pixbuf-moduledir',
