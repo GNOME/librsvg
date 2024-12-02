@@ -54,7 +54,6 @@ cairo_required         = '>= 1.18.0'
 dav1d_required         = '>= 1.3.0'
 ft2_cmake_required     = '>= 2.8.0'   # Actual FreeType version required
 freetype2_required     = '>= 20.0.14' # Corresponds to ft2_cmake_required
-gio_required           = '>= 2.24.0'
 glib_required          = '>= 2.50.0'
 harfbuzz_required      = '>= 2.0.0'
 libxml_required        = '>= 2.9.0'
@@ -100,7 +99,7 @@ pixbuf_dep     = dependency('gdk-pixbuf-2.0',
                             fallback: ['gdk-pixbuf', 'gdkpixbuf_dep'],
                             default_options: ['png=enabled', 'jpeg=enabled', 'builtin_loaders=png,jpeg', 'man=false'])
 gio_dep        = dependency('gio-2.0',
-                            version: gio_required,
+                            version: glib_required,
                             fallback: ['glib', 'libgio_dep'])
 glib_dep       = dependency('glib-2.0',
                             version: glib_required,

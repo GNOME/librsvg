@@ -17,7 +17,7 @@ minimum version is listed here; you may use a newer version instead.
 
 * `Cairo <https://gitlab.freedesktop.org/cairo/cairo>`_ 1.18.0 with PNG support
 * `Freetype2 <https://gitlab.freedesktop.org/freetype/freetype>`_ 2.8.0
-* `GIO <https://gitlab.gnome.org/GNOME/glib/>`_ 2.24.0
+* `GLib <https://gitlab.gnome.org/GNOME/glib/>`_ 2.50.0
 * `Libxml2 <https://gitlab.gnome.org/GNOME/libxml2>`_ 2.9.0
 * `Pango <https://gitlab.gnome.org/GNOME/pango/>`_ 1.46.0
 
