@@ -160,7 +160,9 @@ impl Parse for u32 {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CommaSeparatedList<T: Parse, const REQUIRED: usize, const MAX: usize>(pub Vec<T>);
 
-impl<T: Parse, const REQUIRED: usize, const MAX: usize> Parse for CommaSeparatedList<T, REQUIRED, MAX> {
+impl<T: Parse, const REQUIRED: usize, const MAX: usize> Parse
+    for CommaSeparatedList<T, REQUIRED, MAX>
+{
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         let loc = parser.current_source_location();
         let mut v = Vec::<T>::with_capacity(MAX);
@@ -184,7 +186,6 @@ impl<T: Parse, const REQUIRED: usize, const MAX: usize> Parse for CommaSeparated
         }
     }
 }
-
 
 /// Parses a list of identifiers from a `cssparser::Parser`
 ///
