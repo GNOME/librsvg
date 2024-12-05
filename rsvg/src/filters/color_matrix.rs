@@ -8,7 +8,7 @@ use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parse_identifiers;
-use crate::parsers::{NumberList, Parse, ParseValue};
+use crate::parsers::{CommaSeparatedList, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::rsvg_log;
@@ -112,10 +112,10 @@ impl ElementTrait for FeColorMatrix {
 }
 
 fn parse_matrix(dest: &mut Matrix5<f64>, attr: QualName, value: &str, session: &Session) {
-    let parsed: Result<NumberList<20, 20>, _> = attr.parse(value);
+    let parsed: Result<CommaSeparatedList<f64, 20, 20>, _> = attr.parse(value);
 
     match parsed {
-        Ok(NumberList(v)) => {
+        Ok(CommaSeparatedList(v)) => {
             let matrix = Matrix4x5::from_row_slice(&v);
             let mut matrix = matrix.fixed_resize(0.0);
             matrix[(4, 4)] = 1.0;
