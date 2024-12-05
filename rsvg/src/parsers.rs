@@ -48,11 +48,27 @@ pub trait ParseValue<T: Parse> {
 }
 
 impl<T: Parse> ParseValue<T> for QualName {
+    /// Parse a value from an XML attribute.
+    ///
+    /// Say we have an attribute `bar` like in `<foo bar="42"/>`.  If `attr` is a [`QualName`]
+    /// for the attribute `bar`, then we'll parse it like `attr.parse("42")`.
+    ///
+    /// The reason for doing things that way is so that, in case of a parse error, this
+    /// function can annotate the error result with the attribute's name.
+    ///
+    /// Note that attribute values are parsed entirely, thus the call to
+    /// `expect_exhausted()` below.  We don't want to allow garbage in the string after
+    /// the initial value has been parsed.
     fn parse(&self, value: &str) -> Result<T, ElementError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser).attribute(self.clone())
+        T::parse(&mut parser)
+            .and_then(|v| {
+                parser.expect_exhausted()?;
+                Ok(v)
+            })
+            .attribute(self.clone())
     }
 }
 
@@ -256,6 +272,8 @@ impl Parse for CustomIdent {
 mod tests {
     use super::*;
 
+    use markup5ever::{local_name, namespace_url, ns, QualName};
+
     #[test]
     fn parses_number_optional_number() {
         assert_eq!(
@@ -407,6 +425,20 @@ mod tests {
         // too few
         assert!(CommaSeparatedList::<f64, 2, 2>::parse_str("1").is_err());
         assert!(CommaSeparatedList::<f64, 3, 3>::parse_str("1 2").is_err());
+    }
+
+    #[test]
+    fn detects_too_many_numbers_bug_1138() {
+        // The root cause of this bug is that we didn't check for token exhaustion when
+        // parsing attribute values in `impl<T: Parse> ParseValue<T> for QualName`.  So,
+        // for this test, we actually invoke the parser for CommaSeparatedList via that impl.
+
+        let attribute = QualName::new(None, ns!(svg), local_name!("matrix"));
+
+        // should parse 20 numbers and error out on the 21st
+        let r: Result<CommaSeparatedList<f64, 20, 20>, _> =
+            attribute.parse("1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0,500000 0 ");
+        assert!(r.is_err());
     }
 
     #[test]
