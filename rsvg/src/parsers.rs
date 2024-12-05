@@ -179,6 +179,7 @@ impl<T: Parse, const REQUIRED: usize, const MAX: usize> Parse for CommaSeparated
         if REQUIRED > 0 && v.len() < REQUIRED {
             Err(loc.new_custom_error(ValueErrorKind::value_error("expected more values")))
         } else {
+            v.shrink_to_fit();
             Ok(CommaSeparatedList(v))
         }
     }
