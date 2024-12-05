@@ -1,6 +1,6 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use pango::IsAttribute;
 use std::cell::RefCell;
 use std::convert::TryFrom;
@@ -15,7 +15,7 @@ use crate::layout::{self, FontProperties, Layer, LayerKind, StackingContext, Str
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::PaintSource;
-use crate::parsers::ParseValue;
+use crate::parsers::{CommaSeparatedList, ParseValue};
 use crate::properties::{
     ComputedValues, Direction, FontStretch, FontStyle, FontVariant, FontWeight, PaintOrder,
     TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
@@ -753,14 +753,47 @@ impl Text {
     }
 }
 
+// Parse an (optionally) comma-separated list of Length and just return the first element.
+//
+// From https://gitlab.gnome.org/GNOME/librsvg/-/issues/183, the current implementation
+// of text layout only supports a single value for the x/y/dx/dy attributes.  However,
+// we need to be able to parse values with multiple lengths.  So, we'll do that, but just
+// use the first value from each attribute.
+fn parse_length_list_and_extract_first<D>(
+    dest: &mut Length<D>,
+    attr: QualName,
+    value: &str,
+    session: &Session,
+) where
+    D: Normalize,
+    D: Copy,
+{
+    let mut list: CommaSeparatedList<Length<D>, 0, 1024> = CommaSeparatedList(Vec::new());
+
+    set_attribute(&mut list, attr.parse(value), session);
+    if list.0.len() == 0 {
+        *dest = Length::default();
+    } else {
+        *dest = list.0[0]; // ignore all but the first element
+    }
+}
+
 impl ElementTrait for Text {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
-                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
-                expanded_name!("", "dx") => set_attribute(&mut self.dx, attr.parse(value), session),
-                expanded_name!("", "dy") => set_attribute(&mut self.dy, attr.parse(value), session),
+                expanded_name!("", "x") => {
+                    parse_length_list_and_extract_first(&mut self.x, attr, value, session)
+                }
+                expanded_name!("", "y") => {
+                    parse_length_list_and_extract_first(&mut self.y, attr, value, session)
+                }
+                expanded_name!("", "dx") => {
+                    parse_length_list_and_extract_first(&mut self.dx, attr, value, session)
+                }
+                expanded_name!("", "dy") => {
+                    parse_length_list_and_extract_first(&mut self.dy, attr, value, session)
+                }
                 _ => (),
             }
         }
