@@ -15,7 +15,7 @@ use crate::layout::{self, FontProperties, Layer, LayerKind, StackingContext, Str
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::PaintSource;
-use crate::parsers::{CommaSeparatedList, ParseValue};
+use crate::parsers::{CommaSeparatedList, Parse, ParseValue};
 use crate::properties::{
     ComputedValues, Direction, FontStretch, FontStyle, FontVariant, FontWeight, PaintOrder,
     TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
@@ -753,26 +753,23 @@ impl Text {
     }
 }
 
-// Parse an (optionally) comma-separated list of Length and just return the first element.
+// Parse an (optionally) comma-separated list and just return the first element.
 //
 // From https://gitlab.gnome.org/GNOME/librsvg/-/issues/183, the current implementation
 // of text layout only supports a single value for the x/y/dx/dy attributes.  However,
 // we need to be able to parse values with multiple lengths.  So, we'll do that, but just
 // use the first value from each attribute.
-fn parse_length_list_and_extract_first<D>(
-    dest: &mut Length<D>,
+fn parse_list_and_extract_first<T: Copy + Default + Parse>(
+    dest: &mut T,
     attr: QualName,
     value: &str,
     session: &Session,
-) where
-    D: Normalize,
-    D: Copy,
-{
-    let mut list: CommaSeparatedList<Length<D>, 0, 1024> = CommaSeparatedList(Vec::new());
+) {
+    let mut list: CommaSeparatedList<T, 0, 1024> = CommaSeparatedList(Vec::new());
 
     set_attribute(&mut list, attr.parse(value), session);
     if list.0.len() == 0 {
-        *dest = Length::default();
+        *dest = Default::default();
     } else {
         *dest = list.0[0]; // ignore all but the first element
     }
@@ -783,16 +780,16 @@ impl ElementTrait for Text {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => {
-                    parse_length_list_and_extract_first(&mut self.x, attr, value, session)
+                    parse_list_and_extract_first(&mut self.x, attr, value, session)
                 }
                 expanded_name!("", "y") => {
-                    parse_length_list_and_extract_first(&mut self.y, attr, value, session)
+                    parse_list_and_extract_first(&mut self.y, attr, value, session)
                 }
                 expanded_name!("", "dx") => {
-                    parse_length_list_and_extract_first(&mut self.dx, attr, value, session)
+                    parse_list_and_extract_first(&mut self.dx, attr, value, session)
                 }
                 expanded_name!("", "dy") => {
-                    parse_length_list_and_extract_first(&mut self.dy, attr, value, session)
+                    parse_list_and_extract_first(&mut self.dy, attr, value, session)
                 }
                 _ => (),
             }
