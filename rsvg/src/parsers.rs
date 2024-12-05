@@ -156,34 +156,6 @@ impl Parse for u32 {
     }
 }
 
-/// Number lists with bounds for the required and maximum number of items.
-#[derive(Clone, Debug, PartialEq)]
-pub struct NumberList<const REQUIRED: usize, const MAX: usize>(pub Vec<f64>);
-
-impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX> {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        let loc = parser.current_source_location();
-        let mut v = Vec::<f64>::with_capacity(MAX);
-        for i in 0..MAX {
-            if i != 0 {
-                optional_comma(parser);
-            }
-
-            v.push(f64::parse(parser)?);
-
-            if parser.is_exhausted() {
-                break;
-            }
-        }
-
-        if REQUIRED > 0 && v.len() < REQUIRED {
-            Err(loc.new_custom_error(ValueErrorKind::value_error("expected more numbers")))
-        } else {
-            Ok(NumberList(v))
-        }
-    }
-}
-
 /// List separated by optional commas, with bounds for the required and maximum number of items.
 #[derive(Clone, Debug, PartialEq)]
 pub struct CommaSeparatedList<T: Parse, const REQUIRED: usize, const MAX: usize>(pub Vec<T>);
