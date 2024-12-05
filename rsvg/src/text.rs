@@ -768,7 +768,7 @@ fn parse_list_and_extract_first<T: Copy + Default + Parse>(
     let mut list: CommaSeparatedList<T, 0, 1024> = CommaSeparatedList(Vec::new());
 
     set_attribute(&mut list, attr.parse(value), session);
-    if list.0.len() == 0 {
+    if list.0.is_empty() {
         *dest = Default::default();
     } else {
         *dest = list.0[0]; // ignore all but the first element
