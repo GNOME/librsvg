@@ -12,7 +12,7 @@ use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parse_identifiers;
-use crate::parsers::{NumberList, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{CommaSeparatedList, NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::rsvg_log;
@@ -39,7 +39,7 @@ pub struct FeConvolveMatrix {
 pub struct ConvolveMatrix {
     in1: Input,
     order: NumberOptionalNumber<u32>,
-    kernel_matrix: NumberList<0, 400>, // #691: Limit list to 400 (20x20) to mitigate malicious SVGs
+    kernel_matrix: CommaSeparatedList<f64, 0, 400>, // #691: Limit list to 400 (20x20) to mitigate malicious SVGs
     divisor: f64,
     bias: f64,
     target_x: Option<u32>,
@@ -79,7 +79,7 @@ impl Default for ConvolveMatrix {
         ConvolveMatrix {
             in1: Default::default(),
             order: NumberOptionalNumber(3, 3),
-            kernel_matrix: NumberList(Vec::new()),
+            kernel_matrix: CommaSeparatedList(Vec::new()),
             divisor: 0.0,
             bias: 0.0,
             target_x: None,

@@ -9,7 +9,7 @@ use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parse_identifiers;
-use crate::parsers::{NumberList, Parse, ParseValue};
+use crate::parsers::{CommaSeparatedList, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
@@ -209,7 +209,7 @@ impl FeFuncCommon {
                 }
                 expanded_name!("", "tableValues") => {
                     // #691: Limit list to 256 to mitigate malicious SVGs
-                    let mut number_list = NumberList::<0, 256>(Vec::new());
+                    let mut number_list = CommaSeparatedList::<f64, 0, 256>(Vec::new());
                     set_attribute(&mut number_list, attr.parse(value), session);
                     self.table_values = number_list.0;
                 }

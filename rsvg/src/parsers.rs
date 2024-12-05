@@ -48,11 +48,27 @@ pub trait ParseValue<T: Parse> {
 }
 
 impl<T: Parse> ParseValue<T> for QualName {
+    /// Parse a value from an XML attribute.
+    ///
+    /// Say we have an attribute `bar` like in `<foo bar="42"/>`.  If `attr` is a [`QualName`]
+    /// for the attribute `bar`, then we'll parse it like `attr.parse("42")`.
+    ///
+    /// The reason for doing things that way is so that, in case of a parse error, this
+    /// function can annotate the error result with the attribute's name.
+    ///
+    /// Note that attribute values are parsed entirely, thus the call to
+    /// `expect_exhausted()` below.  We don't want to allow garbage in the string after
+    /// the initial value has been parsed.
     fn parse(&self, value: &str) -> Result<T, ElementError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        T::parse(&mut parser).attribute(self.clone())
+        T::parse(&mut parser)
+            .and_then(|v| {
+                parser.expect_exhausted()?;
+                Ok(v)
+            })
+            .attribute(self.clone())
     }
 }
 
@@ -156,20 +172,22 @@ impl Parse for u32 {
     }
 }
 
-/// Number lists with bounds for the required and maximum number of items.
+/// List separated by optional commas, with bounds for the required and maximum number of items.
 #[derive(Clone, Debug, PartialEq)]
-pub struct NumberList<const REQUIRED: usize, const MAX: usize>(pub Vec<f64>);
+pub struct CommaSeparatedList<T: Parse, const REQUIRED: usize, const MAX: usize>(pub Vec<T>);
 
-impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX> {
+impl<T: Parse, const REQUIRED: usize, const MAX: usize> Parse
+    for CommaSeparatedList<T, REQUIRED, MAX>
+{
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         let loc = parser.current_source_location();
-        let mut v = Vec::<f64>::with_capacity(MAX);
+        let mut v = Vec::<T>::with_capacity(MAX);
         for i in 0..MAX {
             if i != 0 {
                 optional_comma(parser);
             }
 
-            v.push(f64::parse(parser)?);
+            v.push(T::parse(parser)?);
 
             if parser.is_exhausted() {
                 break;
@@ -177,9 +195,10 @@ impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX
         }
 
         if REQUIRED > 0 && v.len() < REQUIRED {
-            Err(loc.new_custom_error(ValueErrorKind::value_error("expected more numbers")))
+            Err(loc.new_custom_error(ValueErrorKind::value_error("expected more values")))
         } else {
-            Ok(NumberList(v))
+            v.shrink_to_fit();
+            Ok(CommaSeparatedList(v))
         }
     }
 }
@@ -252,6 +271,8 @@ impl Parse for CustomIdent {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use markup5ever::{local_name, namespace_url, ns, QualName};
 
     #[test]
     fn parses_number_optional_number() {
@@ -359,51 +380,65 @@ mod tests {
     }
 
     #[test]
-    fn parses_number_list() {
+    fn parses_comma_separated_list() {
         assert_eq!(
-            NumberList::<1, 1>::parse_str("5").unwrap(),
-            NumberList(vec![5.0])
+            CommaSeparatedList::<f64, 1, 1>::parse_str("5").unwrap(),
+            CommaSeparatedList(vec![5.0])
         );
 
         assert_eq!(
-            NumberList::<4, 4>::parse_str("1 2 3 4").unwrap(),
-            NumberList(vec![1.0, 2.0, 3.0, 4.0])
+            CommaSeparatedList::<f64, 4, 4>::parse_str("1 2 3 4").unwrap(),
+            CommaSeparatedList(vec![1.0, 2.0, 3.0, 4.0])
         );
 
         assert_eq!(
-            NumberList::<0, 5>::parse_str("1 2 3 4 5").unwrap(),
-            NumberList(vec![1.0, 2.0, 3.0, 4.0, 5.0])
+            CommaSeparatedList::<f64, 0, 5>::parse_str("1 2 3 4 5").unwrap(),
+            CommaSeparatedList(vec![1.0, 2.0, 3.0, 4.0, 5.0])
         );
 
         assert_eq!(
-            NumberList::<0, 5>::parse_str("1 2 3").unwrap(),
-            NumberList(vec![1.0, 2.0, 3.0])
+            CommaSeparatedList::<f64, 0, 5>::parse_str("1 2 3").unwrap(),
+            CommaSeparatedList(vec![1.0, 2.0, 3.0])
         );
     }
 
     #[test]
-    fn errors_on_invalid_number_list() {
+    fn errors_on_invalid_comma_separated_list() {
         // empty
-        assert!(NumberList::<1, 1>::parse_str("").is_err());
-        assert!(NumberList::<0, 1>::parse_str("").is_err());
+        assert!(CommaSeparatedList::<f64, 1, 1>::parse_str("").is_err());
+        assert!(CommaSeparatedList::<f64, 0, 1>::parse_str("").is_err());
 
         // garbage
-        assert!(NumberList::<1, 1>::parse_str("foo").is_err());
-        assert!(NumberList::<2, 2>::parse_str("1foo").is_err());
-        assert!(NumberList::<2, 2>::parse_str("1 foo").is_err());
-        assert!(NumberList::<2, 2>::parse_str("1 foo 2").is_err());
-        assert!(NumberList::<2, 2>::parse_str("1,foo").is_err());
+        assert!(CommaSeparatedList::<f64, 1, 1>::parse_str("foo").is_err());
+        assert!(CommaSeparatedList::<f64, 2, 2>::parse_str("1foo").is_err());
+        assert!(CommaSeparatedList::<f64, 2, 2>::parse_str("1 foo").is_err());
+        assert!(CommaSeparatedList::<f64, 2, 2>::parse_str("1 foo 2").is_err());
+        assert!(CommaSeparatedList::<f64, 2, 2>::parse_str("1,foo").is_err());
 
         // too many
-        assert!(NumberList::<1, 1>::parse_str("1 2").is_err());
+        assert!(CommaSeparatedList::<f64, 1, 1>::parse_str("1 2").is_err());
 
         // extra token
-        assert!(NumberList::<1, 1>::parse_str("1,").is_err());
-        assert!(NumberList::<0, 1>::parse_str("1,").is_err());
+        assert!(CommaSeparatedList::<f64, 1, 1>::parse_str("1,").is_err());
+        assert!(CommaSeparatedList::<f64, 0, 1>::parse_str("1,").is_err());
 
         // too few
-        assert!(NumberList::<2, 2>::parse_str("1").is_err());
-        assert!(NumberList::<3, 3>::parse_str("1 2").is_err());
+        assert!(CommaSeparatedList::<f64, 2, 2>::parse_str("1").is_err());
+        assert!(CommaSeparatedList::<f64, 3, 3>::parse_str("1 2").is_err());
+    }
+
+    #[test]
+    fn detects_too_many_numbers_bug_1138() {
+        // The root cause of this bug is that we didn't check for token exhaustion when
+        // parsing attribute values in `impl<T: Parse> ParseValue<T> for QualName`.  So,
+        // for this test, we actually invoke the parser for CommaSeparatedList via that impl.
+
+        let attribute = QualName::new(None, ns!(svg), local_name!("matrix"));
+
+        // should parse 20 numbers and error out on the 21st
+        let r: Result<CommaSeparatedList<f64, 20, 20>, _> =
+            attribute.parse("1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0,500000 0 ");
+        assert!(r.is_err());
     }
 
     #[test]
