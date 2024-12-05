@@ -1058,10 +1058,18 @@ impl ElementTrait for TSpan {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
-                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
-                expanded_name!("", "dx") => set_attribute(&mut self.dx, attr.parse(value), session),
-                expanded_name!("", "dy") => set_attribute(&mut self.dy, attr.parse(value), session),
+                expanded_name!("", "x") => {
+                    parse_list_and_extract_first(&mut self.x, attr, value, session)
+                }
+                expanded_name!("", "y") => {
+                    parse_list_and_extract_first(&mut self.y, attr, value, session)
+                }
+                expanded_name!("", "dx") => {
+                    parse_list_and_extract_first(&mut self.dx, attr, value, session)
+                }
+                expanded_name!("", "dy") => {
+                    parse_list_and_extract_first(&mut self.dy, attr, value, session)
+                }
                 _ => (),
             }
         }
