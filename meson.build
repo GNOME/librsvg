@@ -445,8 +445,15 @@ cargo_wrapper_args = [
   '--libdir', get_option('libdir'),
 ]
 
-if not get_option('debug') or \
-   (is_msvc_style and get_option('buildtype') == 'debugoptimized')
+if get_option('debug')
+  optimization = get_option('optimization')
+  if optimization in ['0', '1', '2', '3', 's']
+    cargo_wrapper_args += ['--optimization', optimization]
+  elif optimization != 'plain' # g
+    cargo_wrapper_args += ['--optimization', '1']
+    # plain: https://github.com/mesonbuild/meson/issues/7194
+  endif
+else
   cargo_wrapper_args += ['--release']
 endif
 
