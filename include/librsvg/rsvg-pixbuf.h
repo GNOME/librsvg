@@ -72,7 +72,7 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
  * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error
  * during rendering.
  *
- * Since: 2.58
+ * Since: 2.59
  **/
 RSVG_API
 GdkPixbuf *rsvg_handle_get_pixbuf_and_error (RsvgHandle *handle, GError **error);
