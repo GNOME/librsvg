@@ -242,14 +242,14 @@ if target != ''
   target_arg += ['--target', target]
 endif
 
+query_rustc_harness = find_program('meson/query-rustc.py', native: true, required: get_option('default_library') != 'shared')
+
+rustc_query_args = [
+  query_rustc_harness,
+  rustc,
+]
+
 if host_system == 'windows'
-  query_rustc_harness = find_program('meson/query-rustc.py', native: true, required: get_option('default_library') != 'shared')
-
-  rustc_query_args = [
-    query_rustc_harness,
-    rustc,
-  ]
-
   # First deduce the target that is to be used for the build, based on Meson build settings
   host_cpu_family = host_machine.cpu_family()
   rustc_toolchain_cpu = host_cpu_family == 'x86' ? 'i686' : host_cpu_family
@@ -322,7 +322,9 @@ if host_system == 'windows'
       target_arg += ['--target', rustc_target]
     endif
   endif
+endif
 
+if host_system in ['windows', 'linux']
   rustc_query_native_static_libs_args = rustc_query_args
   if target_arg != []
     rustc_query_native_static_libs_args += target_arg
