@@ -58,10 +58,6 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--release", action="store_true", help="Build artifacts in release mode"
-)
-
-parser.add_argument(
     "--avif", action="store_true", help="Enable AVIF support"
 )
 
@@ -88,6 +84,15 @@ group.add_argument(
     "--extension", help="filename extension for the library (so, a, dll, lib, dylib)",
 )
 group.add_argument("--bin", help="Name of binary to build")
+
+g = parser.add_argument_group("Optimizations")
+group = parser.add_mutually_exclusive_group(required=False)
+group.add_argument(
+    "--release", action="store_true", help="Build artifacts in release mode"
+)
+group.add_argument(
+    '--optimization', type=int, help="Set optimization level"
+)
 
 args = parser.parse_args()
 
@@ -163,6 +168,11 @@ if args.release:
     cargo_cmd.extend(['--release'])
 else:
     buildtype = 'debug'
+    if args.optimization:
+        if 'CARGO_BUILD_RUSTFLAGS' in env:
+            env['CARGO_BUILD_RUSTFLAGS'] = env['CARGO_BUILD_RUSTFLAGS'] + f' -C opt-level={args.optimization}'
+        else:
+            env['CARGO_BUILD_RUSTFLAGS'] = f'-C opt-level={args.optimization}'
 
 if args.target:
     cargo_cmd.extend(['--target', args.target])
