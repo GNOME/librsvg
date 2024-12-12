@@ -45,6 +45,7 @@ use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
+use crate::text2::Text2;
 use crate::xml::Attributes;
 
 pub trait ElementTrait {
@@ -162,6 +163,7 @@ pub enum ElementData {
     Switch(Box<Switch>),
     Symbol(Box<Symbol>),
     Text(Box<Text>),
+    Text2(Box<Text2>),
     TRef(Box<TRef>),
     TSpan(Box<TSpan>),
     Use(Box<Use>),
@@ -279,6 +281,7 @@ fn get_element_creators() -> &'static HashMap<&'static str, (ElementDataCreateFn
             ("switch",              create_switch,                Default),
             ("symbol",              create_symbol,                Default),
             ("text",                create_text,                  Default),
+            ("text2",               create_text2,                 Default),
             /* ("textPath",         ), */
             /* ("title",            ), */
             ("tref",                create_tref,                  Default),
@@ -561,6 +564,7 @@ impl ElementData {
             Switch(d) =>               &**d,
             Symbol(d) =>               &**d,
             Text(d) =>                 &**d,
+            Text2(d) =>                 &**d,
             TRef(d) =>                 &**d,
             TSpan(d) =>                &**d,
             Use(d) =>                  &**d,
@@ -633,6 +637,7 @@ impl ElementData {
             Switch(d) =>               &**d,
             Symbol(d) =>               &**d,
             Text(d) =>                 &**d,
+            Text2(d) =>                 &**d,
             TRef(d) =>                 &**d,
             TSpan(d) =>                &**d,
             Use(d) =>                  &**d,
@@ -733,6 +738,7 @@ mod creators {
     e!(create_switch,                   Switch);
     e!(create_symbol,                   Symbol);
     e!(create_text,                     Text);
+    e!(create_text2,                    Text2);
     e!(create_tref,                     TRef);
     e!(create_tspan,                    TSpan);
     e!(create_use,                      Use);

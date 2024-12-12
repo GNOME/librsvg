@@ -193,6 +193,7 @@ mod structure;
 mod style;
 mod surface_utils;
 mod text;
+mod text2;
 mod transform;
 mod unit_interval;
 mod url_resolver;
