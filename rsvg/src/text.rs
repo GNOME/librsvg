@@ -293,8 +293,26 @@ fn compute_baseline_offset(
     let mut baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
     let dominant_baseline = values.dominant_baseline();
 
-    assert!(items.len() == 1);
-    let font = items[0].analysis().font();
+    let font;
+    if items.len() >= 1 {
+        // Ignores font(s) on any other items
+        font = items[0].analysis().font();
+    }
+    else
+    {
+        let font_description;
+        let context = layout.context();
+        if !layout.font_description().is_none() {
+            font_description = layout.font_description().unwrap();
+        } else {
+            font_description = layout.context().font_description().unwrap();
+        }
+        // XXX not sure this is the best way to get the font here...
+        font = context.load_font(&font_description).unwrap();
+    }
+
+    //println!("font = {}", font.describe());
+
     let metrics = font.metrics(None);
     let ascent = metrics.ascent();
     let descent = metrics.descent();
@@ -409,6 +427,7 @@ impl MeasuredSpan {
         );
 
         let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
+        println!("MeasuredSpan '{}'", span.text);
 
         if let Some(layout) = create_pango_layout(layout_context, &properties, &with_control_chars)
         {
