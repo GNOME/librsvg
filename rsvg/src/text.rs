@@ -294,15 +294,13 @@ fn compute_baseline_offset(
     let dominant_baseline = values.dominant_baseline();
 
     let font;
-    if items.len() >= 1 {
+    if !items.is_empty() {
         // Ignores font(s) on any other items
         font = items[0].analysis().font();
-    }
-    else
-    {
+    } else {
         let font_description;
         let context = layout.context();
-        if !layout.font_description().is_none() {
+        if layout.font_description().is_some() {
             font_description = layout.font_description().unwrap();
         } else {
             font_description = layout.context().font_description().unwrap();
