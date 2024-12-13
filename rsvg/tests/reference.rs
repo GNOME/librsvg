@@ -918,6 +918,7 @@ mod tests {
     t!(svg1_1_text_align_02_b_svg,                                  "svg1.1/text-align-02-b.svg");
     t!(svg1_1_text_align_03_b_svg,                                  "svg1.1/text-align-03-b.svg");
     t!(svg1_1_text_fonts_02_t_svg,                                  "svg1.1/text-fonts-02-t.svg");
+    t!(svg1_1_text_dominant_baseline_01_svg,                        "svg1.1/text-dominant-baseline-01.svg");
     t!(svg1_1_text_text_03_b_svg,                                   "svg1.1/text-text-03-b.svg");
     t!(svg1_1_text_text_08_b_svg,                                   "svg1.1/text-text-08-b.svg");
     t!(svg1_1_text_text_10_t_svg,                                   "svg1.1/text-text-10-t.svg");
