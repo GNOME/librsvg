@@ -307,7 +307,7 @@ fn compute_baseline_offset(
             // Approximate meanline using strikethrough position and thickness
             // https://mail.gnome.org/archives/gtk-i18n-list/2012-December/msg00046.html
             baseline -=
-                f64::from(metrics.strikethrough_position() + metrics.strikethrough_thickness()/2)
+                f64::from(metrics.strikethrough_position() + metrics.strikethrough_thickness() / 2)
                     / f64::from(pango::SCALE);
         }
         DominantBaseline::Central => {
@@ -319,7 +319,7 @@ fn compute_baseline_offset(
         DominantBaseline::TextAfterEdge => {
             baseline += f64::from(descent) / f64::from(pango::SCALE);
         }
-        _ => ()
+        _ => (),
     }
 
     let baseline_shift = values.baseline_shift().0.to_user(params);
@@ -429,7 +429,8 @@ impl MeasuredSpan {
                 0,
                 span.text.len() as i32,
                 &layout.attributes().unwrap(),
-                None);
+                None,
+            );
 
             Some(MeasuredSpan {
                 values,
