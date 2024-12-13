@@ -1,8 +1,8 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
-use pango::{itemize, IsAttribute, Item};
 use pango::prelude::FontExt;
+use pango::{itemize, IsAttribute, Item};
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
