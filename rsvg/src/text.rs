@@ -1,7 +1,7 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
-use pango::{IsAttribute, Item, itemize};
+use pango::{itemize, IsAttribute, Item};
 use pango::prelude::FontExt;
 use std::cell::RefCell;
 use std::convert::TryFrom;
@@ -18,8 +18,8 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::PaintSource;
 use crate::parsers::{CommaSeparatedList, Parse, ParseValue};
 use crate::properties::{
-    ComputedValues, Direction, DominantBaseline, FontStretch, FontStyle, FontVariant, FontWeight, PaintOrder,
-    TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
+    ComputedValues, Direction, DominantBaseline, FontStretch, FontStyle, FontVariant, FontWeight,
+    PaintOrder, TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
 };
 use crate::rect::Rect;
 use crate::rsvg_log;
@@ -286,7 +286,7 @@ impl PositionedChunk {
 
 fn compute_baseline_offset(
     layout: &pango::Layout,
-    items: &Vec<pango::Item>,
+    items: &[pango::Item],
     values: &ComputedValues,
     params: &NormalizeParams,
 ) -> f64 {
@@ -302,21 +302,23 @@ fn compute_baseline_offset(
     match dominant_baseline {
         DominantBaseline::Hanging => {
             baseline -= f64::from(ascent - descent) / f64::from(pango::SCALE);
-        },
+        }
         DominantBaseline::Middle => {
             // Approximate meanline using strikethrough position and thickness
             // https://mail.gnome.org/archives/gtk-i18n-list/2012-December/msg00046.html
-            baseline -= f64::from(metrics.strikethrough_position() + metrics.strikethrough_thickness()/2) / f64::from(pango::SCALE);
-        },
+            baseline -=
+                f64::from(metrics.strikethrough_position() + metrics.strikethrough_thickness()/2)
+                    / f64::from(pango::SCALE);
+        }
         DominantBaseline::Central => {
             baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
-        },
+        }
         DominantBaseline::TextBeforeEdge => {
             baseline -= f64::from(ascent) / f64::from(pango::SCALE);
-        },
+        }
         DominantBaseline::TextAfterEdge => {
             baseline += f64::from(descent) / f64::from(pango::SCALE);
-        },
+        }
         _ => ()
     }
 
@@ -421,7 +423,13 @@ impl MeasuredSpan {
                 (0.0, w)
             };
 
-            let items = itemize(&layout.context(), &span.text, 0, span.text.len() as i32, &layout.attributes().unwrap(), None);
+            let items = itemize(
+                &layout.context(),
+                &span.text,
+                0,
+                span.text.len() as i32,
+                &layout.attributes().unwrap(),
+                None);
 
             Some(MeasuredSpan {
                 values,
