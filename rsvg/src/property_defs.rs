@@ -252,6 +252,29 @@ make_property!(
     "none" => None,
 );
 
+make_property!(
+    /// `dominant-baseline` property.
+    ///
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#BaselineAlignmentProperties>
+    DominantBaseline,
+    default: Auto,
+    inherits_automatically: true,
+
+    identifiers:
+    "auto" => Auto,
+    //"ideographic"
+    "alphabetic" => Alphabetic,
+    "hanging" => Hanging,
+    //"mathematical"
+    "central" => Central,
+    "middle" => Middle,
+    "text-after-edge" => TextAfterEdge,
+    "text-before-edge" => TextBeforeEdge,
+    // CSS3 also has text-top and text-bottom
+    // No longer supported in SVG2 (https://www.w3.org/TR/SVG2/text.html#DominantBaselineProperty):
+    // use-script, no-change and reset-size
+);
+
 /// `enable-background` property.
 ///
 /// SVG1.1: <https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty>

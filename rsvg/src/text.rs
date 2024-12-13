@@ -1,7 +1,8 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
-use pango::IsAttribute;
+use pango::{IsAttribute, Item, itemize};
+use pango::prelude::FontExt;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
@@ -17,7 +18,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::PaintSource;
 use crate::parsers::{CommaSeparatedList, Parse, ParseValue};
 use crate::properties::{
-    ComputedValues, Direction, FontStretch, FontStyle, FontVariant, FontWeight, PaintOrder,
+    ComputedValues, Direction, DominantBaseline, FontStretch, FontStyle, FontVariant, FontWeight, PaintOrder,
     TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
 };
 use crate::rect::Rect;
@@ -96,6 +97,7 @@ struct MeasuredSpan {
     advance: (f64, f64),
     dx: f64,
     dy: f64,
+    items: Vec<Item>,
     link_target: Option<String>,
 }
 
@@ -205,7 +207,7 @@ impl PositionedChunk {
             let dy = mspan.dy;
             let advance = mspan.advance;
 
-            let baseline_offset = compute_baseline_offset(&layout, &values, &params);
+            let baseline_offset = compute_baseline_offset(&layout, &mspan.items, &values, &params);
 
             let start_pos = match chunk_direction {
                 Direction::Ltr => (x, y),
@@ -284,11 +286,42 @@ impl PositionedChunk {
 
 fn compute_baseline_offset(
     layout: &pango::Layout,
+    items: &Vec<pango::Item>,
     values: &ComputedValues,
     params: &NormalizeParams,
 ) -> f64 {
-    let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
+    let mut baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
+    let dominant_baseline = values.dominant_baseline();
+
+    assert!(items.len() == 1);
+    let font = items[0].analysis().font();
+    let metrics = font.metrics(None);
+    let ascent = metrics.ascent();
+    let descent = metrics.descent();
+
+    match dominant_baseline {
+        DominantBaseline::Hanging => {
+            baseline -= f64::from(ascent - descent) / f64::from(pango::SCALE);
+        },
+        DominantBaseline::Middle => {
+            // Approximate meanline using strikethrough position and thickness
+            // https://mail.gnome.org/archives/gtk-i18n-list/2012-December/msg00046.html
+            baseline -= f64::from(metrics.strikethrough_position() + metrics.strikethrough_thickness()/2) / f64::from(pango::SCALE);
+        },
+        DominantBaseline::Central => {
+            baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
+        },
+        DominantBaseline::TextBeforeEdge => {
+            baseline -= f64::from(ascent) / f64::from(pango::SCALE);
+        },
+        DominantBaseline::TextAfterEdge => {
+            baseline += f64::from(descent) / f64::from(pango::SCALE);
+        },
+        _ => ()
+    }
+
     let baseline_shift = values.baseline_shift().0.to_user(params);
+
     baseline + baseline_shift
 }
 
@@ -388,6 +421,8 @@ impl MeasuredSpan {
                 (0.0, w)
             };
 
+            let items = itemize(&layout.context(), &span.text, 0, span.text.len() as i32, &layout.attributes().unwrap(), None);
+
             Some(MeasuredSpan {
                 values,
                 layout,
@@ -395,6 +430,7 @@ impl MeasuredSpan {
                 advance,
                 dx: span.dx,
                 dy: span.dy,
+                items,
                 link_target: span.link_target.clone(),
             })
         } else {
