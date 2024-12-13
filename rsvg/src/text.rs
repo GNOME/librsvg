@@ -427,7 +427,6 @@ impl MeasuredSpan {
         );
 
         let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
-        println!("MeasuredSpan '{}'", span.text);
 
         if let Some(layout) = create_pango_layout(layout_context, &properties, &with_control_chars)
         {
