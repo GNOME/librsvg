@@ -489,14 +489,13 @@ make_properties! {
         // "transform-origin"         => (PresentationAttr::Yes, unimplemented),
         "unicode-bidi"                => (PresentationAttr::Yes, unicode_bidi                : UnicodeBidi),
         "visibility"                  => (PresentationAttr::Yes, visibility                  : Visibility),
-        // "white-space"              => (PresentationAttr::Yes, unimplemented),
         // "word-spacing"             => (PresentationAttr::Yes, unimplemented),
         "width"                       => (PresentationAttr::Yes, width: Width),
         "writing-mode"                => (PresentationAttr::Yes, writing_mode                : WritingMode),
         "x"                           => (PresentationAttr::Yes, x: X),
         "y"                           => (PresentationAttr::Yes, y: Y),
     }
-
+    
     longhands_not_supported_by_markup5ever: {
         "isolation"                   => (PresentationAttr::No,  isolation                   : Isolation),
         "line-height"                 => (PresentationAttr::No,  line_height                 : LineHeight),
@@ -505,6 +504,7 @@ make_properties! {
         "paint-order"                 => (PresentationAttr::Yes, paint_order                 : PaintOrder),
         "text-orientation"            => (PresentationAttr::No,  text_orientation            : TextOrientation),
         "vector-effect"               => (PresentationAttr::Yes, vector_effect               : VectorEffect),
+        "white-space"                 => (PresentationAttr::Yes, white_space                 : WhiteSpace),
     }
 
     // These are not properties, but presentation attributes.  However,
@@ -758,6 +758,7 @@ impl SpecifiedValues {
         compute!(VectorEffect, vector_effect);
         compute!(Visibility, visibility);
         compute!(Width, width);
+        compute!(WhiteSpace, white_space);
         compute!(WritingMode, writing_mode);
         compute!(X, x);
         compute!(XmlSpace, xml_space);

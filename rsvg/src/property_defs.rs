@@ -1356,3 +1356,21 @@ make_property!(
     inherits_automatically: false,
     newtype_parse: Length<Vertical>,
 );
+
+make_property!(
+    /// `whitespace` properties
+    ///
+    /// https://www.w3.org/TR/css-text-3/#white-space-property
+    WhiteSpace,
+
+    default: Normal,
+    inherits_automatically: true,
+
+    identifiers:
+    "normal" => Normal,
+    "pre" => Pre,
+    "no-wrap" => NoWrap,
+    "pre-wrap" => PreWrap,
+    "break-spaces" => BreakSpaces,
+    "pre-line" => PreLine,
+);
