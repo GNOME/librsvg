@@ -691,7 +691,7 @@ which properties are not available as presentation attributes.
 +-----------------------+----------------------------------------------+
 | visibility            |                                              |
 +-----------------------+----------------------------------------------+
-| white-space           | Not available as a presentaion Attributes    |
+| white-space           | Not available as a presentation attribute.   |
 +-----------------------+----------------------------------------------+
 | writing-mode          |                                              |
 +-----------------------+----------------------------------------------+

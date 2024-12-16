@@ -1369,7 +1369,7 @@ make_property!(
     identifiers:
     "normal" => Normal,
     "pre" => Pre,
-    "no-wrap" => NoWrap,
+    "nowrap" => NoWrap,
     "pre-wrap" => PreWrap,
     "break-spaces" => BreakSpaces,
     "pre-line" => PreLine,
