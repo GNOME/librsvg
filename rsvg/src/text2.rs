@@ -54,7 +54,14 @@ mod tests {
         let text_string = collect_text_from_node(&text2_node);
         assert_eq!(
             text_string,
-            "\n    Hello\n    \n      bold\n      world!\n      \n       How are you.\n     \n  "
+            "\n    \
+             Hello\n    \
+             \n      \
+             bold\n      \
+             world!\n    \
+             \n    \
+             How are you.\
+             \n  "
         );
     }
 }
