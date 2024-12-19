@@ -324,6 +324,7 @@ if host_system == 'windows'
   endif
 endif
 
+default_overrides = []
 if host_system in ['windows', 'linux']
   rustc_query_native_static_libs_args = rustc_query_args
   if target_arg != []
@@ -345,7 +346,17 @@ if host_system in ['windows', 'linux']
   endif
 
   foreach i: native_libs.stdout().split()
-    if i != 'msvcrt'
+    if 'msvcrt' in i
+      if i.endswith('.lib') # pre Rust 1.83
+        default_overrides = [
+          'b_vscrt=md@0@'.format(i.substring(0, -4).split('msvcrt')[1])
+        ]
+      else # /DEFAULTLIB:<crt goes here, minus the .lib extension>
+        default_overrides = [
+          'b_vscrt=md@0@'.format(i.split('msvcrt')[1])
+        ]
+      endif
+    else
       private_dependencies += cc.find_library(i, required: get_option('default_library') != 'shared')
     endif
   endforeach

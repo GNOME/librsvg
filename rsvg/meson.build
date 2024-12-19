@@ -234,6 +234,7 @@ if get_option('default_library') in ['shared', 'both']
     link_depends: librsvg_ver,
     dependencies: library_dependencies,
     include_directories: [includeinc],
+    override_options: default_overrides,
     vs_module_defs: librsvg_def,
     install: true,
     version: meson.project_version() # it's not exact as m4
