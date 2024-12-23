@@ -2,7 +2,6 @@
 
 use crate::element::{ElementData, ElementTrait};
 use crate::node::{Node, NodeBorrow};
-use crate::text::{wrap_with_direction_control_chars, BidiControl};
 
 #[allow(dead_code)]
 #[derive(Default)]
@@ -11,14 +10,18 @@ pub struct Text2;
 impl ElementTrait for Text2 {}
 
 fn collect_text_from_node(node: &Node) -> String {
-    // This function is basically the same as
-    // text.rs::extract_chars_children_to_chunks_recursively()
-    // You can do in the end:
-    //
-    //   if child.is_chars() {
-    //       let contents = child.borrow_chars().get_string();
-    //           ^^^^^^^^ append this to your result
-    unimplemented!();
+    let mut result = String::new();
+
+    for child in node.children() {
+        if child.is_chars() {
+            let content = child.borrow_chars().get_string();
+            result.push_str(&content);
+        } else {
+            result.push_str(&collect_text_from_node(&child));
+        };
+    }
+
+    result
 }
 
 #[cfg(test)]
