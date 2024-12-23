@@ -1264,7 +1264,7 @@ mod directional_formatting_characters {
 /// another.  This struct contains slices with the control characters that must be
 /// inserted into the text stream at the span's limits so that the bidi/shaping engine
 /// will know what to do.
-struct BidiControl {
+pub struct BidiControl {
     start: &'static [char],
     end: &'static [char],
 }
@@ -1275,7 +1275,7 @@ impl BidiControl {
     /// See the table titled "Bidi control codes injected..." in
     /// <https://www.w3.org/TR/css-writing-modes-3/#unicode-bidi>
     #[rustfmt::skip]
-    fn from_unicode_bidi_and_direction(unicode_bidi: UnicodeBidi, direction: Direction) -> BidiControl {
+    pub fn from_unicode_bidi_and_direction(unicode_bidi: UnicodeBidi, direction: Direction) -> BidiControl {
         use UnicodeBidi::*;
         use Direction::*;
         use directional_formatting_characters::*;
@@ -1299,7 +1299,7 @@ impl BidiControl {
 }
 
 /// Prepends and appends Unicode directional formatting characters.
-fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> String {
+pub fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> String {
     let mut res =
         String::with_capacity(s.len() + bidi_control.start.len() + bidi_control.end.len());
 
