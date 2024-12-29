@@ -2,7 +2,7 @@
 # https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
 
 include:
-  - remote: "https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/80f87b3058efb75a1faae11826211375fba77e7f/templates/opensuse.yml"
+  - remote: "https://gitlab.gnome.org/Infrastructure/freedesktop-ci-templates/-/raw/80f87b3058efb75a1faae11826211375fba77e7f/templates/opensuse.yml"
   - remote: "https://gitlab.freedesktop.org/alatiera/ci-templates/-/raw/104fbc7115a99a450ba926d2a96208457d77cac0/templates/gnomeos.yml"
 
 variables:
