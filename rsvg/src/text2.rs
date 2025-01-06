@@ -10,15 +10,40 @@ pub struct Text2;
 
 impl ElementTrait for Text2 {}
 
+// FIXME: Remove the following line when this code actually starts getting used outside of tests.
+#[allow(unused)]
 fn collect_text_from_node(node: &Node) -> String {
-    // This function is basically the same as
-    // text.rs::extract_chars_children_to_chunks_recursively()
-    // You can do in the end:
-    //
-    //   if child.is_chars() {
-    //       let contents = child.borrow_chars().get_string();
-    //           ^^^^^^^^ append this to your result
-    unimplemented!();
+    let mut result = String::new();
+
+    for child in node.children() {
+        if child.is_chars() {
+            let content = child.borrow_chars().get_string();
+            result.push_str(&content);
+        } else if child.is_element() {
+            let element = child.borrow_element();
+            let element_data = child.borrow_element_data();
+
+            if matches!(*element_data, ElementData::TSpan(_)) {
+                let values = element.get_computed_values();
+                let direction = values.direction();
+                let unicode_bidi = values.unicode_bidi();
+
+                let bidi_control =
+                    BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction);
+
+                let original_string = collect_text_from_node(&child);
+
+                let string_for_this_element =
+                    wrap_with_direction_control_chars(&original_string, &bidi_control);
+
+                result.push_str(&string_for_this_element);
+            }
+        } else {
+            result.push_str(&collect_text_from_node(&child));
+        };
+    }
+
+    result
 }
 
 #[cfg(test)]
@@ -66,40 +91,6 @@ mod tests {
         );
     }
 
-    // Second homework:
-    //
-    // This is about expanding collect_text_from_node() so that it will do two things:
-    //
-    //   * Collect all the text content in a single string, as before.
-    //
-    //   * Simultaneously, add the BidiControl characters for spans that need it.
-    //     The text inside each span needs to be prefixed with BidiControl.start
-    //     and suffixed with BidiControl.end for the span's (direction, unicode-bidi).
-    //
-    // If you have a node that corresponds to an ElementData::TSpan, then you can look
-    // at its `direction` and `unicode_bidi` properties like this:
-    //
-    //   let child = /* it comes from your iteration of the children in a node */;
-    //
-    //   if child.is_element() {
-    //       let element = child.borrow_element();
-    //       let element_data = child.borrow_element_data();
-    //
-    //       if matches!(*element_data, ElementData::TSpan(_)) {
-    //           let values = element.get_computed_values();
-    //           let direction = values.direction();
-    //           let unicode_bidi = values.unicode_bidi();
-    //
-    //           // Now you can use direction and unicode_bidi to get the control characters:
-    //
-    //           let bidi_control = BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction);
-    //
-    //           // Then, prepend bidi_control.start to your string, and append bidi_control.end
-    //           // original_string is the (recursive) text that you had already computed for this element.
-    //
-    //           let string_for_this_element = wrap_with_direction_control_chars(original_string, &bidi_control);
-    //       }
-    //  }
     #[test]
     fn adds_bidi_control_characters() {
         let doc_str = br##"<?xml version="1.0" encoding="UTF-8"?>
