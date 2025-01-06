@@ -10,6 +10,8 @@ pub struct Text2;
 
 impl ElementTrait for Text2 {}
 
+// FIXME: Remove the following line when this code actually starts getting used outside of tests.
+#[allow(unused)]
 fn collect_text_from_node(node: &Node) -> String {
     let mut result = String::new();
 
