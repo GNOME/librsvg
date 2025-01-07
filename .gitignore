@@ -97,3 +97,6 @@ tools/docker/opensuse/build-librsvg.sh
 tools/docker/opensuse/librsvg.tar.gz
 tools/docker/fedora/build-librsvg.sh
 tools/docker/fedora/librsvg.tar.gz
+output-ref.png
+output.png
+
