@@ -1,7 +1,7 @@
 // ! development file for text2
 
-use crate::element::{ElementData, ElementTrait};
-use crate::node::{Node, NodeBorrow};
+use crate::element::{self, ElementData, ElementTrait};
+use crate::node::{Node, NodeBorrow, NodeData};
 use crate::text::{wrap_with_direction_control_chars, BidiControl};
 
 #[allow(dead_code)]
@@ -16,31 +16,31 @@ fn collect_text_from_node(node: &Node) -> String {
     let mut result = String::new();
 
     for child in node.children() {
-        if child.is_chars() {
-            let content = child.borrow_chars().get_string();
-            result.push_str(&content);
-        } else if child.is_element() {
-            let element = child.borrow_element();
-            let element_data = child.borrow_element_data();
-
-            if matches!(*element_data, ElementData::TSpan(_)) {
-                let values = element.get_computed_values();
-                let direction = values.direction();
-                let unicode_bidi = values.unicode_bidi();
-
-                let bidi_control =
-                    BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction);
-
-                let original_string = collect_text_from_node(&child);
-
-                let string_for_this_element =
-                    wrap_with_direction_control_chars(&original_string, &bidi_control);
-
-                result.push_str(&string_for_this_element);
+        match *child.borrow() {
+            NodeData::Text(ref chars) => {
+                result.push_str(&chars.get_string());
             }
-        } else {
-            result.push_str(&collect_text_from_node(&child));
-        };
+            NodeData::Element(ref element) => match element.element_data {
+                ElementData::TSpan(_) => {
+                    let values = element.get_computed_values();
+                    let direction = values.direction();
+                    let unicode_bidi = values.unicode_bidi();
+
+                    let bidi_control =
+                        BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction);
+
+                    let original_string = collect_text_from_node(&child);
+
+                    let wrapped_string =
+                        wrap_with_direction_control_chars(&original_string, &bidi_control);
+
+                    result.push_str(&wrapped_string);
+                }
+                _ => {
+                    result.push_str(&collect_text_from_node(&child));
+                }
+            },
+        }
     }
 
     result
