@@ -1,8 +1,8 @@
 // ! development file for text2
 
-use crate::element::{self, ElementData, ElementTrait};
-use crate::node::{Node, NodeBorrow, NodeData};
-use crate::text::{wrap_with_direction_control_chars, BidiControl};
+use crate::element::{ElementData, ElementTrait};
+use crate::node::{Node, NodeData};
+use crate::text::BidiControl;
 
 #[allow(dead_code)]
 #[derive(Default)]
@@ -29,12 +29,15 @@ fn collect_text_from_node(node: &Node) -> String {
                     let bidi_control =
                         BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction);
 
-                    let original_string = collect_text_from_node(&child);
+                    for &ch in bidi_control.start {
+                        result.push(ch);
+                    }
 
-                    let wrapped_string =
-                        wrap_with_direction_control_chars(&original_string, &bidi_control);
+                    result.push_str(&collect_text_from_node(&child));
 
-                    result.push_str(&wrapped_string);
+                    for &ch in bidi_control.end {
+                        result.push(ch);
+                    }
                 }
                 _ => {
                     result.push_str(&collect_text_from_node(&child));
@@ -50,6 +53,7 @@ fn collect_text_from_node(node: &Node) -> String {
 mod tests {
     use crate::document::Document;
     use crate::element::ElementData;
+    use crate::node::NodeBorrow;
 
     use super::*;
 
