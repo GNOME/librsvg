@@ -46,22 +46,22 @@ fn collect_text_from_node(node: &Node) -> String {
                 },
             },
 
-            NodeEdge::End(child_node) => match *child_node.borrow() {
-                NodeData::Element(ref element) => match element.element_data {
-                    ElementData::TSpan(_) | ElementData::Text(_) => {
-                        let computed_values = element.get_computed_values();
-                        let bidi_control = get_bidi_control(computed_values);
+            NodeEdge::End(child_node) => {
+                if let NodeData::Element(ref element) = *child_node.borrow() {
+                    match element.element_data {
+                        ElementData::TSpan(_) | ElementData::Text(_) => {
+                            let computed_values = element.get_computed_values();
+                            let bidi_control = get_bidi_control(computed_values);
 
-                        for &ch in bidi_control.end {
-                            result.push(ch);
+                            for &ch in bidi_control.end {
+                                result.push(ch);
+                            }
                         }
+
+                        _ => {}
                     }
-
-                    _ => {}
-                },
-
-                _ => {}
-            },
+                }
+            }
         }
     }
 
