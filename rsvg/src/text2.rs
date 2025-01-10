@@ -1,7 +1,10 @@
 // ! development file for text2
 
+use rctree::NodeEdge;
+
 use crate::element::{ElementData, ElementTrait};
 use crate::node::{Node, NodeData};
+use crate::properties::ComputedValues;
 use crate::text::BidiControl;
 
 #[allow(dead_code)]
@@ -10,38 +13,54 @@ pub struct Text2;
 
 impl ElementTrait for Text2 {}
 
+fn get_bidi_control(computed_values: &ComputedValues) -> BidiControl {
+    // Extract bidi control logic to separate function to avoid duplication
+    let unicode_bidi = computed_values.unicode_bidi();
+    let direction = computed_values.direction();
+
+    BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction)
+}
+
 // FIXME: Remove the following line when this code actually starts getting used outside of tests.
 #[allow(unused)]
 fn collect_text_from_node(node: &Node) -> String {
     let mut result = String::new();
 
-    for child in node.children() {
-        match *child.borrow() {
-            NodeData::Text(ref chars) => {
-                result.push_str(&chars.get_string());
-            }
-            NodeData::Element(ref element) => match element.element_data {
-                ElementData::TSpan(_) => {
-                    let values = element.get_computed_values();
-                    let direction = values.direction();
-                    let unicode_bidi = values.unicode_bidi();
+    for edge in node.traverse() {
+        match edge {
+            NodeEdge::Start(child_node) => match *child_node.borrow() {
+                NodeData::Text(ref text) => {
+                    result.push_str(&text.get_string());
+                }
 
-                    let bidi_control =
-                        BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction);
+                NodeData::Element(ref element) => match element.element_data {
+                    ElementData::TSpan(_) | ElementData::Text(_) => {
+                        let computed_values = element.get_computed_values();
+                        let bidi_control = get_bidi_control(&computed_values);
 
-                    for &ch in bidi_control.start {
-                        result.push(ch);
+                        for &ch in bidi_control.start {
+                            result.push(ch);
+                        }
+                    }
+                    _ => {}
+                },
+            },
+
+            NodeEdge::End(child_node) => match *child_node.borrow() {
+                NodeData::Element(ref element) => match element.element_data {
+                    ElementData::TSpan(_) | ElementData::Text(_) => {
+                        let computed_values = element.get_computed_values();
+                        let bidi_control = get_bidi_control(&computed_values);
+
+                        for &ch in bidi_control.end {
+                            result.push(ch);
+                        }
                     }
 
-                    result.push_str(&collect_text_from_node(&child));
+                    _ => {}
+                },
 
-                    for &ch in bidi_control.end {
-                        result.push(ch);
-                    }
-                }
-                _ => {
-                    result.push_str(&collect_text_from_node(&child));
-                }
+                _ => {}
             },
         }
     }
