@@ -36,7 +36,7 @@ fn collect_text_from_node(node: &Node) -> String {
                 NodeData::Element(ref element) => match element.element_data {
                     ElementData::TSpan(_) | ElementData::Text(_) => {
                         let computed_values = element.get_computed_values();
-                        let bidi_control = get_bidi_control(&computed_values);
+                        let bidi_control = get_bidi_control(computed_values);
 
                         for &ch in bidi_control.start {
                             result.push(ch);
@@ -50,7 +50,7 @@ fn collect_text_from_node(node: &Node) -> String {
                 NodeData::Element(ref element) => match element.element_data {
                     ElementData::TSpan(_) | ElementData::Text(_) => {
                         let computed_values = element.get_computed_values();
-                        let bidi_control = get_bidi_control(&computed_values);
+                        let bidi_control = get_bidi_control(computed_values);
 
                         for &ch in bidi_control.end {
                             result.push(ch);
