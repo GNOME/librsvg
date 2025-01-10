@@ -2,9 +2,8 @@
 
 use rctree::NodeEdge;
 
-use crate::element::{ElementData, ElementTrait};
+use crate::element::{Element, ElementData, ElementTrait};
 use crate::node::{Node, NodeData};
-use crate::properties::ComputedValues;
 use crate::text::BidiControl;
 
 #[allow(dead_code)]
@@ -13,8 +12,10 @@ pub struct Text2;
 
 impl ElementTrait for Text2 {}
 
-fn get_bidi_control(computed_values: &ComputedValues) -> BidiControl {
+fn get_bidi_control(element: &Element) -> BidiControl {
     // Extract bidi control logic to separate function to avoid duplication
+    let computed_values = element.get_computed_values();
+
     let unicode_bidi = computed_values.unicode_bidi();
     let direction = computed_values.direction();
 
@@ -35,8 +36,7 @@ fn collect_text_from_node(node: &Node) -> String {
 
                 NodeData::Element(ref element) => match element.element_data {
                     ElementData::TSpan(_) | ElementData::Text(_) => {
-                        let computed_values = element.get_computed_values();
-                        let bidi_control = get_bidi_control(computed_values);
+                        let bidi_control = get_bidi_control(element);
 
                         for &ch in bidi_control.start {
                             result.push(ch);
@@ -50,8 +50,7 @@ fn collect_text_from_node(node: &Node) -> String {
                 if let NodeData::Element(ref element) = *child_node.borrow() {
                     match element.element_data {
                         ElementData::TSpan(_) | ElementData::Text(_) => {
-                            let computed_values = element.get_computed_values();
-                            let bidi_control = get_bidi_control(computed_values);
+                            let bidi_control = get_bidi_control(element);
 
                             for &ch in bidi_control.end {
                                 result.push(ch);
