@@ -36,6 +36,10 @@ struct Character {
 //              A xx B xx C          "xx" are bidi control characters
 // addressable: ttfffttffft
 
+fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec::<Character> {
+    // HOMEWORK
+    unimplemented!()
+}
 
 
 fn get_bidi_control(element: &Element) -> BidiControl {
@@ -176,4 +180,36 @@ mod tests {
              \n  "
         );
     }
+
+    // Takes a string made of 't' and 'f' characters, and compares it
+    // to the `addressable` field of the Characters slice.
+    fn check_true_false_template(template: &str, characters: &[Character]) {
+        // HOMEWORK
+        // it's a loop with assert_eq!(characters[i].addressable, ...);
+    }
+
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_normal_trivial_case() {
+        let result = collapse_white_space("hello  world", WhiteSpace::Normal);
+        let expected =                    "ttttttfttttt";
+        check_true_false_template(expected, &result);
+    }
+
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_normal_start_of_the_line() {
+        let result = collapse_white_space("   hello  world", WhiteSpace::Normal);
+        let expected =                    "tffttttttfttttt";
+        check_true_false_template(expected, &result);
+    }
+
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_normal_ignores_bidi_control() {
+        let result = collapse_white_space("A \u{202b} B \u{202c} C", WhiteSpace::Normal);
+        let expected =                    "ttffttfft";
+        check_true_false_template(expected, &result);
+    }
+    
 }
