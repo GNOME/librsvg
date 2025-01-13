@@ -1,6 +1,8 @@
 // ! development file for text2
 
-use crate::element::{ElementData, ElementTrait};
+use rctree::NodeEdge;
+
+use crate::element::{Element, ElementData, ElementTrait};
 use crate::node::{Node, NodeData};
 use crate::text::BidiControl;
 
@@ -10,39 +12,55 @@ pub struct Text2;
 
 impl ElementTrait for Text2 {}
 
+fn get_bidi_control(element: &Element) -> BidiControl {
+    // Extract bidi control logic to separate function to avoid duplication
+    let computed_values = element.get_computed_values();
+
+    let unicode_bidi = computed_values.unicode_bidi();
+    let direction = computed_values.direction();
+
+    BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction)
+}
+
 // FIXME: Remove the following line when this code actually starts getting used outside of tests.
 #[allow(unused)]
 fn collect_text_from_node(node: &Node) -> String {
     let mut result = String::new();
 
-    for child in node.children() {
-        match *child.borrow() {
-            NodeData::Text(ref chars) => {
-                result.push_str(&chars.get_string());
-            }
-            NodeData::Element(ref element) => match element.element_data {
-                ElementData::TSpan(_) => {
-                    let values = element.get_computed_values();
-                    let direction = values.direction();
-                    let unicode_bidi = values.unicode_bidi();
-
-                    let bidi_control =
-                        BidiControl::from_unicode_bidi_and_direction(unicode_bidi, direction);
-
-                    for &ch in bidi_control.start {
-                        result.push(ch);
-                    }
-
-                    result.push_str(&collect_text_from_node(&child));
-
-                    for &ch in bidi_control.end {
-                        result.push(ch);
-                    }
+    for edge in node.traverse() {
+        match edge {
+            NodeEdge::Start(child_node) => match *child_node.borrow() {
+                NodeData::Text(ref text) => {
+                    result.push_str(&text.get_string());
                 }
-                _ => {
-                    result.push_str(&collect_text_from_node(&child));
-                }
+
+                NodeData::Element(ref element) => match element.element_data {
+                    ElementData::TSpan(_) | ElementData::Text(_) => {
+                        let bidi_control = get_bidi_control(element);
+
+                        for &ch in bidi_control.start {
+                            result.push(ch);
+                        }
+                    }
+                    _ => {}
+                },
             },
+
+            NodeEdge::End(child_node) => {
+                if let NodeData::Element(ref element) = *child_node.borrow() {
+                    match element.element_data {
+                        ElementData::TSpan(_) | ElementData::Text(_) => {
+                            let bidi_control = get_bidi_control(element);
+
+                            for &ch in bidi_control.end {
+                                result.push(ch);
+                            }
+                        }
+
+                        _ => {}
+                    }
+                }
+            }
         }
     }
 
