@@ -12,6 +12,32 @@ pub struct Text2;
 
 impl ElementTrait for Text2 {}
 
+#[derive(Default)]
+struct Character {
+    // https://www.w3.org/TR/SVG2/text.html#TextLayoutAlgorithm
+    // Section "11.5.1 Setup"
+    //
+    // global_index: u32,
+    // x: f64,
+    // y: f64,
+    // angle: Angle,
+    // hidden: bool,
+
+    addressable: bool,
+
+    // middle: bool,
+    // anchored_chunk: bool,
+}
+
+//              <tspan>   hello</tspan>
+// addressable:        tffttttt
+
+//              <tspan direction="ltr">A <tspan direction="rtl"> B </tspan> C</tspan>
+//              A xx B xx C          "xx" are bidi control characters
+// addressable: ttfffttffft
+
+
+
 fn get_bidi_control(element: &Element) -> BidiControl {
     // Extract bidi control logic to separate function to avoid duplication
     let computed_values = element.get_computed_values();
