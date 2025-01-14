@@ -2,20 +2,12 @@
 
 include:
   - local: 'ci/container_builds.yml'
+  - project: "GNOME/citemplates"
+    file: "templates/default-rules.yml"
   - component: "gitlab.gnome.org/GNOME/citemplates/release-service@master"
     inputs:
       dist-job-name: "distcheck"
       tarball-artifact-path: "_build/meson-dist/${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.tar.xz"
-
-# Enable merge request pipelines and avoid duplicate pipelines
-# https://docs.gitlab.com/ee/ci/yaml/index.html#switch-between-branch-pipelines-and-merge-request-pipelines
-workflow:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"
-      when: never
-    - if: '$CI_COMMIT_TAG'
-    - if: '$CI_COMMIT_BRANCH'
 
 variables:
   LIBRSVG_DEBUG: "yes"
@@ -32,9 +24,6 @@ stages:
   - acceptance test
   - docs
   - deploy
-
-default:
-  interruptible: true
 
 lint ci scripts:
   extends:
