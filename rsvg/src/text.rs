@@ -310,9 +310,9 @@ fn compute_baseline_offset(
                 DominantBaseline::Middle => {
                     // Approximate meanline using strikethrough position and thickness
                     // https://mail.gnome.org/archives/gtk-i18n-list/2012-December/msg00046.html
-                    baseline -=
-                        f64::from(metrics.strikethrough_position() + metrics.strikethrough_thickness() / 2)
-                            / f64::from(pango::SCALE);
+                    baseline -= f64::from(
+                        metrics.strikethrough_position() + metrics.strikethrough_thickness() / 2,
+                    ) / f64::from(pango::SCALE);
                 }
                 DominantBaseline::Central => {
                     baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
