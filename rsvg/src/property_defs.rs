@@ -262,10 +262,10 @@ make_property!(
 
     identifiers:
     "auto" => Auto,
-    //"ideographic"
+    "ideographic" => Ideographic,
     "alphabetic" => Alphabetic,
     "hanging" => Hanging,
-    //"mathematical"
+    "mathematical" => Mathematical,
     "central" => Central,
     "middle" => Middle,
     "text-after-edge" => TextAfterEdge,
