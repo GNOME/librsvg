@@ -14,6 +14,7 @@ pub struct Text2;
 impl ElementTrait for Text2 {}
 
 #[derive(Default)]
+#[allow(dead_code)]
 struct Character {
     // https://www.w3.org/TR/SVG2/text.html#TextLayoutAlgorithm
     // Section "11.5.1 Setup"
@@ -46,13 +47,17 @@ fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> 
 
 fn is_bidi_control(ch: char) -> bool {
     use crate::text::directional_formatting_characters::*;
-    ch == LRE || ch == RLE || ch == LRO || ch == RLO || ch == PDF
+    matches!(ch, LRE | RLE | LRO | RLO | PDF)
+}
+
+// move to inline constant if conditions needs to change
+fn is_space(ch: char) -> bool {
+    matches!(ch, ' ' | '\t' | '\n')
 }
 
 fn collapse_white_space_normal(input: &str) -> Vec<Character> {
-    let mut result: Vec<Character> = Vec::new();
+    let mut result: Vec<Character> = Vec::with_capacity(input.len());
     let mut prev_was_space: bool = false;
-    // let mut character = Character::default();
 
     for ch in input.chars() {
         if is_bidi_control(ch) {
@@ -60,9 +65,7 @@ fn collapse_white_space_normal(input: &str) -> Vec<Character> {
             continue;
         }
 
-        let is_space = ch == ' ' || ch == '\t' || ch == '\n';
-
-        if is_space {
+        if is_space(ch) {
             if prev_was_space {
                 result.push(Character { addressable: false });
             } else {
