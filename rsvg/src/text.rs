@@ -2,7 +2,7 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use pango::prelude::FontExt;
-use pango::{Font, IsAttribute};
+use pango::IsAttribute;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
@@ -291,49 +291,47 @@ fn compute_baseline_offset(
     let mut baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
     let dominant_baseline = values.dominant_baseline();
 
-    let mut font : Option<Font> = None;
     let mut layout_iter = layout.iter();
     loop {
         let run = layout_iter.run_readonly();
+
         if run.is_some() {
             let item = run.unwrap().item();
-            font = Some(item.analysis().font());
+            let font = item.analysis().font();
+
+            let metrics = font.metrics(None);
+            let ascent = metrics.ascent();
+            let descent = metrics.descent();
+
+            match dominant_baseline {
+                DominantBaseline::Hanging => {
+                    baseline -= f64::from(ascent - descent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::Middle => {
+                    // Approximate meanline using strikethrough position and thickness
+                    // https://mail.gnome.org/archives/gtk-i18n-list/2012-December/msg00046.html
+                    baseline -=
+                        f64::from(metrics.strikethrough_position() + metrics.strikethrough_thickness() / 2)
+                            / f64::from(pango::SCALE);
+                }
+                DominantBaseline::Central => {
+                    baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::TextBeforeEdge => {
+                    baseline -= f64::from(ascent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::TextAfterEdge => {
+                    baseline += f64::from(descent) / f64::from(pango::SCALE);
+                }
+                _ => (),
+            }
+
             break;
         }
-        else if !layout_iter.next_run() {
+
+        if !layout_iter.next_run() {
             break;
         }
-    }
-
-    if font.is_some() {
-
-        let metrics = font.unwrap().metrics(None);
-        let ascent = metrics.ascent();
-        let descent = metrics.descent();
-
-        match dominant_baseline {
-            DominantBaseline::Hanging => {
-                baseline -= f64::from(ascent - descent) / f64::from(pango::SCALE);
-            }
-            DominantBaseline::Middle => {
-                // Approximate meanline using strikethrough position and thickness
-                // https://mail.gnome.org/archives/gtk-i18n-list/2012-December/msg00046.html
-                baseline -=
-                    f64::from(metrics.strikethrough_position() + metrics.strikethrough_thickness() / 2)
-                        / f64::from(pango::SCALE);
-            }
-            DominantBaseline::Central => {
-                baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
-            }
-            DominantBaseline::TextBeforeEdge => {
-                baseline -= f64::from(ascent) / f64::from(pango::SCALE);
-            }
-            DominantBaseline::TextAfterEdge => {
-                baseline += f64::from(descent) / f64::from(pango::SCALE);
-            }
-            _ => (),
-        }
-
     }
 
     let baseline_shift = values.baseline_shift().0.to_user(params);
