@@ -49,11 +49,7 @@ off items while making a release.
 - ☐ Create a signed tag for the merge commit - ``git tag -s x.y.z`` with the version number.
 - ☐ If this is a development release ``git push`` the signed tag for the crate's version to gitlab.gnome.org/GNOME/librsvg
 - ☐ ``git push`` the signed tag for the GNOME version to gitlab.gnome.org/GNOME/librsvg
-- ☐ Go to the merge request's pipeline, and look for the ``distcheck`` job.  That one has the release tarball; download it.
-- ☐ Copy that tarball to the FTP staging server: ``scp librsvg-x.y.z.tar.xz master.gnome.org:``
-- ☐ ``ssh master.gnome.org`` and then
-  ``ftpadmin install librsvg-x.y.z.tar.xz``
-- ☐ Create a `release in Gitlab <https://gitlab.gnome.org/GNOME/librsvg/-/releases>`_.
+- ☐ Optionally edit the `release page ing Gitlab <https://gitlab.gnome.org/GNOME/librsvg/-/releases>`_.
 
 For ``x.y.0`` releases, do the following:
 
@@ -68,16 +64,13 @@ For ``x.y.0`` releases, do the following:
 Gitlab release
 --------------
 
--  ☐ Go to https://gitlab.gnome.org/GNOME/librsvg/-/releases and click
-   the **New release** button.
-
--  ☐ Select the tag ``x.y.z`` you created as part of the release steps.
+-  ☐ Select the tag ``x.y.z`` you just pushed.
 
 -  ☐ If there is an associated milestone, select it too.
 
 -  ☐ Fill in the release title - ``x.y.z``.
 
--  ☐ Copy the release notes from NEWS.
+-  ☐ Copy the release notes from NEWS (By default it uses the GIT_TAG_MESSAGE).
 
 -  ☐ Add a release asset link to
    ``https://download.gnome.org/sources/librsvg/x.y/librsvg-x.y.z.tar.xz``
