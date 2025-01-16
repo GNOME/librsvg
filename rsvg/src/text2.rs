@@ -48,7 +48,7 @@ fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> 
 
 fn is_bidi_control(ch: char) -> bool {
     use crate::text::directional_formatting_characters::*;
-    matches!(ch, LRE | RLE | LRO | RLO | PDF | LRI | FSI | PDI)
+    matches!(ch, LRE | RLE | LRO | RLO | PDF | LRI | RLI| FSI | PDI)
 }
 
 // move to inline constant if conditions needs to change
