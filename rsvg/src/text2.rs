@@ -4,6 +4,7 @@ use rctree::NodeEdge;
 
 use crate::element::{Element, ElementData, ElementTrait};
 use crate::node::{Node, NodeData};
+use crate::properties::WhiteSpace;
 use crate::text::BidiControl;
 
 #[allow(dead_code)]
@@ -13,6 +14,7 @@ pub struct Text2;
 impl ElementTrait for Text2 {}
 
 #[derive(Default)]
+#[allow(dead_code)]
 struct Character {
     // https://www.w3.org/TR/SVG2/text.html#TextLayoutAlgorithm
     // Section "11.5.1 Setup"
@@ -22,9 +24,8 @@ struct Character {
     // y: f64,
     // angle: Angle,
     // hidden: bool,
-
     addressable: bool,
-
+    character: char,
     // middle: bool,
     // anchored_chunk: bool,
 }
@@ -36,11 +37,63 @@ struct Character {
 //              A xx B xx C          "xx" are bidi control characters
 // addressable: ttfffttffft
 
-fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec::<Character> {
-    // HOMEWORK
-    unimplemented!()
+// HOMEWORK
+#[allow(unused)]
+fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> {
+    match white_space {
+        WhiteSpace::Normal => collapse_white_space_normal(input),
+        _ => unimplemented!(),
+    }
 }
 
+fn is_bidi_control(ch: char) -> bool {
+    use crate::text::directional_formatting_characters::*;
+    matches!(ch, LRE | RLE | LRO | RLO | PDF | LRI | RLI | FSI | PDI)
+}
+
+// move to inline constant if conditions needs to change
+fn is_space(ch: char) -> bool {
+    matches!(ch, ' ' | '\t' | '\n')
+}
+
+fn collapse_white_space_normal(input: &str) -> Vec<Character> {
+    let mut result: Vec<Character> = Vec::with_capacity(input.len());
+    let mut prev_was_space: bool = false;
+
+    for ch in input.chars() {
+        if is_bidi_control(ch) {
+            result.push(Character {
+                addressable: false,
+                character: ch,
+            });
+            continue;
+        }
+
+        if is_space(ch) {
+            if prev_was_space {
+                result.push(Character {
+                    addressable: false,
+                    character: ch,
+                });
+            } else {
+                result.push(Character {
+                    addressable: true,
+                    character: ch,
+                });
+                prev_was_space = true;
+            }
+        } else {
+            result.push(Character {
+                addressable: true,
+                character: ch,
+            });
+
+            prev_was_space = false;
+        }
+    }
+
+    result
+}
 
 fn get_bidi_control(element: &Element) -> BidiControl {
     // Extract bidi control logic to separate function to avoid duplication
@@ -184,8 +237,13 @@ mod tests {
     // Takes a string made of 't' and 'f' characters, and compares it
     // to the `addressable` field of the Characters slice.
     fn check_true_false_template(template: &str, characters: &[Character]) {
+        assert_eq!(characters.len(), template.len());
+
         // HOMEWORK
         // it's a loop with assert_eq!(characters[i].addressable, ...);
+        for (i, ch) in template.chars().enumerate() {
+            assert_eq!(characters[i].addressable, ch == 't');
+        }
     }
 
     #[rustfmt::skip]
@@ -211,5 +269,4 @@ mod tests {
         let expected =                    "ttffttfft";
         check_true_false_template(expected, &result);
     }
-    
 }
