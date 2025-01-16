@@ -25,6 +25,7 @@ struct Character {
     // angle: Angle,
     // hidden: bool,
     addressable: bool,
+    character: char,
     // middle: bool,
     // anchored_chunk: bool,
 }
@@ -47,7 +48,7 @@ fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> 
 
 fn is_bidi_control(ch: char) -> bool {
     use crate::text::directional_formatting_characters::*;
-    matches!(ch, LRE | RLE | LRO | RLO | PDF)
+    matches!(ch, LRE | RLE | LRO | RLO | PDF | LRI | FSI | PDI)
 }
 
 // move to inline constant if conditions needs to change
@@ -61,19 +62,32 @@ fn collapse_white_space_normal(input: &str) -> Vec<Character> {
 
     for ch in input.chars() {
         if is_bidi_control(ch) {
-            result.push(Character { addressable: false });
+            result.push(Character {
+                addressable: false,
+                character: ch,
+            });
             continue;
         }
 
         if is_space(ch) {
             if prev_was_space {
-                result.push(Character { addressable: false });
+                result.push(Character {
+                    addressable: false,
+                    character: ch,
+                });
             } else {
-                result.push(Character { addressable: true });
+                result.push(Character {
+                    addressable: true,
+                    character: ch,
+                });
                 prev_was_space = true;
             }
         } else {
-            result.push(Character { addressable: true });
+            result.push(Character {
+                addressable: true,
+                character: ch,
+            });
+
             prev_was_space = false;
         }
     }
