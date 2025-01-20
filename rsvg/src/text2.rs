@@ -259,6 +259,8 @@ mod tests {
         }
     }
 
+    // white-space="normal"
+
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_normal_trivial_case() {
@@ -280,6 +282,24 @@ mod tests {
     fn handles_white_space_normal_ignores_bidi_control() {
         let result = collapse_white_space("A \u{202b} B \u{202c} C", WhiteSpace::Normal);
         let expected =                    "ttffttfft";
+        check_true_false_template(expected, &result);
+    }
+
+    // white-space="pre"
+
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_pre_trivial_case() {
+        let result = collapse_white_space("   hello  \n  \n  \n\n\nworld", WhiteSpace::Pre);
+        let expected =                    "tttttttttttttttttttttttt";
+        check_true_false_template(expected, &result);
+    }
+
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_pre_ignores_bidi_control() {
+        let result = collapse_white_space("A  \u{202b} \n\n\n B \u{202c} C  ", WhiteSpace::Pre);
+        let expected =                    "tttftttttttftttt";
         check_true_false_template(expected, &result);
     }
 }
