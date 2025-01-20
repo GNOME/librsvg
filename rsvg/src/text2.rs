@@ -56,6 +56,19 @@ fn is_space(ch: char) -> bool {
     matches!(ch, ' ' | '\t' | '\n')
 }
 
+// Summary of white-space rules from https://www.w3.org/TR/css-text-3/#white-space-property
+//
+//              New Lines   Spaces and Tabs   Text Wrapping   End-of-line   End-of-line
+//                                                            spaces        other space separators
+// -----------------------------------------------------------------------------------------------
+// normal       Collapse    Collapse          Wrap            Remove        Hang
+// pre          Preserve    Preserve          No wrap         Preserve      No wrap
+// nowrap       Collapse    Collapse          No wrap         Remove        Hang
+// pre-wrap     Preserve    Preserve          Wrap            Hang          Hang
+// break-spaces Preserve    Preserve          Wrap            Wrap          Wrap
+// pre-line     Preserve    Collapse          Wrap            Remove        Hang
+
+
 fn collapse_white_space_normal(input: &str) -> Vec<Character> {
     let mut result: Vec<Character> = Vec::with_capacity(input.len());
     let mut prev_was_space: bool = false;
