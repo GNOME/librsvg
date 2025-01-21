@@ -307,6 +307,24 @@ mod tests {
         );
     }
 
+    // FIXME: here, we need to collapse newlines.  See section https://www.w3.org/TR/css-text-3/#line-break-transform
+    //
+    // Also, we need to test that consecutive newlines get replaced by a single space, FOR NOW,
+    // at least for languages where inter-word spaces actually exist.  For ideographic languages,
+    // consecutive newlines need to be removed.
+    /*
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_normal_collapses_newlines() {
+        check_modes_with_identical_processing(
+            "A \n  B \u{202c} C\n\n",
+            "ttfffttffttf",
+            WhiteSpace::Normal,
+            WhiteSpace::NoWrap
+        );
+    }
+    */
+
     // white-space="pre" and "pre-wrap"; these are processed in the same way
 
     #[rustfmt::skip]
