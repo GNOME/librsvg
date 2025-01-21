@@ -259,47 +259,75 @@ mod tests {
         }
     }
 
-    // white-space="normal"
+    fn check_modes_with_identical_processing(
+        string: &str,
+        template: &str,
+        mode1: WhiteSpace,
+        mode2: WhiteSpace
+    ) {
+        let result1 = collapse_white_space(string, mode1);
+        check_true_false_template(template, &result1);
+
+        let result2 = collapse_white_space(string, mode2);
+        check_true_false_template(template, &result2);
+    }
+
+    // white-space="normal" and "nowrap"; these are processed in the same way
 
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_normal_trivial_case() {
-        let result = collapse_white_space("hello  world", WhiteSpace::Normal);
-        let expected =                    "ttttttfttttt";
-        check_true_false_template(expected, &result);
+        check_modes_with_identical_processing(
+            "hello  world",
+            "ttttttfttttt",
+            WhiteSpace::Normal,
+            WhiteSpace::NoWrap
+        );
     }
 
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_normal_start_of_the_line() {
-        let result = collapse_white_space("   hello  world", WhiteSpace::Normal);
-        let expected =                    "tffttttttfttttt";
-        check_true_false_template(expected, &result);
+        check_modes_with_identical_processing(
+            "   hello  world",
+            "tffttttttfttttt",
+            WhiteSpace::Normal,
+            WhiteSpace::NoWrap
+        );
     }
 
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_normal_ignores_bidi_control() {
-        let result = collapse_white_space("A \u{202b} B \u{202c} C", WhiteSpace::Normal);
-        let expected =                    "ttffttfft";
-        check_true_false_template(expected, &result);
+        check_modes_with_identical_processing(
+            "A \u{202b} B \u{202c} C",
+            "ttffttfft",
+            WhiteSpace::Normal,
+            WhiteSpace::NoWrap
+        );
     }
 
-    // white-space="pre"
+    // white-space="pre" and "pre-wrap"; these are processed in the same way
 
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_pre_trivial_case() {
-        let result = collapse_white_space("   hello  \n  \n  \n\n\nworld", WhiteSpace::Pre);
-        let expected =                    "tttttttttttttttttttttttt";
-        check_true_false_template(expected, &result);
+        check_modes_with_identical_processing(
+            "   hello  \n  \n  \n\n\nworld",
+            "tttttttttttttttttttttttt",
+            WhiteSpace::Pre,
+            WhiteSpace::PreWrap
+        );
     }
 
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_pre_ignores_bidi_control() {
-        let result = collapse_white_space("A  \u{202b} \n\n\n B \u{202c} C  ", WhiteSpace::Pre);
-        let expected =                    "tttftttttttftttt";
-        check_true_false_template(expected, &result);
+        check_modes_with_identical_processing(
+            "A  \u{202b} \n\n\n B \u{202c} C  ",
+            "tttftttttttftttt",
+            WhiteSpace::Pre,
+            WhiteSpace::PreWrap
+        );
     }
 }
