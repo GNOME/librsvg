@@ -41,7 +41,10 @@ struct Character {
 #[allow(unused)]
 fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> {
     match white_space {
-        WhiteSpace::Normal => collapse_white_space_normal(input),
+        WhiteSpace::Normal => handle_white_space_normal(input),
+        WhiteSpace::NoWrap => handle_white_space_nowrap(input),
+        WhiteSpace::Pre => handle_white_space_pre(input),
+        WhiteSpace::PreWrap => handle_white_space_prewrap(input),
         _ => unimplemented!(),
     }
 }
@@ -49,11 +52,6 @@ fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> 
 fn is_bidi_control(ch: char) -> bool {
     use crate::text::directional_formatting_characters::*;
     matches!(ch, LRE | RLE | LRO | RLO | PDF | LRI | RLI | FSI | PDI)
-}
-
-// move to inline constant if conditions needs to change
-fn is_space(ch: char) -> bool {
-    matches!(ch, ' ' | '\t' | '\n')
 }
 
 // Summary of white-space rules from https://www.w3.org/TR/css-text-3/#white-space-property
@@ -68,9 +66,7 @@ fn is_space(ch: char) -> bool {
 // break-spaces Preserve    Preserve          Wrap            Wrap          Wrap
 // pre-line     Preserve    Collapse          Wrap            Remove        Hang
 
-
-fn collapse_white_space_normal(input: &str) -> Vec<Character> {
-    let mut result: Vec<Character> = Vec::with_capacity(input.len());
+fn compute_normal_nowrap(mut result: Vec<Character>, input: &str) -> Vec<Character> {
     let mut prev_was_space: bool = false;
 
     for ch in input.chars() {
@@ -82,7 +78,7 @@ fn collapse_white_space_normal(input: &str) -> Vec<Character> {
             continue;
         }
 
-        if is_space(ch) {
+        if ch.is_whitespace() {
             if prev_was_space {
                 result.push(Character {
                     addressable: false,
@@ -106,6 +102,48 @@ fn collapse_white_space_normal(input: &str) -> Vec<Character> {
     }
 
     result
+}
+
+fn compute_pre_prewrap(mut result: Vec<Character>, input: &str) -> Vec<Character> {
+    for ch in input.chars() {
+        if is_bidi_control(ch) {
+            result.push(Character {
+                addressable: false,
+                character: ch,
+            });
+        } else {
+            result.push(Character {
+                addressable: true,
+                character: ch,
+            });
+        }
+    }
+
+    result
+}
+
+fn handle_white_space_normal(input: &str) -> Vec<Character> {
+    let result: Vec<Character> = Vec::with_capacity(input.len());
+
+    compute_normal_nowrap(result, input)
+}
+
+fn handle_white_space_nowrap(input: &str) -> Vec<Character> {
+    let result: Vec<Character> = Vec::with_capacity(input.len());
+
+    compute_normal_nowrap(result, input)
+}
+
+fn handle_white_space_pre(input: &str) -> Vec<Character> {
+    let result: Vec<Character> = Vec::with_capacity(input.len());
+
+    compute_pre_prewrap(result, input)
+}
+
+fn handle_white_space_prewrap(input: &str) -> Vec<Character> {
+    let result: Vec<Character> = Vec::with_capacity(input.len());
+
+    compute_pre_prewrap(result, input)
 }
 
 fn get_bidi_control(element: &Element) -> BidiControl {
@@ -263,7 +301,7 @@ mod tests {
         string: &str,
         template: &str,
         mode1: WhiteSpace,
-        mode2: WhiteSpace
+        mode2: WhiteSpace,
     ) {
         let result1 = collapse_white_space(string, mode1);
         check_true_false_template(template, &result1);
