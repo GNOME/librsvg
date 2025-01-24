@@ -41,10 +41,8 @@ struct Character {
 #[allow(unused)]
 fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> {
     match white_space {
-        WhiteSpace::Normal => handle_white_space_normal(input),
-        WhiteSpace::NoWrap => handle_white_space_nowrap(input),
-        WhiteSpace::Pre => handle_white_space_pre(input),
-        WhiteSpace::PreWrap => handle_white_space_prewrap(input),
+        WhiteSpace::Normal | WhiteSpace::NoWrap => compute_normal_nowrap(input),
+        WhiteSpace::Pre | WhiteSpace::PreWrap => compute_pre_prewrap(input),
         _ => unimplemented!(),
     }
 }
@@ -52,6 +50,11 @@ fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> 
 fn is_bidi_control(ch: char) -> bool {
     use crate::text::directional_formatting_characters::*;
     matches!(ch, LRE | RLE | LRO | RLO | PDF | LRI | RLI | FSI | PDI)
+}
+
+// move to inline constant if conditions needs to change
+fn is_space(ch: char) -> bool {
+    matches!(ch, ' ' | '\t' | '\n')
 }
 
 // Summary of white-space rules from https://www.w3.org/TR/css-text-3/#white-space-property
@@ -66,7 +69,9 @@ fn is_bidi_control(ch: char) -> bool {
 // break-spaces Preserve    Preserve          Wrap            Wrap          Wrap
 // pre-line     Preserve    Collapse          Wrap            Remove        Hang
 
-fn compute_normal_nowrap(mut result: Vec<Character>, input: &str) -> Vec<Character> {
+fn compute_normal_nowrap(input: &str) -> Vec<Character> {
+    let mut result: Vec<Character> = Vec::with_capacity(input.len());
+
     let mut prev_was_space: bool = false;
 
     for ch in input.chars() {
@@ -78,7 +83,7 @@ fn compute_normal_nowrap(mut result: Vec<Character>, input: &str) -> Vec<Charact
             continue;
         }
 
-        if ch.is_whitespace() {
+        if is_space(ch) {
             if prev_was_space {
                 result.push(Character {
                     addressable: false,
@@ -104,7 +109,9 @@ fn compute_normal_nowrap(mut result: Vec<Character>, input: &str) -> Vec<Charact
     result
 }
 
-fn compute_pre_prewrap(mut result: Vec<Character>, input: &str) -> Vec<Character> {
+fn compute_pre_prewrap(input: &str) -> Vec<Character> {
+    let mut result: Vec<Character> = Vec::with_capacity(input.len());
+
     for ch in input.chars() {
         if is_bidi_control(ch) {
             result.push(Character {
@@ -120,30 +127,6 @@ fn compute_pre_prewrap(mut result: Vec<Character>, input: &str) -> Vec<Character
     }
 
     result
-}
-
-fn handle_white_space_normal(input: &str) -> Vec<Character> {
-    let result: Vec<Character> = Vec::with_capacity(input.len());
-
-    compute_normal_nowrap(result, input)
-}
-
-fn handle_white_space_nowrap(input: &str) -> Vec<Character> {
-    let result: Vec<Character> = Vec::with_capacity(input.len());
-
-    compute_normal_nowrap(result, input)
-}
-
-fn handle_white_space_pre(input: &str) -> Vec<Character> {
-    let result: Vec<Character> = Vec::with_capacity(input.len());
-
-    compute_pre_prewrap(result, input)
-}
-
-fn handle_white_space_prewrap(input: &str) -> Vec<Character> {
-    let result: Vec<Character> = Vec::with_capacity(input.len());
-
-    compute_pre_prewrap(result, input)
 }
 
 fn get_bidi_control(element: &Element) -> BidiControl {
