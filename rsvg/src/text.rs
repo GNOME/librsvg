@@ -321,7 +321,7 @@ fn compute_baseline_offset(
                 DominantBaseline::TextBeforeEdge | DominantBaseline::TextTop => {
                     //baseline -= f64::from(ascent) / f64::from(pango::SCALE);
                     // Bit of a klutch, but leads to better results
-                    baseline -= f64::from(2*ascent-height) / f64::from(pango::SCALE);
+                    baseline -= f64::from(2 * ascent - height) / f64::from(pango::SCALE);
                 }
                 DominantBaseline::TextAfterEdge | DominantBaseline::TextBottom => {
                     baseline += f64::from(descent) / f64::from(pango::SCALE);
