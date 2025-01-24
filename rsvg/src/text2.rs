@@ -184,6 +184,25 @@ fn collect_text_from_node(node: &Node) -> String {
     result
 }
 
+/// A range onto which font properties are applied.
+///
+/// The indices are relative to a certain string, which is then passed on to Pango.
+/// The font properties will get translated to a pango::AttrList.
+struct Attributes {
+    start_index: usize,
+    end_index: usize,
+    props: FontProperties,
+}
+
+/// Text and ranged attributes just prior to text layout.
+///
+/// This is what gets shipped to Pango for layout.
+struct FormattedText {
+    text: String,
+    attributes: Vec<Attributes>,
+}
+
+
 #[cfg(test)]
 mod tests {
     use crate::document::Document;
