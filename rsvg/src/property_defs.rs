@@ -270,7 +270,9 @@ make_property!(
     "middle" => Middle,
     "text-after-edge" => TextAfterEdge,
     "text-before-edge" => TextBeforeEdge,
-    // CSS3 also has text-top and text-bottom
+    // CSS3
+    "text-top" => TextTop,
+    "text-bottom" => TextBottom,
     // No longer supported in SVG2 (https://www.w3.org/TR/SVG2/text.html#DominantBaselineProperty):
     // use-script, no-change and reset-size
 );

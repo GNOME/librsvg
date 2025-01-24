@@ -302,6 +302,7 @@ fn compute_baseline_offset(
             let metrics = font.metrics(None);
             let ascent = metrics.ascent();
             let descent = metrics.descent();
+            let height = metrics.height();
 
             match dominant_baseline {
                 DominantBaseline::Hanging => {
@@ -317,11 +318,21 @@ fn compute_baseline_offset(
                 DominantBaseline::Central => {
                     baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
                 }
-                DominantBaseline::TextBeforeEdge => {
-                    baseline -= f64::from(ascent) / f64::from(pango::SCALE);
+                DominantBaseline::TextBeforeEdge | DominantBaseline::TextTop => {
+                    //baseline -= f64::from(ascent) / f64::from(pango::SCALE);
+                    // Bit of a klutch, but leads to better results
+                    baseline -= f64::from(2*ascent-height) / f64::from(pango::SCALE);
                 }
-                DominantBaseline::TextAfterEdge => {
+                DominantBaseline::TextAfterEdge | DominantBaseline::TextBottom => {
                     baseline += f64::from(descent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::Ideographic => {
+                    // Approx
+                    baseline += f64::from(descent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::Mathematical => {
+                    // Approx
+                    baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
                 }
                 _ => (),
             }
