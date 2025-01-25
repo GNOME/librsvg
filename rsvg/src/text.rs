@@ -1,6 +1,7 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use pango::prelude::FontExt;
 use pango::IsAttribute;
 use std::cell::RefCell;
 use std::convert::TryFrom;
@@ -17,8 +18,8 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::PaintSource;
 use crate::parsers::{CommaSeparatedList, Parse, ParseValue};
 use crate::properties::{
-    ComputedValues, Direction, FontStretch, FontStyle, FontVariant, FontWeight, PaintOrder,
-    TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
+    ComputedValues, Direction, DominantBaseline, FontStretch, FontStyle, FontVariant, FontWeight,
+    PaintOrder, TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
 };
 use crate::rect::Rect;
 use crate::rsvg_log;
@@ -287,8 +288,65 @@ fn compute_baseline_offset(
     values: &ComputedValues,
     params: &NormalizeParams,
 ) -> f64 {
-    let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
+    let mut baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
+    let dominant_baseline = values.dominant_baseline();
+
+    let mut layout_iter = layout.iter();
+    loop {
+        let run = layout_iter.run_readonly();
+
+        if run.is_some() {
+            let item = run.unwrap().item();
+            let font = item.analysis().font();
+
+            let metrics = font.metrics(None);
+            let ascent = metrics.ascent();
+            let descent = metrics.descent();
+            let height = metrics.height();
+
+            match dominant_baseline {
+                DominantBaseline::Hanging => {
+                    baseline -= f64::from(ascent - descent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::Middle => {
+                    // Approximate meanline using strikethrough position and thickness
+                    // https://mail.gnome.org/archives/gtk-i18n-list/2012-December/msg00046.html
+                    baseline -= f64::from(
+                        metrics.strikethrough_position() + metrics.strikethrough_thickness() / 2,
+                    ) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::Central => {
+                    baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::TextBeforeEdge | DominantBaseline::TextTop => {
+                    //baseline -= f64::from(ascent) / f64::from(pango::SCALE);
+                    // Bit of a klutch, but leads to better results
+                    baseline -= f64::from(2 * ascent - height) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::TextAfterEdge | DominantBaseline::TextBottom => {
+                    baseline += f64::from(descent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::Ideographic => {
+                    // Approx
+                    baseline += f64::from(descent) / f64::from(pango::SCALE);
+                }
+                DominantBaseline::Mathematical => {
+                    // Approx
+                    baseline = 0.5 * f64::from(ascent + descent) / f64::from(pango::SCALE);
+                }
+                _ => (),
+            }
+
+            break;
+        }
+
+        if !layout_iter.next_run() {
+            break;
+        }
+    }
+
     let baseline_shift = values.baseline_shift().0.to_user(params);
+
     baseline + baseline_shift
 }
 

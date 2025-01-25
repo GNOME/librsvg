@@ -417,7 +417,7 @@ make_properties! {
         "cy"                          => (PresentationAttr::Yes, cy: CY),
         "direction"                   => (PresentationAttr::Yes, direction                   : Direction),
         "display"                     => (PresentationAttr::Yes, display                     : Display),
-        // "dominant-baseline"        => (PresentationAttr::Yes, unimplemented),
+        "dominant-baseline"           => (PresentationAttr::Yes, dominant_baseline           : DominantBaseline),
         "enable-background"           => (PresentationAttr::Yes, enable_background           : EnableBackground),
 
         // "applies to any element except animation elements"
@@ -708,6 +708,7 @@ impl SpecifiedValues {
         compute!(CY, cy);
         compute!(Direction, direction);
         compute!(Display, display);
+        compute!(DominantBaseline, dominant_baseline);
         compute!(EnableBackground, enable_background);
         compute!(Fill, fill);
         compute!(FillOpacity, fill_opacity);
