@@ -41,7 +41,8 @@ struct Character {
 #[allow(unused)]
 fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> {
     match white_space {
-        WhiteSpace::Normal => collapse_white_space_normal(input),
+        WhiteSpace::Normal | WhiteSpace::NoWrap => compute_normal_nowrap(input),
+        WhiteSpace::Pre | WhiteSpace::PreWrap => compute_pre_prewrap(input),
         _ => unimplemented!(),
     }
 }
@@ -68,9 +69,9 @@ fn is_space(ch: char) -> bool {
 // break-spaces Preserve    Preserve          Wrap            Wrap          Wrap
 // pre-line     Preserve    Collapse          Wrap            Remove        Hang
 
-
-fn collapse_white_space_normal(input: &str) -> Vec<Character> {
+fn compute_normal_nowrap(input: &str) -> Vec<Character> {
     let mut result: Vec<Character> = Vec::with_capacity(input.len());
+
     let mut prev_was_space: bool = false;
 
     for ch in input.chars() {
@@ -102,6 +103,26 @@ fn collapse_white_space_normal(input: &str) -> Vec<Character> {
             });
 
             prev_was_space = false;
+        }
+    }
+
+    result
+}
+
+fn compute_pre_prewrap(input: &str) -> Vec<Character> {
+    let mut result: Vec<Character> = Vec::with_capacity(input.len());
+
+    for ch in input.chars() {
+        if is_bidi_control(ch) {
+            result.push(Character {
+                addressable: false,
+                character: ch,
+            });
+        } else {
+            result.push(Character {
+                addressable: true,
+                character: ch,
+            });
         }
     }
 
@@ -263,7 +284,7 @@ mod tests {
         string: &str,
         template: &str,
         mode1: WhiteSpace,
-        mode2: WhiteSpace
+        mode2: WhiteSpace,
     ) {
         let result1 = collapse_white_space(string, mode1);
         check_true_false_template(template, &result1);
