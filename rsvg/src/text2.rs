@@ -41,7 +41,8 @@ struct Character {
 #[allow(unused)]
 fn collapse_white_space(input: &str, white_space: WhiteSpace) -> Vec<Character> {
     match white_space {
-        WhiteSpace::Normal => collapse_white_space_normal(input),
+        WhiteSpace::Normal | WhiteSpace::NoWrap => compute_normal_nowrap(input),
+        WhiteSpace::Pre | WhiteSpace::PreWrap => compute_pre_prewrap(input),
         _ => unimplemented!(),
     }
 }
@@ -56,8 +57,21 @@ fn is_space(ch: char) -> bool {
     matches!(ch, ' ' | '\t' | '\n')
 }
 
-fn collapse_white_space_normal(input: &str) -> Vec<Character> {
+// Summary of white-space rules from https://www.w3.org/TR/css-text-3/#white-space-property
+//
+//              New Lines   Spaces and Tabs   Text Wrapping   End-of-line   End-of-line
+//                                                            spaces        other space separators
+// -----------------------------------------------------------------------------------------------
+// normal       Collapse    Collapse          Wrap            Remove        Hang
+// pre          Preserve    Preserve          No wrap         Preserve      No wrap
+// nowrap       Collapse    Collapse          No wrap         Remove        Hang
+// pre-wrap     Preserve    Preserve          Wrap            Hang          Hang
+// break-spaces Preserve    Preserve          Wrap            Wrap          Wrap
+// pre-line     Preserve    Collapse          Wrap            Remove        Hang
+
+fn compute_normal_nowrap(input: &str) -> Vec<Character> {
     let mut result: Vec<Character> = Vec::with_capacity(input.len());
+
     let mut prev_was_space: bool = false;
 
     for ch in input.chars() {
@@ -89,6 +103,26 @@ fn collapse_white_space_normal(input: &str) -> Vec<Character> {
             });
 
             prev_was_space = false;
+        }
+    }
+
+    result
+}
+
+fn compute_pre_prewrap(input: &str) -> Vec<Character> {
+    let mut result: Vec<Character> = Vec::with_capacity(input.len());
+
+    for ch in input.chars() {
+        if is_bidi_control(ch) {
+            result.push(Character {
+                addressable: false,
+                character: ch,
+            });
+        } else {
+            result.push(Character {
+                addressable: true,
+                character: ch,
+            });
         }
     }
 
@@ -246,27 +280,93 @@ mod tests {
         }
     }
 
+    fn check_modes_with_identical_processing(
+        string: &str,
+        template: &str,
+        mode1: WhiteSpace,
+        mode2: WhiteSpace,
+    ) {
+        let result1 = collapse_white_space(string, mode1);
+        check_true_false_template(template, &result1);
+
+        let result2 = collapse_white_space(string, mode2);
+        check_true_false_template(template, &result2);
+    }
+
+    // white-space="normal" and "nowrap"; these are processed in the same way
+
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_normal_trivial_case() {
-        let result = collapse_white_space("hello  world", WhiteSpace::Normal);
-        let expected =                    "ttttttfttttt";
-        check_true_false_template(expected, &result);
+        check_modes_with_identical_processing(
+            "hello  world",
+            "ttttttfttttt",
+            WhiteSpace::Normal,
+            WhiteSpace::NoWrap
+        );
     }
 
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_normal_start_of_the_line() {
-        let result = collapse_white_space("   hello  world", WhiteSpace::Normal);
-        let expected =                    "tffttttttfttttt";
-        check_true_false_template(expected, &result);
+        check_modes_with_identical_processing(
+            "   hello  world",
+            "tffttttttfttttt",
+            WhiteSpace::Normal,
+            WhiteSpace::NoWrap
+        );
     }
 
     #[rustfmt::skip]
     #[test]
     fn handles_white_space_normal_ignores_bidi_control() {
-        let result = collapse_white_space("A \u{202b} B \u{202c} C", WhiteSpace::Normal);
-        let expected =                    "ttffttfft";
-        check_true_false_template(expected, &result);
+        check_modes_with_identical_processing(
+            "A \u{202b} B \u{202c} C",
+            "ttffttfft",
+            WhiteSpace::Normal,
+            WhiteSpace::NoWrap
+        );
+    }
+
+    // FIXME: here, we need to collapse newlines.  See section https://www.w3.org/TR/css-text-3/#line-break-transform
+    //
+    // Also, we need to test that consecutive newlines get replaced by a single space, FOR NOW,
+    // at least for languages where inter-word spaces actually exist.  For ideographic languages,
+    // consecutive newlines need to be removed.
+    /*
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_normal_collapses_newlines() {
+        check_modes_with_identical_processing(
+            "A \n  B \u{202c} C\n\n",
+            "ttfffttffttf",
+            WhiteSpace::Normal,
+            WhiteSpace::NoWrap
+        );
+    }
+    */
+
+    // white-space="pre" and "pre-wrap"; these are processed in the same way
+
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_pre_trivial_case() {
+        check_modes_with_identical_processing(
+            "   hello  \n  \n  \n\n\nworld",
+            "tttttttttttttttttttttttt",
+            WhiteSpace::Pre,
+            WhiteSpace::PreWrap
+        );
+    }
+
+    #[rustfmt::skip]
+    #[test]
+    fn handles_white_space_pre_ignores_bidi_control() {
+        check_modes_with_identical_processing(
+            "A  \u{202b} \n\n\n B \u{202c} C  ",
+            "tttftttttttftttt",
+            WhiteSpace::Pre,
+            WhiteSpace::PreWrap
+        );
     }
 }
