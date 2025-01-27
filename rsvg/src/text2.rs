@@ -202,6 +202,58 @@ struct FormattedText {
     attributes: Vec<Attributes>,
 }
 
+// HOMEWORK:
+//
+// Traverse the text_node in the same way as when collecting the text.  See the comment below
+// on what needs to happen while traversing.  We are building a FormattedText that has only
+// the addressable characters AND the BidiControl chars, and the corresponding Attributtes/
+// for text styling.
+//
+//
+fn build_formatted_text(characters: &[Character], text_node: &Node, params: &NormalizeParams) -> FormattedText {
+    // These will be used to compute the start_index / end_index of each Attributes struct
+    let mut indices_stack = Vec::new();
+    let mut current_index = 0;
+
+    let mut num_visited_characters = 0;
+    let mut text = String::new();
+    let mut attributes = Vec::new();
+
+    for edge in text_node.traverse() {
+        // If you enter a <text> or <tspan>, push the current_index into the indices_stack
+        //
+        // If you exit a <text> or <tspan>, pop from the indices_stack and use that as the start_index,
+        // and use the current_index as the end_index for a new Attributes.  For its font_props,
+        // use something like this:
+        //
+        //     let values = element.get_computed_values();
+        //     let font_props = FontProperties::new(values, params);
+        //
+        // If you enter a NodeData::Text, do nothing.
+        //
+        // If you exit a NodeData::Text, compute the number of UTF-8 characters in it
+        // (note: this is `.chars().count()`, not `.len()`).  Call that text_len.  Now,
+        // visit the next text_len Characters in the slice and do this for each of them:
+        //
+        //   - If the character is addressable, push its character to `text`.  Increment current_index.
+        //
+        //   - If the character is not addressable, just increment current_index.
+        //
+        // This will build a new string in `text` that has the addressable characters.
+        // However, note that the BidiControl characters that were already in &[Character]
+        // need to be included in `text`, even if they are not in the original XML.  You
+        // may choose to pass-through a Character if it is a bidi control char, or store
+        // an additional flag in struct Character to say "this is not from the original
+        // text, but it needs to be included anyway".
+        unimplemented!();
+    }
+
+    FormattedText {
+        text,
+        attributes,
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
