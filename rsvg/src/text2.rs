@@ -3,6 +3,8 @@
 use rctree::NodeEdge;
 
 use crate::element::{Element, ElementData, ElementTrait};
+use crate::layout::FontProperties;
+use crate::length::NormalizeParams;
 use crate::node::{Node, NodeData};
 use crate::properties::WhiteSpace;
 use crate::text::BidiControl;
@@ -258,8 +260,10 @@ fn build_formatted_text(characters: &[Character], text_node: &Node, params: &Nor
 #[cfg(test)]
 mod tests {
     use crate::document::Document;
+    use crate::dpi::Dpi;
     use crate::element::ElementData;
     use crate::node::NodeBorrow;
+    use crate::properties::{FontStyle, FontWeight};
 
     use super::*;
 
@@ -439,5 +443,53 @@ mod tests {
             WhiteSpace::Pre,
             WhiteSpace::PreWrap
         );
+    }
+
+    // This is just to have a way to construct a `NormalizeParams` for tests; we don't
+    // actually care what it contains.
+    fn dummy_normalize_params() -> NormalizeParams {
+        NormalizeParams::from_dpi(Dpi::new(96.0, 96.0))
+    }
+
+    #[test]
+    fn builds_non_bidi_formatted_text() {
+        let doc_str = r##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+
+  <text2 id="sample" font-family="Foobar">
+    Hello <tspan font-weight="bold">böld</tspan> world <tspan font-style="italic">in italics</tspan>!
+  </text2>
+</svg>
+"##;
+
+        let document = Document::load_from_bytes(doc_str.as_bytes());
+
+        let text2_node = document.lookup_internal_node("sample").unwrap();
+        assert!(matches!(
+            *text2_node.borrow_element_data(),
+            ElementData::Text2(_)
+        ));
+
+        let collected_text = collect_text_from_node(&text2_node);
+        let collapsed_characters = collapse_white_space(&collected_text, WhiteSpace::Normal);
+
+        let formatted = build_formatted_text(&collapsed_characters, &text2_node, &dummy_normalize_params());
+
+        assert_eq!(&formatted.text, "Hello böld world in italics!");
+
+        // "böld" (note that the ö takes two bytes in UTF-8)
+        assert_eq!(formatted.attributes[0].start_index, 6);
+        assert_eq!(formatted.attributes[0].end_index, 11);
+        assert_eq!(formatted.attributes[0].props.font_weight, FontWeight::Bold);
+
+        // "in italics"
+        assert_eq!(formatted.attributes[1].start_index, 18);
+        assert_eq!(formatted.attributes[1].end_index, 28);
+        assert_eq!(formatted.attributes[1].props.font_style, FontStyle::Italic);
+
+        // the whole string
+        assert_eq!(formatted.attributes[2].start_index, 0);
+        assert_eq!(formatted.attributes[2].end_index, 29);
+        assert_eq!(formatted.attributes[2].props.font_family.0, "Foobar");
     }
 }
