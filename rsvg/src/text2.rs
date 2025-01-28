@@ -28,6 +28,7 @@ struct Character {
     // hidden: bool,
     addressable: bool,
     character: char,
+    // must_include: bool,
     // middle: bool,
     // anchored_chunk: bool,
 }
@@ -191,8 +192,13 @@ fn collect_text_from_node(node: &Node) -> String {
 /// The indices are relative to a certain string, which is then passed on to Pango.
 /// The font properties will get translated to a pango::AttrList.
 struct Attributes {
+    /// Start byte offset within the `text` of [`FormattedText`].
     start_index: usize,
+
+    /// End byte offset within the `text` of [`FormattedText`].
     end_index: usize,
+
+    /// Font style and properties for this range of text.
     props: FontProperties,
 }
 
