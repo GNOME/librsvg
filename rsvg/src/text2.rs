@@ -498,4 +498,50 @@ mod tests {
         assert_eq!(formatted.attributes[2].end_index, 29);
         assert_eq!(formatted.attributes[2].props.font_family.0, "Foobar");
     }
+
+    #[test]
+    fn builds_bidi_formatted_text() {
+        let doc_str = r##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+
+  <text2 id="sample" font-family="Foobar">
+    LTR<tspan direction="rtl" unicode-bidi="embed" font-style="italic">RTL</tspan><tspan font-weight="bold">LTR</tspan>
+  </text2>
+</svg>
+"##;
+
+        let document = Document::load_from_bytes(doc_str.as_bytes());
+
+        let text2_node = document.lookup_internal_node("sample").unwrap();
+        assert!(matches!(
+            *text2_node.borrow_element_data(),
+            ElementData::Text2(_)
+        ));
+
+        let collected_text = collect_text_from_node(&text2_node);
+        let collapsed_characters = collapse_white_space(&collected_text, WhiteSpace::Normal);
+
+        let formatted = build_formatted_text(
+            &collapsed_characters,
+            &text2_node,
+            &dummy_normalize_params(),
+        );
+
+        assert_eq!(&formatted.text, "\nLTR\u{202b}RTL\u{202c}LTR\n");
+
+        // "RTL" surrounded by bidi control chars
+        assert_eq!(formatted.attributes[0].start_index, 4);
+        assert_eq!(formatted.attributes[0].end_index, 11);
+        assert_eq!(formatted.attributes[0].props.font_style, FontStyle::Italic);
+
+        // "LTR" at the end
+        assert_eq!(formatted.attributes[1].start_index, 11);
+        assert_eq!(formatted.attributes[1].end_index, 15);
+        assert_eq!(formatted.attributes[1].props.font_weight, FontWeight::Bold);
+
+        // the whole string
+        assert_eq!(formatted.attributes[2].start_index, 0);
+        assert_eq!(formatted.attributes[2].end_index, 15);
+        assert_eq!(formatted.attributes[2].props.font_family.0, "Foobar");
+    }
 }
