@@ -284,7 +284,7 @@ pkg = import('pkgconfig')
 # (if CMake, there's simply no way at all)
 has_pkgconfig_dependencies = true
 
-foreach i : library_dependencies_sole
+foreach i : library_dependencies_sole + private_dependencies
   if i.found() and i.type_name() != 'pkgconfig'
     warning('One or more dependencies are not provided by pkg-config, skipping generation of the pkg-config module.')
     has_pkgconfig_dependencies = false
@@ -304,7 +304,8 @@ if has_pkgconfig_dependencies
     libraries : [librsvg_lib] + other_library_dependencies,
     subdirs: librsvg_pc,
     requires: library_dependencies_sole,
-    libraries_private: private_dependencies,
+    requires_private: private_dependencies,
+    libraries_private: private_libraries,
   )
 endif
 
