@@ -181,23 +181,25 @@ empty_pc_dep = dependency('', required: false)
 
 # ignore the system dependencies for GIR
 library_dependencies_sole = [
+  glib_dep,
+  gio_dep,
+  pixbuf_dep,
   cairo_dep,
+]
+private_libraries = []
+# these dependencies are not exported in the ABI
+private_dependencies = [
   cairogobj_dep,
   cairo_png_dep,
   dav1d_dep,
   freetype2_dep.type_name() != 'cmake' ? freetype2_dep : empty_pc_dep,
-  pixbuf_dep,
-  gio_dep,
-  glib_dep,
   harfbuzz_dep,
   libxml_dep.type_name() != 'cmake' ? libxml_dep : empty_pc_dep,
   pangocairo_dep,
   pangoft2_dep,
   gmodule_dep,
 ]
-
 library_dependencies = library_dependencies_sole
-private_dependencies = []
 other_library_dependencies = []
 
 foreach d: [libxml_dep, freetype2_dep]
@@ -357,13 +359,15 @@ if host_system in ['windows', 'linux']
         ]
       endif
     else
-      private_dependencies += cc.find_library(i, required: get_option('default_library') != 'shared')
+      private_libraries += cc.find_library(i, required: get_option('default_library') != 'shared')
     endif
   endforeach
 endif
 
-private_dependencies += [m_dep, foundation_dep]
+private_libraries += [m_dep]
+private_dependencies += [foundation_dep]
 library_dependencies += other_library_dependencies
+library_dependencies += private_libraries
 library_dependencies += private_dependencies
 
 cargo_toml = meson.project_source_root() / 'Cargo.toml'
@@ -413,7 +417,7 @@ current_library_path = run_command(
 extra_env.set(var, current_library_path.stdout().strip())
 extra_env.prepend(var, meson.project_build_root() / 'rsvg')
 if host_system == 'windows'
-  foreach i: library_dependencies_sole
+  foreach i: library_dependencies_sole + private_dependencies
     x = i.get_variable(pkgconfig: 'bindir', default_value: '')
     if x != ''
       extra_env.prepend('PATH', x)
