@@ -155,7 +155,7 @@ fn collect_text_from_node(node: &Node) -> String {
                 }
 
                 NodeData::Element(ref element) => match element.element_data {
-                    ElementData::TSpan(_) | ElementData::Text(_) => {
+                    ElementData::TSpan(_) | ElementData::Text(_) | ElementData::Text2(_) => {
                         let bidi_control = get_bidi_control(element);
 
                         for &ch in bidi_control.start {
@@ -169,7 +169,7 @@ fn collect_text_from_node(node: &Node) -> String {
             NodeEdge::End(child_node) => {
                 if let NodeData::Element(ref element) = *child_node.borrow() {
                     match element.element_data {
-                        ElementData::TSpan(_) | ElementData::Text(_) => {
+                        ElementData::TSpan(_) | ElementData::Text(_) | ElementData::Text2(_) => {
                             let bidi_control = get_bidi_control(element);
 
                             for &ch in bidi_control.end {
@@ -191,6 +191,7 @@ fn collect_text_from_node(node: &Node) -> String {
 ///
 /// The indices are relative to a certain string, which is then passed on to Pango.
 /// The font properties will get translated to a pango::AttrList.
+#[allow(unused)]
 struct Attributes {
     /// Start byte offset within the `text` of [`FormattedText`].
     start_index: usize,
@@ -205,6 +206,7 @@ struct Attributes {
 /// Text and ranged attributes just prior to text layout.
 ///
 /// This is what gets shipped to Pango for layout.
+#[allow(unused)]
 struct FormattedText {
     text: String,
     attributes: Vec<Attributes>,
@@ -218,50 +220,83 @@ struct FormattedText {
 // for text styling.
 //
 //
-fn build_formatted_text(characters: &[Character], text_node: &Node, params: &NormalizeParams) -> FormattedText {
-    // These will be used to compute the start_index / end_index of each Attributes struct
+#[allow(unused)]
+fn build_formatted_text(
+    characters: &[Character],
+    text_node: &Node,
+    params: &NormalizeParams,
+) -> FormattedText {
     let mut indices_stack = Vec::new();
-    let mut current_index = 0;
-
+    let mut byte_index = 0;
     let mut num_visited_characters = 0;
     let mut text = String::new();
     let mut attributes = Vec::new();
 
     for edge in text_node.traverse() {
-        // If you enter a <text> or <tspan>, push the current_index into the indices_stack
-        //
-        // If you exit a <text> or <tspan>, pop from the indices_stack and use that as the start_index,
-        // and use the current_index as the end_index for a new Attributes.  For its font_props,
-        // use something like this:
-        //
-        //     let values = element.get_computed_values();
-        //     let font_props = FontProperties::new(values, params);
-        //
-        // If you enter a NodeData::Text, do nothing.
-        //
-        // If you exit a NodeData::Text, compute the number of UTF-8 characters in it
-        // (note: this is `.chars().count()`, not `.len()`).  Call that text_len.  Now,
-        // visit the next text_len Characters in the slice and do this for each of them:
-        //
-        //   - If the character is addressable, push its character to `text`.  Increment current_index.
-        //
-        //   - If the character is not addressable, just increment current_index.
-        //
-        // This will build a new string in `text` that has the addressable characters.
-        // However, note that the BidiControl characters that were already in &[Character]
-        // need to be included in `text`, even if they are not in the original XML.  You
-        // may choose to pass-through a Character if it is a bidi control char, or store
-        // an additional flag in struct Character to say "this is not from the original
-        // text, but it needs to be included anyway".
-        unimplemented!();
+        match edge {
+            NodeEdge::Start(child_node) => match *child_node.borrow() {
+                NodeData::Element(ref element) => match element.element_data {
+                    ElementData::TSpan(_) | ElementData::Text(_) | ElementData::Text2(_) => {
+                        indices_stack.push(byte_index);
+                        let bidi_control = get_bidi_control(element);
+                        for &ch in bidi_control.start {
+                            byte_index += ch.len_utf8();
+                            num_visited_characters += 1;
+                            text.push(ch);
+                        }
+                    }
+                    _ => {}
+                },
+                NodeData::Text(_) => {}
+            },
+
+            NodeEdge::End(child_node) => match *child_node.borrow() {
+                NodeData::Element(ref element) => match element.element_data {
+                    ElementData::TSpan(_) | ElementData::Text(_) | ElementData::Text2(_) => {
+                        let bidi_control = get_bidi_control(element);
+                        for &ch in bidi_control.end {
+                            byte_index += ch.len_utf8();
+                            num_visited_characters += 1;
+                            text.push(ch);
+                        }
+
+                        let start_index = indices_stack
+                            .pop()
+                            .expect("start_index must be pushed already");
+                        let values = element.get_computed_values();
+                        let font_props = FontProperties::new(values, params);
+
+                        if byte_index > start_index {
+                            attributes.push(Attributes {
+                                start_index,
+                                end_index: byte_index,
+                                props: font_props,
+                            });
+                        }
+                    }
+                    _ => {}
+                },
+
+                NodeData::Text(ref text_ref) => {
+                    let text_len = text_ref.get_string().chars().count();
+                    for character in characters
+                        .iter()
+                        .skip(num_visited_characters)
+                        .take(text_len)
+                    {
+                        if character.addressable {
+                            text.push(character.character);
+                            byte_index += character.character.len_utf8();
+                        }
+                        num_visited_characters += 1;
+                    }
+                }
+            },
+        }
     }
 
-    FormattedText {
-        text,
-        attributes,
-    }
+    FormattedText { text, attributes }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -479,23 +514,27 @@ mod tests {
         let collected_text = collect_text_from_node(&text2_node);
         let collapsed_characters = collapse_white_space(&collected_text, WhiteSpace::Normal);
 
-        let formatted = build_formatted_text(&collapsed_characters, &text2_node, &dummy_normalize_params());
+        let formatted = build_formatted_text(
+            &collapsed_characters,
+            &text2_node,
+            &dummy_normalize_params(),
+        );
 
-        assert_eq!(&formatted.text, "Hello böld world in italics!");
+        assert_eq!(&formatted.text, "\nHello böld world in italics!\n");
 
         // "böld" (note that the ö takes two bytes in UTF-8)
-        assert_eq!(formatted.attributes[0].start_index, 6);
-        assert_eq!(formatted.attributes[0].end_index, 11);
+        assert_eq!(formatted.attributes[0].start_index, 7);
+        assert_eq!(formatted.attributes[0].end_index, 12);
         assert_eq!(formatted.attributes[0].props.font_weight, FontWeight::Bold);
 
         // "in italics"
-        assert_eq!(formatted.attributes[1].start_index, 18);
-        assert_eq!(formatted.attributes[1].end_index, 28);
+        assert_eq!(formatted.attributes[1].start_index, 19);
+        assert_eq!(formatted.attributes[1].end_index, 29);
         assert_eq!(formatted.attributes[1].props.font_style, FontStyle::Italic);
 
         // the whole string
         assert_eq!(formatted.attributes[2].start_index, 0);
-        assert_eq!(formatted.attributes[2].end_index, 29);
+        assert_eq!(formatted.attributes[2].end_index, 31);
         assert_eq!(formatted.attributes[2].props.font_family.0, "Foobar");
     }
 
@@ -531,17 +570,17 @@ mod tests {
 
         // "RTL" surrounded by bidi control chars
         assert_eq!(formatted.attributes[0].start_index, 4);
-        assert_eq!(formatted.attributes[0].end_index, 11);
+        assert_eq!(formatted.attributes[0].end_index, 13);
         assert_eq!(formatted.attributes[0].props.font_style, FontStyle::Italic);
 
         // "LTR" at the end
-        assert_eq!(formatted.attributes[1].start_index, 11);
-        assert_eq!(formatted.attributes[1].end_index, 15);
+        assert_eq!(formatted.attributes[1].start_index, 13);
+        assert_eq!(formatted.attributes[1].end_index, 16);
         assert_eq!(formatted.attributes[1].props.font_weight, FontWeight::Bold);
 
         // the whole string
         assert_eq!(formatted.attributes[2].start_index, 0);
-        assert_eq!(formatted.attributes[2].end_index, 15);
+        assert_eq!(formatted.attributes[2].end_index, 17);
         assert_eq!(formatted.attributes[2].props.font_family.0, "Foobar");
     }
 }
