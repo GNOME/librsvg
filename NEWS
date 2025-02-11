@@ -1,3 +1,31 @@
+Version 2.59.90
+===============
+
+librsvg crate version 2.60.0-beta.0
+
+librsvg-rebind crate version 0.1.0
+
+- #414 - Basic support for the dominant-baseline property (Paul Melis).
+
+- #1138 - Report errors correctly from the parsers for attribute values.
+
+- #951 - Slightly improved test coverage (Vaishnavi Nawghare).
+
+- #1136 - Don't use defined() in C macro definitions, since it is not
+  portable.
+
+- #1146 - Parse the white-space property.  It is not processed yet;
+  this will come after the Outreachy internship (Adetoye Anointing).
+
+- Documentation fixes (Kleis Auke Wolthuizen).
+
+- Many build fixes (Amyspark).
+
+- Improvements for cross builds (Alexander Kanavin).
+
+- Fix CRLF characters in Python sources (sulincix).
+
+
 Version 2.59.2
 ==============
 
