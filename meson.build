@@ -174,6 +174,18 @@ foundation_dep = dependency('appleframeworks', modules: 'Foundation',
                             required: host_system in ['darwin', 'ios'])
 m_dep = cc.find_library('m', required: false)
 
+# Solaris and Illumos distros split a lot of networking-related code
+# into '-lsocket' and '-lnsl'.  Anything that calls socketpair(), getifaddr(),
+# etc. probably needs to include network_deps
+#
+if host_system == 'sunos'
+  network_deps = [
+    cc.find_library('socket', required: false),
+  ]
+else
+  network_deps = []
+endif
+
 # Use this in place of libxml2/freetype2 for 'Requires:' in the
 # pkg-config file in case either or both were found with CMake
 empty_pc_dep = dependency('', required: false)
@@ -364,7 +376,7 @@ if host_system in ['windows', 'linux']
 endif
 
 private_libraries += [m_dep]
-private_dependencies += [foundation_dep]
+private_dependencies += [foundation_dep] + network_deps
 library_dependencies += other_library_dependencies
 library_dependencies += private_libraries
 library_dependencies += private_dependencies
