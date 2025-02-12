@@ -21,4 +21,8 @@ pangocairo = "1.50"
 name = "example_1_trivial"
 path = "src/example_1_trivial.rs"
 
+[[bin]]
+name = "example_2_attributes"
+path = "src/example_2_attributes.rs"
+
 [workspace]
