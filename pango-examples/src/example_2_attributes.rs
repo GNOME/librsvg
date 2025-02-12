@@ -55,6 +55,12 @@ fn main() {
     attr.set_end_index((text.find("in itálics").unwrap() + "in itálics".len()) as u32);
     attr_list.insert(attr);
 
+    // Also make "in italics" red
+    let mut attr = pango::AttrColor::new_foreground(0xffff, 0x0000, 0x0000);
+    attr.set_start_index(text.find("in itálics").unwrap() as u32);
+    attr.set_end_index((text.find("in itálics").unwrap() + "in itálics".len()) as u32);
+    attr_list.insert(attr);
+
     // Finally, set the attribute list on the layout
     layout.set_attributes(Some(&attr_list));
 
