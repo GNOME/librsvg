@@ -25,4 +25,8 @@ path = "src/example_1_trivial.rs"
 name = "example_2_attributes"
 path = "src/example_2_attributes.rs"
 
+[[bin]]
+name = "example_3_glyphs"
+path = "src/example_3_glyphs.rs"
+
 [workspace]
