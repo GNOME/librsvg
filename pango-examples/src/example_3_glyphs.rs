@@ -29,7 +29,7 @@ fn main() {
     pangocairo::functions::show_layout(&cr, &layout);
 
     // Write a PNG file from the surface
-    let mut output = File::create("example_2_attributes.png").unwrap();
+    let mut output = File::create("example_3_glyphs.png").unwrap();
     surface.write_to_png(&mut output).unwrap();
 }
 
