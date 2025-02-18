@@ -45,6 +45,18 @@ fn main() {
                 glyph_string.num_glyphs(),
             );
 
+            for glyph_info in glyph_string.glyph_info() {
+                let geometry = glyph_info.geometry();
+
+                println!(
+                    "    glyph {} width={} x_offset={} y_offset={}",
+                    glyph_info.glyph(),
+                    geometry.width(),
+                    geometry.x_offset(),
+                    geometry.y_offset(),
+                );
+            }
+
             if !iter.next_run() {
                 break;
             }
