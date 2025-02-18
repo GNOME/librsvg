@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 cairo-rs = { version = "0.20", features = ["v1_16", "png"] }
-pango = "0.20"
+pango = { version = "0.20", features = ["v1_54"] }
 pangocairo = "0.20"
 
 [build-dependencies]

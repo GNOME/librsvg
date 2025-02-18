@@ -23,6 +23,38 @@ fn main() {
     let layout = pango::Layout::new(&pango_context);
     fill_layout(&layout);
 
+    // We will iterate the layout by hand
+    // line
+    //   runs
+    //     clusters
+
+    let mut iter = layout.iter();
+    while let Some(_line) = iter.line_readonly() {
+        while let Some(run) = iter.run_readonly() {
+            let item = run.item();
+            let glyph_string = run.glyph_string();
+
+            println!(
+                "item.offfset: {}, item.char_offset: {}",
+                item.offset(),
+                item.char_offset(),
+            );
+
+            println!(
+                "glyph_string num_glyphs: {}",
+                glyph_string.num_glyphs(),
+            );
+
+            if !iter.next_run() {
+                break;
+            }
+        }
+
+        if !iter.next_line() {
+            break;
+        }
+    }
+
     // Set the paint color to black; that's what pangocairo will use.
     cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);
     cr.move_to(100.0, 100.0);
