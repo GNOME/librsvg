@@ -12,7 +12,6 @@ librsvg_api_major = api_split[0]
 librsvg_api_minor = api_split[1]
 
 librsvg_pc = 'librsvg-@0@'.format(librsvg_api_version)
-rsvg_ver = 'rsvg-@0@'.format(librsvg_api_major)
 
 host_system = host_machine.system()
 cc = meson.get_compiler('c')
