@@ -220,6 +220,7 @@ else
   )
 endif
 
+librsvg_dep_args = []
 librsvg_lib = librsvg_c_lib
 
 # Wait on this dependency before trying to build using Rust
@@ -263,6 +264,7 @@ if get_option('default_library') in ['static', 'both']
     install: true,
     install_dir: get_option('libdir'),
   )
+  librsvg_dep_args += ['-DRSVG_STATIC']
 
   librsvg_rust_dep = librsvg_lib
 endif
@@ -272,6 +274,7 @@ librsvg_dep = declare_dependency(
   sources: includes,
   include_directories: [includeinc],
   dependencies: library_dependencies,
+  compile_args: librsvg_dep_args,
   link_with: librsvg_lib,
 )
 
