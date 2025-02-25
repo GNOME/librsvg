@@ -1,5 +1,6 @@
 // ! development file for text2
 
+use pango::IsAttribute;
 use rctree::NodeEdge;
 
 use crate::element::{Element, ElementData, ElementTrait};
@@ -7,6 +8,8 @@ use crate::layout::FontProperties;
 use crate::length::NormalizeParams;
 use crate::node::{Node, NodeData};
 use crate::properties::WhiteSpace;
+use crate::rsvg_log;
+use crate::session::Session;
 use crate::text::BidiControl;
 
 #[allow(dead_code)]
@@ -296,6 +299,114 @@ fn build_formatted_text(
     }
 
     FormattedText { text, attributes }
+}
+
+/// Builds a Pango attribute list from a FormattedText structure.
+///
+/// This function converts the text styling information in FormattedText
+/// into Pango attributes that can be applied to a Pango layout.
+#[allow(unused)]
+fn build_pango_attr_list(session: &Session, formatted_text: &FormattedText) -> pango::AttrList {
+    let attr_list = pango::AttrList::new();
+
+    if formatted_text.text.is_empty() {
+        return attr_list;
+    }
+
+    for attribute in &formatted_text.attributes {
+        // Skip invalid or empty ranges
+        if attribute.start_index >= attribute.end_index {
+            continue;
+        }
+
+        // Validate indices
+        let start_index = attribute.start_index.min(formatted_text.text.len());
+        let end_index = attribute.end_index.min(formatted_text.text.len());
+
+        assert!(start_index <= end_index);
+
+        let start_index =
+            u32::try_from(start_index).expect("Pango attribute index must fit in u32");
+        let end_index = u32::try_from(end_index).expect("Pango attribute index must fit in u32");
+
+        // Create font description
+        let mut font_desc = pango::FontDescription::new();
+        font_desc.set_family(&attribute.props.font_family.0);
+
+        // Handle font size scaling with bounds checking
+        if let Some(font_size) = PangoUnits::from_pixels(attribute.props.font_size) {
+            font_desc.set_size(font_size.0);
+        } else {
+            rsvg_log!(
+                session,
+                "font-size {} is out of bounds; skipping attribute range",
+                attribute.props.font_size
+            );
+        }
+
+        font_desc.set_weight(pango::Weight::from(attribute.props.font_weight));
+        font_desc.set_style(pango::Style::from(attribute.props.font_style));
+        font_desc.set_stretch(pango::Stretch::from(attribute.props.font_stretch));
+        font_desc.set_variant(pango::Variant::from(attribute.props.font_variant));
+
+        let mut font_attr = pango::AttrFontDesc::new(&font_desc).upcast();
+        font_attr.set_start_index(start_index);
+        font_attr.set_end_index(end_index);
+        attr_list.insert(font_attr);
+
+        // Add letter spacing with bounds checking
+        if attribute.props.letter_spacing != 0.0 {
+            if let Some(spacing) = PangoUnits::from_pixels(attribute.props.letter_spacing) {
+                let mut spacing_attr = pango::AttrInt::new_letter_spacing(spacing.0).upcast();
+                spacing_attr.set_start_index(start_index);
+                spacing_attr.set_end_index(end_index);
+                attr_list.insert(spacing_attr);
+            } else {
+                rsvg_log!(
+                    session,
+                    "letter-spacing {} is out of bounds; skipping attribute range",
+                    attribute.props.letter_spacing
+                );
+            }
+        }
+
+        // Add text decoration attributes
+        if attribute.props.text_decoration.overline {
+            let mut overline_attr = pango::AttrInt::new_overline(pango::Overline::Single).upcast();
+            overline_attr.set_start_index(start_index);
+            overline_attr.set_end_index(end_index);
+            attr_list.insert(overline_attr);
+        }
+
+        if attribute.props.text_decoration.underline {
+            let mut underline_attr =
+                pango::AttrInt::new_underline(pango::Underline::Single).upcast();
+            underline_attr.set_start_index(start_index);
+            underline_attr.set_end_index(end_index);
+            attr_list.insert(underline_attr);
+        }
+
+        if attribute.props.text_decoration.strike {
+            let mut strike_attr = pango::AttrInt::new_strikethrough(true).upcast();
+            strike_attr.set_start_index(start_index);
+            strike_attr.set_end_index(end_index);
+            attr_list.insert(strike_attr);
+        }
+    }
+
+    attr_list
+}
+
+struct PangoUnits(i32);
+
+impl PangoUnits {
+    fn from_pixels(v: f64) -> Option<Self> {
+        // We want (v * f64::from(pango::SCALE) + 0.5) as i32
+        // But check for overflow.
+        cast::i32(v * f64::from(pango::SCALE) + 0.5)
+            .ok()
+            .map(PangoUnits)
+    }
 }
 
 #[cfg(test)]
