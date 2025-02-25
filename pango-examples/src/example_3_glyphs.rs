@@ -40,10 +40,19 @@ fn main() {
                 item.char_offset(),
             );
 
-            println!(
-                "glyph_string num_glyphs: {}",
-                glyph_string.num_glyphs(),
-            );
+            println!("glyph_string num_glyphs: {}", glyph_string.num_glyphs(),);
+
+            for glyph_info in glyph_string.glyph_info() {
+                let geometry = glyph_info.geometry();
+
+                println!(
+                    "    glyph {} width={} x_offset={} y_offset={}",
+                    glyph_info.glyph(),
+                    geometry.width(),
+                    geometry.x_offset(),
+                    geometry.y_offset(),
+                );
+            }
 
             for glyph_info in glyph_string.glyph_info() {
                 let geometry = glyph_info.geometry();
