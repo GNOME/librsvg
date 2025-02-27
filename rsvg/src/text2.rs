@@ -1,22 +1,82 @@
 // ! development file for text2
 
 use pango::IsAttribute;
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use rctree::NodeEdge;
 
-use crate::element::{Element, ElementData, ElementTrait};
+use crate::element::{set_attribute, Element, ElementData, ElementTrait};
 use crate::layout::FontProperties;
-use crate::length::NormalizeParams;
+use crate::length::{Horizontal, Length, NormalizeParams, Vertical};
 use crate::node::{Node, NodeData};
+use crate::parsers::{CommaSeparatedList, ParseValue};
 use crate::properties::WhiteSpace;
 use crate::rsvg_log;
 use crate::session::Session;
 use crate::text::BidiControl;
+use crate::xml;
+
+/// Type for the `x/y/dx/dy` attributes of the `<text>` and `<tspan>` elements
+///
+/// https://svgwg.org/svg2-draft/text.html#TSpanAttributes
+///
+/// Explanation of this type:
+///
+/// * Option - the attribute can be specified or not, so make it optional
+///
+///  CommaSeparatedList<Length<Horizontal>> - This type knows how to parse a list of values
+///  that are separated by commas and/or spaces; the values are eventually available as a Vec.
+///
+/// * 1 is the minimum number of elements in the list, so one can have x="42" for example.
+///
+/// * 4096 is an arbitrary limit on the number of length values for each array, as a mitigation
+///   against malicious files which may want to have millions of elements to exhaust memory.
+type OptionalLengthList<N> = Option<CommaSeparatedList<Length<N>, 1, 4096>>;
+
+/// Type for the `rotate` attribute of the `<text>` and `<tspan>` elements
+///
+/// https://svgwg.org/svg2-draft/text.html#TSpanAttributes
+///
+/// See [`OptionalLengthList`] for a description of the structure of the type.
+type OptionalRotateList = Option<CommaSeparatedList<f64, 1, 4096>>;
 
 #[allow(dead_code)]
 #[derive(Default)]
-pub struct Text2;
+pub struct Text2 {
+    x: OptionalLengthList<Horizontal>,
+    y: OptionalLengthList<Vertical>,
+    dx: OptionalLengthList<Horizontal>,
+    dy: OptionalLengthList<Vertical>,
+    rotate: OptionalRotateList,
+    text_length: Length<Horizontal>,
+    // length_adjust: LengthAdjust HOMEWORK
+}
 
-impl ElementTrait for Text2 {}
+impl ElementTrait for Text2 {
+    fn set_attributes(&mut self, attrs: &xml::Attributes, session: &Session) {
+        for (attr, value) in attrs.iter() {
+            match attr.expanded() {
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+
+                // HOMEWORK
+                //
+                // see text.rs and how it implements set_attributes() for the Text element.
+                // The attributes are described here:
+                //
+                // https://svgwg.org/svg2-draft/text.html#TSpanAttributes
+                //
+                // Attributes to parse:
+                //   "x"
+                //   "y"
+                //   "dx"
+                //   "dy"
+                //   "rotate"
+                //   "textLength"
+                //   "lengthAdjust"
+                _ => (),
+            }
+        }
+    }
+}
 
 #[derive(Default)]
 #[allow(dead_code)]
