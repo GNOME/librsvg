@@ -375,7 +375,9 @@ if host_system in ['windows', 'linux']
 endif
 
 private_libraries += [m_dep]
-private_dependencies += [foundation_dep] + network_deps
+private_dependencies += network_deps
+# appleframeworks cannot be exposed to pkg-config
+library_dependencies += foundation_dep
 library_dependencies += other_library_dependencies
 library_dependencies += private_libraries
 library_dependencies += private_dependencies
