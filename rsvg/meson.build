@@ -228,7 +228,7 @@ librsvg_rust_dep = rust_artifacts
 
 if get_option('default_library') in ['shared', 'both']
   librsvg_shared_lib = shared_library(
-    rsvg_ver,
+    'rsvg-@0@'.format(librsvg_api_major),
     rsvg_dummy,
     link_whole: librsvg_c_lib,
     link_args: link_args,

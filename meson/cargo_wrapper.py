@@ -91,7 +91,7 @@ group.add_argument(
     "--release", action="store_true", help="Build artifacts in release mode"
 )
 group.add_argument(
-    '--optimization', type=int, help="Set optimization level"
+    '--optimization', choices=['0', '1', '2', '3', 's'], help="Set optimization level"
 )
 
 args = parser.parse_args()

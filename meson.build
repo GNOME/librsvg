@@ -12,7 +12,6 @@ librsvg_api_major = api_split[0]
 librsvg_api_minor = api_split[1]
 
 librsvg_pc = 'librsvg-@0@'.format(librsvg_api_version)
-rsvg_ver = 'rsvg-@0@'.format(librsvg_api_major)
 
 host_system = host_machine.system()
 cc = meson.get_compiler('c')
@@ -376,7 +375,9 @@ if host_system in ['windows', 'linux']
 endif
 
 private_libraries += [m_dep]
-private_dependencies += [foundation_dep] + network_deps
+private_dependencies += network_deps
+# appleframeworks cannot be exposed to pkg-config
+library_dependencies += foundation_dep
 library_dependencies += other_library_dependencies
 library_dependencies += private_libraries
 library_dependencies += private_dependencies
