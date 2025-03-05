@@ -36,7 +36,7 @@ pixbuf_thumbnailer = configure_file(
   install_dir: get_option('datadir') / 'thumbnailers'
 )
 
-if not meson.is_cross_build()
+if meson.can_run_host_binaries()
   gdk_pixbuf_query_loaders = find_program(pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_query_loaders', default_value: 'gdk-pixbuf-query-loaders'))
 endif
 
@@ -48,7 +48,7 @@ pixbufloader_svg_install_args = [
 ]
 
 # Tell people to run gdk-pixbuf-query-loaders manually for cross builds
-if meson.is_cross_build()
+if not meson.can_run_host_binaries()
   pixbufloader_svg_install_args += '--show-cross-message'
 endif
 
