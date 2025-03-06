@@ -1,19 +1,20 @@
 // ! development file for text2
-
-use pango::IsAttribute;
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use pango::IsAttribute;
 use rctree::NodeEdge;
 
 use crate::element::{set_attribute, Element, ElementData, ElementTrait};
+use crate::error::ParseError;
 use crate::layout::FontProperties;
 use crate::length::{Horizontal, Length, NormalizeParams, Vertical};
 use crate::node::{Node, NodeData};
-use crate::parsers::{CommaSeparatedList, ParseValue};
+use crate::parsers::{CommaSeparatedList, Parse, ParseValue};
 use crate::properties::WhiteSpace;
-use crate::rsvg_log;
 use crate::session::Session;
 use crate::text::BidiControl;
 use crate::xml;
+use crate::{parse_identifiers, rsvg_log};
 
 /// Type for the `x/y/dx/dy` attributes of the `<text>` and `<tspan>` elements
 ///
@@ -39,6 +40,26 @@ type OptionalLengthList<N> = Option<CommaSeparatedList<Length<N>, 1, 4096>>;
 /// See [`OptionalLengthList`] for a description of the structure of the type.
 type OptionalRotateList = Option<CommaSeparatedList<f64, 1, 4096>>;
 
+/// Enum for the `lengthAdjust` attribute
+///
+/// https://svgwg.org/svg2-draft/text.html#LengthAdjustProperty
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+enum LengthAdjust {
+    #[default]
+    Spacing,
+    SpacingAndGlyphs,
+}
+
+impl Parse for LengthAdjust {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        Ok(parse_identifiers!(
+            parser,
+            "spacing" => LengthAdjust::Spacing,
+            "spacingAndGlyphs" => LengthAdjust::SpacingAndGlyphs,
+        )?)
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Default)]
 pub struct Text2 {
@@ -48,30 +69,41 @@ pub struct Text2 {
     dy: OptionalLengthList<Vertical>,
     rotate: OptionalRotateList,
     text_length: Length<Horizontal>,
-    // length_adjust: LengthAdjust HOMEWORK
+    length_adjust: LengthAdjust, // Implemented
 }
 
+// HOMEWORK
+//
+// see text.rs and how it implements set_attributes() for the Text element.
+// The attributes are described here:
+//
+// https://svgwg.org/svg2-draft/text.html#TSpanAttributes
+//
+// Attributes to parse:
+//   "x"
+//   "y"
+//   "dx"
+//   "dy"
+//   "rotate"
+//   "textLength"
+//   "lengthAdjust"
 impl ElementTrait for Text2 {
     fn set_attributes(&mut self, attrs: &xml::Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
-
-                // HOMEWORK
-                //
-                // see text.rs and how it implements set_attributes() for the Text element.
-                // The attributes are described here:
-                //
-                // https://svgwg.org/svg2-draft/text.html#TSpanAttributes
-                //
-                // Attributes to parse:
-                //   "x"
-                //   "y"
-                //   "dx"
-                //   "dy"
-                //   "rotate"
-                //   "textLength"
-                //   "lengthAdjust"
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "dx") => set_attribute(&mut self.dx, attr.parse(value), session),
+                expanded_name!("", "dy") => set_attribute(&mut self.dy, attr.parse(value), session),
+                expanded_name!("", "rotate") => {
+                    set_attribute(&mut self.rotate, attr.parse(value), session)
+                }
+                expanded_name!("", "textLength") => {
+                    set_attribute(&mut self.text_length, attr.parse(value), session)
+                }
+                expanded_name!("", "lengthAdjust") => {
+                    set_attribute(&mut self.length_adjust, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
