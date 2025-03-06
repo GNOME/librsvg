@@ -11,6 +11,9 @@ librsvg-rebind crate version 0.1.0
 
 * Fix versioning of library name (Amyspark).
 
+* Enable cross-compilation of the gdk-pixbuf loader if meson/qemu can
+  handle it (Colin Sane).
+
 Version 2.59.90
 ===============
 
