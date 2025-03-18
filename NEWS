@@ -1,3 +1,28 @@
+Version 2.60.0
+==============
+
+librsvg crate version 2.60.0
+
+librsvg-rebind crate version 0.1.0
+
+This is a summary of changes from the last development period.  For
+details, see the individual release notes for the 2.59.9x releases.
+
+- The minimum supported Rust version (MSRV) is 1.77.2.
+
+- Many build fixes for various platforms (Amyspark, Alexander Kanavin,
+  Colin Sane).
+
+- #414 - Basic support for the dominant-baseline property (Paul Melis).
+
+- #1146 - Parse the white-space property.  It is not processed yet;
+  this is part of the work to support SVG2 text layout (Adetoye Anointing).
+
+- #1138 - Report errors correctly from the parsers for attribute values.
+
+- Portability fixes to the C header files.
+
+
 Version 2.59.91
 ===============
 
