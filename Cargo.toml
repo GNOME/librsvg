@@ -20,6 +20,7 @@ overflow-checks = true
 
 [workspace]
 members = [
+    "ci",
     "gdk-pixbuf-loader",
     "librsvg-c",
     "librsvg-rebind/librsvg-rebind",

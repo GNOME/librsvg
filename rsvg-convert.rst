@@ -410,6 +410,20 @@ OPTIONS
    - any part of this format specification within `[ ]` is optional except
      when stated otherwise.
 
+   If any change is made to this format, please see to it that
+   `ci/check_rsvg_convert_options.rs` is updated accordingly, if neccesary.
+
+.. If any change is made to the options in this document, please run:
+
+     $ cargo run -p ci --bin check-rsvg-convert-options
+
+   and make the neccesary corrections, if there are any errors.
+
+.. The comment below is used as a marker by `ci/check_rsvg_convert_options.rs`.
+   If the comment is modfied, please ensure the module is updated accordingly.
+
+.. START OF OPTIONS
+
 
 GENERAL OPTIONS
 ---------------
@@ -560,6 +574,12 @@ MISCELLANEOUS
    Possible values are ``bash``, ``elvish``, ``fish``, ``powershell``,
    ``zsh``.
    Rsvg-convert will then write a suitable script to standard output.
+
+
+.. END OF OPTIONS
+
+.. The comment above is used as a marker by ``ci/check_rsvg_convert_options.rs``.
+   If the comment is modfied, please ensure the module is updated accordingly.
 
 
 ENVIRONMENT VARIABLES
