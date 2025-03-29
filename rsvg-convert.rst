@@ -369,6 +369,48 @@ Then the PNG created by the command above will have these elements:
 OPTIONS
 =======
 
+..
+   ## ATTENTION ##
+
+   Below is the format for documenting an option:
+
+   [``-<short-name>``, ]``--<long-name>``[ *<value-name>*]
+      <main-description>
+      [<value-description>]
+      [<default-description>]
+      [<extra-description>] ...
+
+   where:
+
+   - *short-name* is the short option name, if it has one.
+   - *long-name* is the long option name (which is required).
+   - *value-name* is the name of the option's value, if it takes one.
+     If present, it must be a sequence of alphabetic characters, optionally
+     containing `-`, `.` or `_` (one at a time) **in-between** the letters.
+   - *main-description* is a (preferably brief) description of the option.
+   - *value-description* is a description of the option's value, if it takes
+     one. For an option with a fixed set of possible values, this segment is
+     required and **all** the values must be listed out (backquoted and
+     separated by ", ") as in "Possible values are ``foo``, ``bar``, ``baz``.".
+   - *default-description* is a description of the option's default value
+     (if it takes a value) or behaviour when not specified. This segment is
+     typically not neccesary for boolean/flag options.
+   - *extra-description* can be anything else such as further description,
+     "See ..." or description of interaction with another option.
+     This segment may be repeated as many times as neccessary.
+   - for ease of updating and parsing, each description segment must:
+     
+     - be a **single sentence** (ending with a `.`), with the exception of
+       *extra-description*.
+     - start on a new line, with the exception of subsequent
+       *extra-description*.
+
+   - `<`, `>`, `[` and `]` in this format specification are not literal
+     i.e should not appear in an actual instance.
+   - any part of this format specification within `[ ]` is optional except
+     when stated otherwise.
+
+
 GENERAL OPTIONS
 ---------------
 
