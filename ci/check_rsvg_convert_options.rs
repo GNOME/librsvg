@@ -1,7 +1,5 @@
 //! This crate tests that rsvg-convert's man page fully and properly documents its options.
-//!
-//! The crate uses/enforces the format specification defined in the "OPTIONS" section
-//! of `rsvg-convert.rst`.
+//! It uses/enforces the format specified in the "OPTIONS" section of `rsvg-convert.rst`.
 
 // Allow references to `mut` statics since there's no multithreading.
 //
@@ -211,7 +209,7 @@ fn check_options(
         let header = option_header_re.captures(&line).unwrap();
         let long_name = header.name("long_name").unwrap().as_str();
 
-        // Removing so we can easily know what options are undocmented at end.
+        // Removing so we can easily know what options are undocumented at end.
         if let Some(option) = options.remove(long_name) {
             if let Err(option_errs) = check_option(
                 option,
