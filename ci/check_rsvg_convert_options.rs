@@ -37,7 +37,7 @@ static mut POSSIBLE_VALUES_RE: MaybeUninit<Regex> = MaybeUninit::uninit();
 enum Error {
     InvalidFormat {
         message: String,
-        text: String,
+        string: String,
         causes: &'static [&'static str],
     },
     UnspecifiedOption(String),
@@ -88,6 +88,7 @@ enum Error {
     },
     NoValueDescription {
         option: String,
+        required_because: &'static str,
     },
 
     // // Possible values
@@ -191,14 +192,18 @@ fn check_options(
                 line_no,
                 InvalidFormat {
                     message: "Invalid option header format".to_string(),
-                    text: line,
+                    string: line,
                     causes: &[
                         "no long name",
                         "no double backquotes around the short and/or long name",
-                        "no comma followed by space between the short and long name",
                         "wrong amount of '-' before short and/or long name",
-                        "the long name contains a character other than 'a'..'z', and '-'",
+                        "no comma followed by space between the short and long name",
+                        "multiple space between the short name and long name",
+                        "the short name contains more than one character",
+                        "the short name contains a character other than 'a'..'z', 'A'..'Z'",
+                        "the long name contains a character other than 'a'..'z', '-'",
                         "no space between the long name and value name",
+                        "multiple space between the long name and value name",
                         "value name after short name",
                     ],
                 },
@@ -451,6 +456,7 @@ fn check_value_description(
     } else {
         return Err(Box::new(NoValueDescription {
             option: long_name.to_string(),
+            required_because: "the option has a fixed set of possible values",
         }));
     }
 
@@ -582,7 +588,7 @@ fn get_possible_values<'a>(
                 "Invalid possible values description (lines {:?}) for option `--{}`",
                 value_desc_range, long_name,
             ),
-            text: value_description.to_string(),
+            string: value_description.to_string(),
             causes: &[
                 "doesn't start on a new line",
                 r#"doesn't start with "Possible values are ""#,
@@ -602,7 +608,7 @@ fn get_value_name<'a>(long_name: &str, value_name_segment: &'a str) -> Result<&'
     } else {
         Err(Box::new(InvalidFormat {
             message: format!("Invalid value name segment for option `--{}`", long_name),
-            text: value_name_segment.to_string(),
+            string: value_name_segment.to_string(),
             causes: &["the value name is not sorrounded by asterisks '*'"],
         }))
     }
