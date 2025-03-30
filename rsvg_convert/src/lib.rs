@@ -1,6 +1,6 @@
-//! This crate exists to enable testing (by `ci/check_rsvg_convert_options.rs`)
-//! that rsvg-convert's CLI options are fully and properly documented in its man
-//! page (`rsvg-convert.rst`).
+//! This crate exists only to enable testing (by the `ci/check-rsvg-convert-options`
+//! crate) that rsvg-convert's CLI options are fully and properly documented in its
+//! man page (`rsvg-convert.rst`).
 
 use clap::crate_version;
 use clap_complete::Shell;

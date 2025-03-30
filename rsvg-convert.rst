@@ -410,8 +410,8 @@ OPTIONS
    - any part of this format specification within `[ ]` is optional except
      when stated otherwise.
 
-   If any change is made to this format, please see to it that
-   `ci/check_rsvg_convert_options.rs` is updated accordingly, if neccesary.
+   If any change is made to this format, please see to it that the
+   `ci/check-rsvg-convert-options` crate is updated accordingly, if neccesary.
 
 .. If any change is made to the options in this document, please run:
 
@@ -419,8 +419,8 @@ OPTIONS
 
    and make the neccesary corrections, if there are any errors.
 
-.. The comment below is used as a marker by `ci/check_rsvg_convert_options.rs`.
-   If the comment is modfied, please ensure the module is updated accordingly.
+.. The comment below is used as a marker by `ci/check-rsvg-convert-options`.
+   If the comment is modfied, please ensure the crate is updated accordingly.
 
 .. START OF OPTIONS
 
@@ -578,8 +578,8 @@ MISCELLANEOUS
 
 .. END OF OPTIONS
 
-.. The comment above is used as a marker by ``ci/check_rsvg_convert_options.rs``.
-   If the comment is modfied, please ensure the module is updated accordingly.
+.. The comment above is used as a marker by `ci/check-rsvg-convert-options`.
+   If the comment is modfied, please ensure the crate is updated accordingly.
 
 
 ENVIRONMENT VARIABLES
