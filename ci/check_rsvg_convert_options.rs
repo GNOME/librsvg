@@ -165,9 +165,9 @@ fn check_options(
     man_page: &mut BufReader<File>,
 ) -> UnitResult<Vec<(i32, Error)>> {
     let option_header_re = Regex::new(concat!(
-        r"^(?:``-(?<short_name>[a-zA-Z])``, )?",
+        r"^(?:``-(?<short_name>[a-zA-Z?])``, )?",
         r"``--(?<long_name>[a-z]+(?:-[a-z]+)*)``",
-        r"(?: (?<value_names>.+?))?\s*$",
+        r"(?: (?<value_names>\S.*?))?\s*$",
     ))
     .unwrap();
     let mut errors: Vec<(i32, Error)> = Vec::new();
