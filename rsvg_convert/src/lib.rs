@@ -187,6 +187,7 @@ pub fn build_cli() -> clap::Command {
                 .long("output")
                 .num_args(1)
                 .value_parser(clap::value_parser!(PathBuf))
+                .value_name("filename")
                 .help("Output filename [defaults to stdout]")
                 .action(clap::ArgAction::Set),
         )
@@ -195,7 +196,7 @@ pub fn build_cli() -> clap::Command {
                 .short('i')
                 .long("export-id")
                 .value_parser(clap::builder::NonEmptyStringValueParser::new())
-                .value_name("object id")
+                .value_name("object-id")
                 .help("SVG id of object to export [default is to export all objects]")
                 .action(clap::ArgAction::Set),
         )
@@ -204,7 +205,7 @@ pub fn build_cli() -> clap::Command {
                 .short('l')
                 .long("accept-language")
                 .value_parser(clap::builder::NonEmptyStringValueParser::new())
-                .value_name("languages")
+                .value_name("language-tags")
                 .help("Languages to accept, for example \"es-MX,de,en\" [default uses language from the environment]")
                 .action(clap::ArgAction::Set),
         )
@@ -270,7 +271,8 @@ pub fn build_cli() -> clap::Command {
                 .help("Output shell completion for the given shell")
                 .num_args(1)
                 .action(clap::ArgAction::Set)
-                .value_parser(clap::value_parser!(Shell)),
+                .value_parser(clap::value_parser!(Shell))
+                .value_name("shell-name"),
         )
         .arg(
             clap::Arg::new("FILE")

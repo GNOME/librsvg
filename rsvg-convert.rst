@@ -442,7 +442,7 @@ GENERAL OPTIONS
 ``-v``, ``--version``
    Display what version of rsvg-convert you are running.
 
-``--help``
+``-?``, ``--help``
    Display a summary of usage and options.
 
 
@@ -524,10 +524,10 @@ CONTROLLING THE RENDERED APPEARANCE
 ``-s``, ``--stylesheet`` *filename.css*
    Filename of a custom CSS stylesheet.
 
-``-l``, ``--accept-language`` *language-tag*
+``-l``, ``--accept-language`` *language-tags*
    Specify which languages will be used for SVG documents with multiple
    languages.
-   The string is formatted like an HTTP Accept-Language header, which
+   The value is formatted like an HTTP Accept-Language header, which
    is a comma-separated list of BCP47 language tags:
    https://www.rfc-editor.org/info/bcp47 e.g ``es-MX,fr,en``.
    The default is to use the language specified by environment
