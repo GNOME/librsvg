@@ -523,3 +523,20 @@ pages:
     expire_in: 1 day
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+
+check rsvg-convert options:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache'
+  stage: docs
+  needs:
+    - job: opensuse-container@x86_64.stable
+      artifacts: false
+    - job: check
+      artifacts: false
+  variables:
+    PREFIX: "/usr/local/librsvg"
+  script:
+    - source ./ci/setup-dependencies-env.sh
+    - cargo run -p ci --bin check-rsvg-convert-options
