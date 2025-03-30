@@ -107,7 +107,123 @@ enum Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            InvalidFormat {
+                message,
+                string,
+                causes,
+            } => {
+                f.write_str(message)?;
+                write!(f, "\n  string: {string:?}")?;
+
+                if !causes.is_empty() {
+                    f.write_str("\n  possible causes:")?;
+                    for cause in *causes {
+                        write!(f, "\n    - {cause}")?;
+                    }
+                }
+            }
+            UnspecifiedOption(option) => write!(f, "`--{option}` is documented but not specified")?,
+
+            // Short name
+            MismacthedShortNames {
+                option,
+                documented,
+                specified,
+            } => write!(
+                f,
+                "`--{option}` specifies short name `-{specified}` but documents `-{documented}`",
+            )?,
+            UndocumentedShortName { option, short } => write!(
+                f,
+                "`--{option}` specifies short name `-{short}` but documents none",
+            )?,
+            UnspecifiedShortName { option, short } => write!(
+                f,
+                "`--{option}` specifies no short name but documents `-{short}`",
+            )?,
+
+            // Value name
+            InvalidValueName { option, value_name } => {
+                write!(f, "Invalid value name {value_name:?} for `--{option}`")?;
+                f.write_str(
+                    "\
+                    \n  possible causes:\
+                    \n    - contains a non-alphabetic character other than '-', '.', '_'\
+                    \n    - contains any of the allowed non-alphabetic characters in succession\
+                    \n    - doesn't start with an alphabetic character\
+                    \n    - doesn't end with an alphabetic character",
+                )?;
+            }
+            MismacthedValueNames {
+                option,
+                documented,
+                specified,
+            } => write!(
+                f,
+                "`--{option}` specifies value name {specified:?} but documents {documented:?}",
+            )?,
+            UndocumentedValueName { option, value_name } => write!(
+                f,
+                "`--{option}` specifies value name {value_name:?} but documents none",
+            )?,
+            UnspecifiedValueName { option, value_name } => write!(
+                f,
+                "`--{option}` specifies no value name but documents {value_name:?}",
+            )?,
+
+            // Description
+            InvalidDescriptionIndentation {
+                option,
+                line_no,
+                indent,
+                expected,
+            } => {
+                write!(f, "Invalid indentation in the description of `--{option}`")?;
+                write!(f, "\n   line no: {line_no}")?;
+                write!(f, "\n    indent: {indent:?}")?;
+                write!(f, "\n  expected: {expected:?}")?;
+            }
+            NoDescription { option } => write!(f, "`--{option}` has no description")?,
+            NoValueDescription {
+                option,
+                required_because,
+            } => {
+                write!(f, "`--{option}` has no value description")?;
+                write!(f, "\n  required because {required_because}")?;
+            }
+
+            // // Possible values
+            InvalidPossibleValues {
+                option,
+                line_range,
+                values,
+            } => {
+                write!(f, "Invalid possible values {values:?} for `--{option}`")?;
+                f.write_str("\n  these values contain whitespace")?;
+                write!(f, "\n  possible values documented on lines {line_range:?}")?;
+            }
+            MismatchedPossibleValues {
+                option,
+                line_range,
+                documented,
+                specified,
+            } => {
+                let undocumented = specified - documented;
+                let unspecified = documented - specified;
+
+                write!(f, "Mismatched possible values for `--{option}`")?;
+                if !undocumented.is_empty() {
+                    write!(f, "\n  specified but not documented: {undocumented:?}")?;
+                }
+                if !unspecified.is_empty() {
+                    write!(f, "\n  documented but not specified: {unspecified:?}")?;
+                }
+                write!(f, "\n  possible values documented on lines {line_range:?}")?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -133,14 +249,14 @@ fn main() -> ExitCode {
     if let Err(errors) = check_options(&mut options, &mut man_page) {
         n_errors += errors.len();
         for (line_no, error) in errors {
-            eprintln!("line {line_no}: {:?}\n", error);
+            eprintln!("line {line_no}: {error}\n");
         }
     }
 
     if !options.is_empty() {
         n_errors += options.len();
         for long_name in options.keys() {
-            eprintln!("option `--{}` is not documented\n", long_name);
+            eprintln!("`--{long_name}` is specified but not documented\n");
         }
     }
 
