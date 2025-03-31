@@ -369,97 +369,169 @@ Then the PNG created by the command above will have these elements:
 OPTIONS
 =======
 
+..
+   ## ATTENTION ##
+
+   Below is the format for documenting an option:
+
+   [``-<short-name>``, ]``--<long-name>``[ *<value-name>*]
+      <main-description>
+      [<value-description>]
+      [<default-description>]
+      [<extra-description>] ...
+
+   where:
+
+   - *short-name* is the short option name, if it has one.
+   - *long-name* is the long option name (which is required).
+   - *value-name* is the name of the option's value, if it takes one.
+     If present, it must be a sequence of alphabetic characters, optionally
+     containing `-`, `.` or `_` (one at a time) **in-between** the letters.
+   - *main-description* is a (preferably brief) description of the option.
+   - *value-description* is a description of the option's value, if it takes
+     one. For an option with a fixed set of possible values, this segment is
+     required and **all** the values must be listed out (backquoted and
+     separated by ", ") as in "Possible values are ``foo``, ``bar``, ``baz``.".
+   - *default-description* is a description of the option's default value
+     (if it takes a value) or behaviour when not specified. This segment is
+     typically not neccesary for boolean/flag options.
+   - *extra-description* can be anything else such as further description,
+     "See ..." or description of interaction with another option.
+     This segment may be repeated as many times as neccessary.
+   - for ease of updating and parsing, each description segment must:
+     
+     - be a **single sentence** (ending with a `.`), with the exception of
+       *extra-description*.
+     - start on a new line, with the exception of subsequent
+       *extra-description*.
+
+   - `<`, `>`, `[` and `]` in this format specification are not literal
+     i.e should not appear in an actual instance.
+   - any part of this format specification within `[ ]` is optional except
+     when stated otherwise.
+
+   If any change is made to this format, please see to it that the
+   `ci/check-rsvg-convert-options` crate is updated accordingly, if neccesary.
+
+.. If any change is made to the options in this document, please run:
+
+     $ cargo run -p ci --bin check-rsvg-convert-options
+
+   and make the neccesary corrections, if there are any errors.
+
+.. The comment below is used as a marker by `ci/check-rsvg-convert-options`.
+   If the comment is modfied, please ensure the crate is updated accordingly.
+
+.. START OF OPTIONS
+
+
 GENERAL OPTIONS
 ---------------
 
-``-f`` *format*, ``--format=[png, pdf, pdf1.4, pdf1.5, pdf1.6. pdf1.7, ps, eps, svg]``
-   Output format for the rendered document. Default is ``png``.
+``-f``, ``--format`` *format*
+   Output format for the rendered document.
+   Possible values are ``png``, ``pdf``, ``pdf1.4``, ``pdf1.5``, ``pdf1.6``,
+   ``pdf1.7``, ``ps``, ``eps``, ``svg``.
+   Default is ``png``.
    See the section "PDF VERSIONS" for more detail on what each one allows.
 
-``-o`` *filename*, ``--output`` *filename*
-   Specify the output filename. If unspecified, outputs to standard
-   output.
+``-o``, ``--output`` *filename*
+   Specify the output filename.
+   If unspecified, outputs to standard output.
 
 ``-v``, ``--version``
    Display what version of rsvg-convert you are running.
 
-``--help``
+``-?``, ``--help``
    Display a summary of usage and options.
 
 
 SIZE AND POSITION
 -----------------
 
-In the following, *<length>* values must be specified with CSS <length>
+In the following, *length* values must be specified with CSS <length>
 syntax: https://developer.mozilla.org/en-US/docs/Web/CSS/length.
 For example, ``640px`` or ``25cm``.
 
-``--page-width`` *<length>* ``--page-height`` *<length>*
-   Page size of the output document; both options must be used
-   together.  The default is to use the image's width and height as
-   modified by the options below.
+``--page-width`` *length*
+   Page width of the output document.
+   The default is to use the image's width as modified by the options
+   below.
+   Must be used together with ``--page-height``.
 
-``--top`` *<length>*
-   Distance between top edge of the page and the rendered image. Default
-   is 0.
+``--page-height`` *length*
+   Page height of the output document.
+   The default is to use the image's height as modified by the options
+   below.
+   Must be used together with ``--page-width``.
 
-``--left`` *<length>*
+``--top`` *length*
+   Distance between top edge of the page and the rendered image.
+   Default is 0.
+
+``--left`` *length*
    Distance between left edge of the page and the rendered image.
    Default is 0.
 
-``-w`` *<length>*, ``--width`` *<length>*
-   Width of the rendered image. If unspecified, the natural width of the
-   image is used as the default. See the section "SPECIFYING DIMENSIONS"
-   above for details.
+``-w``, ``--width`` *length*
+   Width of the rendered image.
+   If unspecified, the natural width of the image is used.
+   See the section "SPECIFYING DIMENSIONS" above for details.
 
-``-h`` *<length>*, ``--height`` *<length>*
-   Height of the rendered image. If unspecified, the natural height of
-   the image is used as the default. See the section "SPECIFYING
-   DIMENSIONS" above for details.
+``-h``, ``--height`` *length*
+   Height of the rendered image.
+   If unspecified, the natural height of the image is used.
+   See the section "SPECIFYING DIMENSIONS" above for details.
 
 ``-a``, ``--keep-aspect-ratio``
-   Specify that the aspect ratio is to be preserved, i.e. the image is
-   scaled proportionally to fit in the **--width** and **--height**. If
-   not specified, aspect ratio will not be preserved.
+   Specify that the aspect ratio is to be preserved.
+   If not specified, aspect ratio will not be preserved.
+   The image is scaled proportionally to fit in the ``--width`` and
+   ``--height``.
 
-``-d`` *number*, ``--dpi-x`` *number*
-   Set the X resolution of the image in pixels per inch. Default is 96
-   DPI.
+``-d``, ``--dpi-x`` *number*
+   Set the X resolution of the image in pixels per inch.
+   Default is 96 DPI.
 
-``-p`` *number*, ``--dpi-y`` *number*
-   Set the Y resolution of the image in pixels per inch. Default is 96
-   DPI.
+``-p``, ``--dpi-y`` *number*
+   Set the Y resolution of the image in pixels per inch.
+   Default is 96 DPI.
 
-``-x`` *number*, ``--x-zoom`` *number*
-   Horizontal scaling factor. Default is 1.0.
+``-x``, ``--x-zoom`` *number*
+   Horizontal scaling factor.
+   Default is 1.0.
 
-``-y`` *number*, ``--y-zoom`` *number*
-   Vertical factor factor. Default is 1.0.
+``-y``, ``--y-zoom`` *number*
+   Vertical factor factor.
+   Default is 1.0.
 
-``-z`` *number*, ``--zoom`` *number*
-   Horizontal and vertical scaling factor. Default is 1.0.
+``-z``, ``--zoom`` *number*
+   Horizontal and vertical scaling factor.
+   Default is 1.0.
 
 
 CONTROLLING THE RENDERED APPEARANCE
 -----------------------------------
 
-``-b`` *<color>*, ``--background-color`` *[black, white, #abccee, #aaa...]*
-   Specify the background color. If unspecified, ``none`` is used as
-   the default; this will create transparent PNGs, or PDF/PS/EPS
-   without a special background.  The *<color>* must be specified in
-   CSS <color> syntax: https://developer.mozilla.org/en-US/docs/Web/CSS/color_value.
-   For example, ``black``, ``#ff0000``, ``rgba(0.0, 1.0, 0.0, 1.0)``.
+``-b``, ``--background-color`` *color*
+   Specify the background color.
+   The *color* must be specified in CSS <color> syntax:
+   https://developer.mozilla.org/en-US/docs/Web/CSS/color_value;
+   for example, ``black``, ``#ff0000``, ``rgba(0.0, 1.0, 0.0, 1.0)``.
+   The default is ``none``; this will create transparent PNGs,
+   or PDF/PS/EPS without a special background.
 
-``-s`` *filename.css*, ``--stylesheet`` *filename.css*
+``-s``, ``--stylesheet`` *filename.css*
    Filename of a custom CSS stylesheet.
 
-``-l`` *language-tag*, ``--accept-language`` *[es-MX,fr,en]*
+``-l``, ``--accept-language`` *language-tags*
    Specify which languages will be used for SVG documents with multiple
-   languages. The string is formatted like an HTTP Accept-Language
-   header, which is a comma-separated list of BCP47 language tags:
-   https://www.rfc-editor.org/info/bcp47. The default is to use the
-   language specified by environment variables; see the section
-   "ENVIRONMENT VARIABLES" below.
+   languages.
+   The value is formatted like an HTTP Accept-Language header, which
+   is a comma-separated list of BCP47 language tags:
+   https://www.rfc-editor.org/info/bcp47 e.g ``es-MX,fr,en``.
+   The default is to use the language specified by environment
+   variables; see the section "ENVIRONMENT VARIABLES" below.
 
 
 OPTIONS SPECIFIC TO PDF/PS/EPS OUTPUT
@@ -468,23 +540,26 @@ OPTIONS SPECIFIC TO PDF/PS/EPS OUTPUT
 ``--keep-image-data``
    For SVG documents that reference PNG or JPEG images, include the
    original, compressed images in the final output, rather than
-   uncompressed RGB data. This is the default behavior for PDF and
-   (E)PS output.
+   uncompressed RGB data.
+   This is the default behavior for PDF and (E)PS output.
 
 ``--no-keep-image-data``
    Do not include the original, compressed images but instead embed
-   uncompressed RGB date in PDF or (E)PS output. This will most likely
-   result in larger documents that are slower to read.
+   uncompressed RGB data in PDF or (E)PS output.
+   This will most likely result in larger documents that are slower
+   to read.
 
 
 MISCELLANEOUS
 -------------
 
-``-i`` *object-id*, ``--export-id`` *object-id*
+``-i``, ``--export-id`` *object-id*
    Allows to specify an SVG object that should be exported based on its
-   XML ``id`` attribute. If not specified, all objects will be exported.
+   XML ``id`` attribute.
+   If not specified, all objects will be exported.
 
 ``-u``, ``--unlimited``
+   Turn off the XML parser's guards.
    The XML parser has some guards designed to mitigate large CPU or
    memory consumption in the face of malicious documents. It may also
    refuse to resolve ``data:`` URIs used to embed image data in SVG
@@ -495,10 +570,16 @@ MISCELLANEOUS
    For developers only: render images for librsvg's test suite.
 
 ``--completion`` *shell-name*
-  Generate a script for a shell's Tab completion.  You can use ``bash``,
-  ``elvish``, ``fish``, ``powershell``, and ``zsh`` for the shell's
-  name.  Rsvg-convert will then write a suitable script to standard
-  output.
+   Generate a script for a shell's Tab completion.
+   Possible values are ``bash``, ``elvish``, ``fish``, ``powershell``,
+   ``zsh``.
+   Rsvg-convert will then write a suitable script to standard output.
+
+
+.. END OF OPTIONS
+
+.. The comment above is used as a marker by `ci/check-rsvg-convert-options`.
+   If the comment is modfied, please ensure the crate is updated accordingly.
 
 
 ENVIRONMENT VARIABLES

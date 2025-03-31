@@ -1,0 +1,20 @@
+# IMPORTANT: See
+# https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
+
+[package]
+name = "ci"
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+# Due to the unconventional layout of files
+autobins = false
+
+[dependencies]
+clap.workspace = true
+regex.workspace = true
+rsvg_convert = { path = "../rsvg_convert" }
+
+[[bin]]
+name = "check-rsvg-convert-options"
+path = "check_rsvg_convert_options.rs"
