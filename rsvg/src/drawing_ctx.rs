@@ -593,15 +593,17 @@ impl DrawingCtx {
             mask.get_rect(&params)
         };
 
-        let transform_for_mask = ValidTransform::try_from(values.transform().post_transform(&transform))?;
+        let transform_for_mask =
+            ValidTransform::try_from(values.transform().post_transform(&transform))?;
 
         let bbtransform = if let Ok(t) = rect_to_transform(&bbox.rect, mask_units)
             .map_err(|_: ()| InvalidTransform)
-            .and_then(|t| ValidTransform::try_from(t)) {
-                t
-            } else {
-                return Ok(None);
-            };
+            .and_then(|t| ValidTransform::try_from(t))
+        {
+            t
+        } else {
+            return Ok(None);
+        };
 
         let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
 
@@ -1512,7 +1514,11 @@ impl DrawingCtx {
         cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
-        clip_to_rectangle(&cr, &get_transform(&self.cr), &Rect::from_size(width, height));
+        clip_to_rectangle(
+            &cr,
+            &get_transform(&self.cr),
+            &Rect::from_size(width, height),
+        );
 
         cr.paint()
     }
