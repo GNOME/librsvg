@@ -538,6 +538,7 @@ impl DrawingCtx {
 
             let orig_transform = self.get_transform();
             // FMQ: here
+            let clip_viewport = viewport.with_composed_transform(*transform_for_clip);
             self.cr.transform(transform_for_clip.into());
 
             for child in node.children().filter(|c| {
@@ -546,7 +547,7 @@ impl DrawingCtx {
                 child.draw(
                     acquired_nodes,
                     &CascadedValues::clone_with_node(&cascaded, &child),
-                    viewport,
+                    &clip_viewport,
                     self,
                     true,
                 )?;
