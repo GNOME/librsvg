@@ -401,12 +401,13 @@ impl DrawingCtx {
     /// remove it.  Use the viewport's transform instead.
     fn get_transform_for_stacking_ctx(
         &self,
+        viewport: &Viewport,
         stacking_ctx: &StackingContext,
         clipping: bool,
     ) -> Result<ValidTransform, InternalRenderingError> {
         if stacking_ctx.should_isolate() && !clipping {
             let affines = CompositingAffines::new(
-                *get_transform(&self.cr),
+                viewport.transform,
                 self.initial_viewport.transform,
                 self.cr_stack.borrow().len(),
             );
@@ -1439,7 +1440,7 @@ impl DrawingCtx {
             &mut |an, dc, new_viewport| {
                 let cr = dc.cr.clone();
 
-                let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
+                let transform = dc.get_transform_for_stacking_ctx(new_viewport, stacking_ctx, clipping)?;
                 let mut path_helper = PathHelper::new(&cr, transform, cairo_path);
 
                 if clipping {
