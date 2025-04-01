@@ -414,6 +414,7 @@ impl DrawingCtx {
     }
 
     fn get_transform(&self) -> ValidTransform {
+        // FMQ: wherever this function is called, we should really be using the current viewport's transform instead.
         let t = Transform::from(self.cr.matrix());
         ValidTransform::try_from(t)
             .expect("Cairo should already have checked that its current transform is valid")
