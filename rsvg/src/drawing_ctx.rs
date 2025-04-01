@@ -159,6 +159,18 @@ impl Viewport {
         }
     }
 
+    /// Copies the viewport, but just uses a new transform.
+    ///
+    /// This is used when we are about to draw in a temporary surface: the transform for
+    /// that surface is computed independenly of the one in the current viewport.
+    pub fn with_explicit_transform(&self, transform: Transform) -> Viewport {
+        Viewport {
+            dpi: self.dpi,
+            vbox: self.vbox,
+            transform,
+        }
+    }
+
     pub fn with_composed_transform(&self, transform: Transform) -> Viewport {
         Viewport {
             dpi: self.dpi,
@@ -612,14 +624,17 @@ impl DrawingCtx {
         {
             let mask_cr = cairo::Context::new(&mask_content_surface)?;
             mask_cr.set_matrix(transform_for_mask.into());
+            let viewport = viewport.with_explicit_transform(*transform_for_mask);
 
             let clip_rect = (*bbtransform).transform_rect(&mask_rect);
             clip_to_rectangle(&mask_cr, &transform_for_mask, &clip_rect);
 
             let mask_viewport = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 mask_cr.transform(bbtransform.into());
-                // FMQ: above - and here, the mask_viewport need the new bbtransform composed too
-                viewport.with_units(mask.get_content_units())
+                // FMQ: here
+                viewport
+                    .with_units(mask.get_content_units())
+                    .with_composed_transform(*bbtransform)
             } else {
                 viewport.with_units(mask.get_content_units())
             };
