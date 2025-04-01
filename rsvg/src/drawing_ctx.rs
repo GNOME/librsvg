@@ -612,7 +612,7 @@ impl DrawingCtx {
             mask_cr.set_matrix(transform_for_mask.into());
 
             let clip_rect = (*bbtransform).transform_rect(&mask_rect);
-            clip_to_rectangle(&mask_cr, &get_transform(&mask_cr), &clip_rect);
+            clip_to_rectangle(&mask_cr, &transform_for_mask, &clip_rect);
 
             if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 mask_cr.transform(bbtransform.into());
