@@ -611,12 +611,7 @@ impl DrawingCtx {
             let mask_cr = cairo::Context::new(&mask_content_surface)?;
             mask_cr.set_matrix(transform_for_mask.into());
 
-            let clip_rect = if mask_units == CoordUnits::ObjectBoundingBox {
-                bbtransform.transform_rect(&mask_rect)
-            } else {
-                mask_rect
-            };
-
+            let clip_rect = bbtransform.transform_rect(&mask_rect);
             clip_to_rectangle(&mask_cr, &get_transform(&mask_cr), &clip_rect);
 
             if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
