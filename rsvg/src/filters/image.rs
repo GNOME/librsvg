@@ -13,6 +13,7 @@ use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::shared_surface::{Interpolation, SharedImageSurface, SurfaceType};
+use crate::transform::ValidTransform;
 use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
@@ -136,11 +137,13 @@ impl Image {
 
         let interpolation = Interpolation::from(self.feimage_values.image_rendering());
 
+        let paffine = ValidTransform::try_from(ctx.paffine())?;
+
         let image = draw_ctx.draw_node_to_surface(
             referenced_node,
             acquired_nodes,
             &cascaded,
-            ctx.paffine(),
+            paffine,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
         )?;
