@@ -466,7 +466,7 @@ impl DrawingCtx {
     /// the new coordinate space, but the old one is not restored after the
     /// result's `Viewport` is dropped.  Thus, this function must be called
     /// inside `with_saved_cr` or `draw_ctx.with_discrete_layer`.
-    pub fn push_new_viewport(
+    fn push_new_viewport(
         &self,
         current_viewport: &Viewport,
         layout_viewport: &LayoutViewport,
