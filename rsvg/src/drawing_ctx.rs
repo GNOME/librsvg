@@ -414,7 +414,7 @@ impl DrawingCtx {
 
             Ok(ValidTransform::try_from(affines.for_temporary_surface)?)
         } else {
-            Ok(get_transform(&self.cr))
+            Ok(ValidTransform::try_from(viewport.transform)?)
         }
     }
 
