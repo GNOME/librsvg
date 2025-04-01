@@ -496,8 +496,7 @@ impl DrawingCtx {
         } = *layout_viewport;
 
         if !overflow.overflow_allowed() || (vbox.is_some() && preserve_aspect_ratio.is_slice()) {
-            // FMQ: should use the viewport's transform
-            clip_to_rectangle(&self.cr, &get_transform(&self.cr), &geometry);
+            clip_to_rectangle(&self.cr, &current_viewport.transform, &geometry);
         }
 
         preserve_aspect_ratio
