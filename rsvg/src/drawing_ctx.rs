@@ -595,8 +595,7 @@ impl DrawingCtx {
             mask.get_rect(&params)
         };
 
-        let mask_transform = values.transform().post_transform(&transform);
-        let transform_for_mask = ValidTransform::try_from(mask_transform)?;
+        let transform_for_mask = ValidTransform::try_from(values.transform().post_transform(&transform))?;
 
         let bbtransform = if let Ok(bbtransform) = rect_to_transform(&bbox.rect, mask_units) {
             bbtransform
