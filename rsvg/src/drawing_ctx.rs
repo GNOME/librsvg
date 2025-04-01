@@ -614,12 +614,13 @@ impl DrawingCtx {
             let clip_rect = (*bbtransform).transform_rect(&mask_rect);
             clip_to_rectangle(&mask_cr, &transform_for_mask, &clip_rect);
 
-            if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
+            let mask_viewport = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 mask_cr.transform(bbtransform.into());
-            }
-
-            // FMQ: above - and here, the mask_viewport need the new bbtransform composed too
-            let mask_viewport = viewport.with_units(mask.get_content_units());
+                // FMQ: above - and here, the mask_viewport need the new bbtransform composed too
+                viewport.with_units(mask.get_content_units())
+            } else {
+                viewport.with_units(mask.get_content_units())
+            };
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
