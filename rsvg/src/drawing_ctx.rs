@@ -19,7 +19,7 @@ use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
 use crate::dpi::Dpi;
 use crate::element::{Element, ElementData};
-use crate::error::{AcquireError, ImplementationLimit, InternalRenderingError};
+use crate::error::{AcquireError, ImplementationLimit, InternalRenderingError, InvalidTransform};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
@@ -595,11 +595,13 @@ impl DrawingCtx {
 
         let transform_for_mask = ValidTransform::try_from(values.transform().post_transform(&transform))?;
 
-        let bbtransform = if let Ok(bbtransform) = rect_to_transform(&bbox.rect, mask_units) {
-            bbtransform
-        } else {
-            return Ok(None);
-        };
+        let bbtransform = if let Ok(t) = rect_to_transform(&bbox.rect, mask_units)
+            .map_err(|_: ()| InvalidTransform)
+            .and_then(|t| ValidTransform::try_from(t)) {
+                t
+            } else {
+                return Ok(None);
+            };
 
         let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
 
@@ -609,11 +611,11 @@ impl DrawingCtx {
             let mask_cr = cairo::Context::new(&mask_content_surface)?;
             mask_cr.set_matrix(transform_for_mask.into());
 
-            let clip_rect = bbtransform.transform_rect(&mask_rect);
+            let clip_rect = (*bbtransform).transform_rect(&mask_rect);
             clip_to_rectangle(&mask_cr, &get_transform(&mask_cr), &clip_rect);
 
             if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
-                mask_cr.transform(ValidTransform::try_from(bbtransform)?.into());
+                mask_cr.transform(bbtransform.into());
             }
 
             // FMQ: above - and here, the mask_viewport need the new bbtransform composed too
