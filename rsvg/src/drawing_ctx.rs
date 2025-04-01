@@ -583,8 +583,6 @@ impl DrawingCtx {
         let mask_element = mask_node.borrow_element();
         let mask = borrow_element_as!(mask_node, Mask);
 
-        let bbox_rect = bbox.rect.as_ref().unwrap();
-
         let cascaded = CascadedValues::new_from_node(mask_node);
         let values = cascaded.get();
 
@@ -615,9 +613,6 @@ impl DrawingCtx {
             clip_to_rectangle(&mask_cr, &get_transform(&mask_cr), &clip_rect);
 
             if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
-                if bbox_rect.is_empty() {
-                    return Ok(None);
-                }
                 mask_cr.transform(ValidTransform::try_from(bbtransform)?.into());
             }
 
