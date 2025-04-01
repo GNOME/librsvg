@@ -395,7 +395,7 @@ impl DrawingCtx {
     ///
     /// FMQ: This is only used in the shape drawing code, and we should
     /// remove it.  Use the viewport's transform instead.
-    pub fn get_transform_for_stacking_ctx(
+    fn get_transform_for_stacking_ctx(
         &self,
         stacking_ctx: &StackingContext,
         clipping: bool,
