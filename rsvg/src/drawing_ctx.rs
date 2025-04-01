@@ -351,6 +351,10 @@ impl DrawingCtx {
     /// would like to use that same state but on a different Cairo surface and context
     /// than the ones being used on `self`.  This function copies the `self` state into a
     /// new `DrawingCtx`, and ties the copied one to the supplied `cr`.
+    ///
+    /// Note that if this function is called, it means that a temporary surface is being used.
+    /// That surface needs a viewport which starts with a special transform; see
+    /// [`Viewport::with_explicit_transform`] and how it is used elsewhere.
     fn nested(&self, cr: cairo::Context) -> Box<DrawingCtx> {
         let cr_stack = self.cr_stack.clone();
 
@@ -858,17 +862,21 @@ impl DrawingCtx {
                         }
                     };
 
-                    cr.set_matrix(ValidTransform::try_from(affines.for_temporary_surface)?.into());
+                    // FMQ: here
+                    let transform_for_temporary_surface = ValidTransform::try_from(affines.for_temporary_surface)?;
+                    cr.set_matrix(transform_for_temporary_surface.into());
 
                     let (source_surface, mut res, bbox) = {
                         let mut temporary_draw_ctx = self.nested(cr.clone());
+
+                        let viewport_for_temporary_surface = Viewport::with_explicit_transform(&viewport, *transform_for_temporary_surface);
 
                         // Draw!
 
                         let res = with_saved_cr(&cr, || {
                             temporary_draw_ctx.draw_in_optional_new_viewport(
                                 acquired_nodes,
-                                &viewport,
+                                &viewport_for_temporary_surface,
                                 &layout_viewport,
                                 draw_fn,
                             )
@@ -877,14 +885,14 @@ impl DrawingCtx {
                         let bbox = if let Ok(ref bbox) = res {
                             *bbox
                         } else {
-                            BoundingBox::new().with_transform(affines.for_temporary_surface)
+                            BoundingBox::new().with_transform(*transform_for_temporary_surface)
                         };
 
                         if let Some(ref filter) = stacking_ctx.filter {
                             let filtered_surface = temporary_draw_ctx.filter_current_surface(
                                 acquired_nodes,
                                 filter,
-                                &viewport,
+                                &viewport_for_temporary_surface,
                                 &stacking_ctx.element_name,
                                 &bbox,
                             )?;
