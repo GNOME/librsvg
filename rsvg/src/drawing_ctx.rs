@@ -413,7 +413,7 @@ impl DrawingCtx {
         self.config.testing
     }
 
-    pub fn get_transform(&self) -> ValidTransform {
+    fn get_transform(&self) -> ValidTransform {
         let t = Transform::from(self.cr.matrix());
         ValidTransform::try_from(t)
             .expect("Cairo should already have checked that its current transform is valid")
