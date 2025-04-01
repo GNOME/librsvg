@@ -381,8 +381,8 @@ impl DrawingCtx {
     /// Gets the transform that will be used on the target surface,
     /// whether using an isolated stacking context or not.
     ///
-    /// This is only used in the text code, and we should probably try
-    /// to remove it.
+    /// FMQ: This is only used in the shape drawing code, and we should
+    /// remove it.  Use the viewport's transform instead.
     pub fn get_transform_for_stacking_ctx(
         &self,
         stacking_ctx: &StackingContext,
@@ -390,14 +390,14 @@ impl DrawingCtx {
     ) -> Result<ValidTransform, InternalRenderingError> {
         if stacking_ctx.should_isolate() && !clipping {
             let affines = CompositingAffines::new(
-                *self.get_transform(),
+                *get_transform(&self.cr),
                 self.initial_viewport.transform,
                 self.cr_stack.borrow().len(),
             );
 
             Ok(ValidTransform::try_from(affines.for_temporary_surface)?)
         } else {
-            Ok(self.get_transform())
+            Ok(get_transform(&self.cr))
         }
     }
 
@@ -413,15 +413,8 @@ impl DrawingCtx {
         self.config.testing
     }
 
-    fn get_transform(&self) -> ValidTransform {
-        // FMQ: wherever this function is called, we should really be using the current viewport's transform instead.
-        let t = Transform::from(self.cr.matrix());
-        ValidTransform::try_from(t)
-            .expect("Cairo should already have checked that its current transform is valid")
-    }
-
     pub fn empty_bbox(&self) -> BoundingBox {
-        BoundingBox::new().with_transform(*self.get_transform())
+        BoundingBox::new().with_transform(*get_transform(&self.cr))
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
@@ -536,7 +529,7 @@ impl DrawingCtx {
             let node_transform = values.transform().post_transform(&transform);
             let transform_for_clip = ValidTransform::try_from(node_transform)?;
 
-            let orig_transform = self.get_transform();
+            let orig_transform = get_transform(&self.cr);
             // FMQ: here
             let clip_viewport = viewport.with_composed_transform(*transform_for_clip);
             self.cr.transform(transform_for_clip.into());
@@ -805,7 +798,7 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, InternalRenderingError> {
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
-        let orig_transform = self.get_transform();
+        let orig_transform = get_transform(&self.cr);
 
         // See the comment above about "not using that transform anywhere" (the viewport's).
         let viewport = viewport.with_composed_transform(stacking_ctx.transform);
@@ -821,7 +814,7 @@ impl DrawingCtx {
 
                 let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
-                let affine_at_start = self.get_transform();
+                let affine_at_start = get_transform(&self.cr);
 
                 if let Some(rect) = stacking_ctx.clip_rect.as_ref() {
                     clip_to_rectangle(&self.cr, rect);
@@ -1101,7 +1094,7 @@ impl DrawingCtx {
                         surface,
                         acquired_nodes,
                         self,
-                        *self.get_transform(),
+                        *get_transform(&self.cr),
                         node_bbox,
                     )
                 })
@@ -1180,7 +1173,7 @@ impl DrawingCtx {
 
         let pattern_node = pattern_node_acquired.get();
 
-        let taffine = self.get_transform().pre_transform(&pattern.transform);
+        let taffine = get_transform(&self.cr).pre_transform(&pattern.transform);
 
         let mut scwscale = (taffine.xx.powi(2) + taffine.xy.powi(2)).sqrt();
         let mut schscale = (taffine.yx.powi(2) + taffine.yy.powi(2)).sqrt();
@@ -1901,7 +1894,7 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        let orig_transform = self.get_transform();
+        let orig_transform = get_transform(&self.cr);
 
         // FMQ: here
         self.cr
@@ -2025,6 +2018,13 @@ impl DrawingCtx {
 
         FontOptions { options }
     }
+}
+
+fn get_transform(cr: &cairo::Context) -> ValidTransform {
+    // FMQ: wherever this function is called, we should really be using the current viewport's transform instead.
+    let t = Transform::from(cr.matrix());
+    ValidTransform::try_from(t)
+        .expect("Cairo should already have checked that its current transform is valid")
 }
 
 impl From<ImageRendering> for Interpolation {
