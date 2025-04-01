@@ -808,7 +808,7 @@ impl DrawingCtx {
         let orig_transform = get_transform(&self.cr);
 
         // See the comment above about "not using that transform anywhere" (the viewport's).
-        let viewport = viewport.with_composed_transform(stacking_ctx.transform);
+        let viewport = viewport.with_composed_transform(*stacking_ctx_transform);
         self.cr.transform(stacking_ctx_transform.into());
 
         let res = if clipping {
