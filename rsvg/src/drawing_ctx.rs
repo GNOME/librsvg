@@ -598,6 +598,12 @@ impl DrawingCtx {
         let mask_transform = values.transform().post_transform(&transform);
         let transform_for_mask = ValidTransform::try_from(mask_transform)?;
 
+        let bbtransform = if let Ok(bbtransform) = rect_to_transform(&bbox.rect, mask_units) {
+            bbtransform
+        } else {
+            return Ok(None);
+        };
+
         let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
 
         // Use a scope because mask_cr needs to release the
@@ -606,53 +612,51 @@ impl DrawingCtx {
             let mask_cr = cairo::Context::new(&mask_content_surface)?;
             mask_cr.set_matrix(transform_for_mask.into());
 
-            if let Ok(bbtransform) = rect_to_transform(&bbox.rect, mask_units) {
-                let clip_rect = if mask_units == CoordUnits::ObjectBoundingBox {
-                    bbtransform.transform_rect(&mask_rect)
-                } else {
-                    mask_rect
-                };
+            let clip_rect = if mask_units == CoordUnits::ObjectBoundingBox {
+                bbtransform.transform_rect(&mask_rect)
+            } else {
+                mask_rect
+            };
 
-                clip_to_rectangle(&mask_cr, &get_transform(&mask_cr), &clip_rect);
+            clip_to_rectangle(&mask_cr, &get_transform(&mask_cr), &clip_rect);
 
-                if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
-                    if bbox_rect.is_empty() {
-                        return Ok(None);
-                    }
-                    mask_cr.transform(ValidTransform::try_from(bbtransform)?.into());
+            if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
+                if bbox_rect.is_empty() {
+                    return Ok(None);
                 }
-
-                // FMQ: above - and here, the mask_viewport need the new bbtransform composed too
-                let mask_viewport = viewport.with_units(mask.get_content_units());
-
-                let mut mask_draw_ctx = self.nested(mask_cr);
-
-                let stacking_ctx = Box::new(StackingContext::new(
-                    self.session(),
-                    acquired_nodes,
-                    &mask_element,
-                    Transform::identity(),
-                    None,
-                    values,
-                ));
-
-                rsvg_log!(self.session, "(mask {}", mask_element);
-
-                let res = mask_draw_ctx.with_discrete_layer(
-                    &stacking_ctx,
-                    acquired_nodes,
-                    &mask_viewport,
-                    None,
-                    false,
-                    &mut |an, dc, new_viewport| {
-                        mask_node.draw_children(an, &cascaded, new_viewport, dc, false)
-                    },
-                );
-
-                rsvg_log!(self.session, ")");
-
-                res?;
+                mask_cr.transform(ValidTransform::try_from(bbtransform)?.into());
             }
+
+            // FMQ: above - and here, the mask_viewport need the new bbtransform composed too
+            let mask_viewport = viewport.with_units(mask.get_content_units());
+
+            let mut mask_draw_ctx = self.nested(mask_cr);
+
+            let stacking_ctx = Box::new(StackingContext::new(
+                self.session(),
+                acquired_nodes,
+                &mask_element,
+                Transform::identity(),
+                None,
+                values,
+            ));
+
+            rsvg_log!(self.session, "(mask {}", mask_element);
+
+            let res = mask_draw_ctx.with_discrete_layer(
+                &stacking_ctx,
+                acquired_nodes,
+                &mask_viewport,
+                None,
+                false,
+                &mut |an, dc, new_viewport| {
+                    mask_node.draw_children(an, &cascaded, new_viewport, dc, false)
+                },
+            );
+
+            rsvg_log!(self.session, ")");
+
+            res?;
         }
 
         let tmp = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?;
