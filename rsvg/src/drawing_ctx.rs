@@ -473,7 +473,8 @@ impl DrawingCtx {
         } = *layout_viewport;
 
         if !overflow.overflow_allowed() || (vbox.is_some() && preserve_aspect_ratio.is_slice()) {
-            clip_to_rectangle(&self.cr, &geometry);
+            // FMQ: should use the viewport's transform
+            clip_to_rectangle(&self.cr, &get_transform(&self.cr), &geometry);
         }
 
         preserve_aspect_ratio
@@ -620,7 +621,7 @@ impl DrawingCtx {
                 mask_rect
             };
 
-            clip_to_rectangle(&mask_cr, &clip_rect);
+            clip_to_rectangle(&mask_cr, &get_transform(&mask_cr), &clip_rect);
 
             if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 if bbox_rect.is_empty() {
@@ -817,7 +818,7 @@ impl DrawingCtx {
                 let affine_at_start = get_transform(&self.cr);
 
                 if let Some(rect) = stacking_ctx.clip_rect.as_ref() {
-                    clip_to_rectangle(&self.cr, rect);
+                    clip_to_rectangle(&self.cr, &get_transform(&self.cr), rect);
                 }
 
                 // Here we are clipping in user space, so the bbox doesn't matter
@@ -1522,7 +1523,7 @@ impl DrawingCtx {
         cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
-        clip_to_rectangle(&cr, &Rect::from_size(width, height));
+        clip_to_rectangle(&cr, &get_transform(&self.cr), &Rect::from_size(width, height));
 
         cr.paint()
     }
@@ -2352,9 +2353,14 @@ fn escape_link_target(value: &str) -> Cow<'_, str> {
     })
 }
 
-fn clip_to_rectangle(cr: &cairo::Context, r: &Rect) {
+fn clip_to_rectangle(cr: &cairo::Context, transform: &ValidTransform, r: &Rect) {
+    let save_matrix = cr.matrix();
+    cr.set_matrix((*transform).into());
+
     cr.rectangle(r.x0, r.y0, r.width(), r.height());
     cr.clip();
+
+    cr.set_matrix(save_matrix);
 }
 
 impl From<SpreadMethod> for cairo::Extend {
