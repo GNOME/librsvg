@@ -900,7 +900,8 @@ impl DrawingCtx {
 
                     // Clip
 
-                    let transform_for_clip = ValidTransform::try_from(affines.outside_temporary_surface)?;
+                    let transform_for_clip =
+                        ValidTransform::try_from(affines.outside_temporary_surface)?;
 
                     let viewport_for_clip = viewport.with_explicit_transform(transform_for_clip);
                     self.cr.set_matrix(transform_for_clip.into());
