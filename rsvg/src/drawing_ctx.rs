@@ -476,10 +476,9 @@ impl DrawingCtx {
 
     /// Creates a new coordinate space inside a viewport and sets a clipping rectangle.
     ///
-    /// Note that this actually changes the `draw_ctx.cr`'s transformation to match
-    /// the new coordinate space, but the old one is not restored after the
-    /// result's `Viewport` is dropped.  Thus, this function must be called
-    /// inside `with_saved_cr` or `draw_ctx.with_discrete_layer`.
+    /// Returns the new viewport with the new coordinate space, or `None` if the transform
+    /// inside the new viewport turned out to be invalid.  In this case, the caller can simply
+    /// not render the object in question.
     fn push_new_viewport(
         &self,
         current_viewport: &Viewport,
