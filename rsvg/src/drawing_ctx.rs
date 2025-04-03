@@ -612,7 +612,7 @@ impl DrawingCtx {
 
         let bbtransform = if let Ok(t) = rect_to_transform(&bbox.rect, mask_units)
             .map_err(|_: ()| InvalidTransform)
-            .and_then(|t| ValidTransform::try_from(t))
+            .and_then(ValidTransform::try_from)
         {
             t
         } else {
