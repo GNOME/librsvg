@@ -107,7 +107,6 @@ impl FilterContext {
         stroke_paint: Rc<UserSpacePaintSource>,
         fill_paint: Rc<UserSpacePaintSource>,
         source_surface: &SharedImageSurface,
-        draw_transform: Transform,
         node_bbox: BoundingBox,
         viewport: Viewport,
     ) -> Result<Self, FilterError> {
@@ -116,7 +115,7 @@ impl FilterContext {
         let bbox_rect = node_bbox.rect.unwrap_or_default();
 
         let affine = match filter.filter_units {
-            CoordUnits::UserSpaceOnUse => draw_transform,
+            CoordUnits::UserSpaceOnUse => *viewport.transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
@@ -125,11 +124,11 @@ impl FilterContext {
                 bbox_rect.x0,
                 bbox_rect.y0,
             )
-            .post_transform(&draw_transform),
+            .post_transform(&viewport.transform),
         };
 
         let paffine = match filter.primitive_units {
-            CoordUnits::UserSpaceOnUse => draw_transform,
+            CoordUnits::UserSpaceOnUse => *viewport.transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
@@ -138,7 +137,7 @@ impl FilterContext {
                 bbox_rect.x0,
                 bbox_rect.y0,
             )
-            .post_transform(&draw_transform),
+            .post_transform(&viewport.transform),
         };
 
         if !(affine.is_invertible() && paffine.is_invertible()) {

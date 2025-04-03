@@ -1119,7 +1119,6 @@ impl DrawingCtx {
                         surface,
                         acquired_nodes,
                         self,
-                        *viewport.transform,
                         node_bbox,
                         viewport.clone(),
                     )
