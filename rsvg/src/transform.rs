@@ -27,7 +27,7 @@ use crate::rect::Rect;
 ///
 /// We need to validate user-supplied transforms before setting them on Cairo,
 /// so we use this type for that.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct ValidTransform(Transform);
 
 impl TryFrom<Transform> for ValidTransform {

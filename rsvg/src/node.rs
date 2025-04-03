@@ -354,11 +354,11 @@ impl NodeDraw for Node {
                     // "If a transform function causes the current transformation matrix of an
                     // object to be non-invertible, the object and its content do not get
                     // displayed."
-                    Err(InternalRenderingError::InvalidTransform) => Ok(draw_ctx.empty_bbox()),
+                    Err(InternalRenderingError::InvalidTransform) => Ok(viewport.empty_bbox()),
 
                     Err(InternalRenderingError::CircularReference(node)) => {
                         if node != *self {
-                            return Ok(draw_ctx.empty_bbox());
+                            return Ok(viewport.empty_bbox());
                         } else {
                             return Err(InternalRenderingError::CircularReference(node));
                         }
@@ -372,7 +372,7 @@ impl NodeDraw for Node {
                 res
             }
 
-            _ => Ok(draw_ctx.empty_bbox()),
+            _ => Ok(viewport.empty_bbox()),
         }
     }
 
@@ -384,7 +384,7 @@ impl NodeDraw for Node {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        let mut bbox = draw_ctx.empty_bbox();
+        let mut bbox = viewport.empty_bbox();
 
         for child in self.children().filter(|c| c.is_element()) {
             let child_bbox = draw_ctx.draw_node_from_stack(

@@ -77,7 +77,7 @@ impl ElementTrait for Image {
         if let Some(layer) = layer {
             draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
         } else {
-            Ok(draw_ctx.empty_bbox())
+            Ok(viewport.empty_bbox())
         }
     }
 }

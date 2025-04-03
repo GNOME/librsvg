@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::error::InternalRenderingError;
+use crate::error::{InternalRenderingError, InvalidTransform};
 
 /// An enumeration of errors that can occur during filter primitive rendering.
 #[derive(Clone)]
@@ -74,5 +74,11 @@ impl From<InternalRenderingError> for FilterError {
     #[inline]
     fn from(e: InternalRenderingError) -> Self {
         FilterError::Rendering(e)
+    }
+}
+
+impl From<InvalidTransform> for FilterError {
+    fn from(_: InvalidTransform) -> Self {
+        FilterError::Rendering(InternalRenderingError::InvalidTransform)
     }
 }

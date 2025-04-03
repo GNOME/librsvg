@@ -7,7 +7,7 @@ use std::time::Instant;
 
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::{InternalRenderingError, ParseError};
 use crate::filter::UserSpaceFilter;
@@ -23,7 +23,6 @@ use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
     EdgeMode,
 };
-use crate::transform::Transform;
 use crate::xml::Attributes;
 
 mod bounds;
@@ -261,8 +260,8 @@ pub fn render(
     source_surface: SharedImageSurface,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
-    transform: Transform,
     node_bbox: &BoundingBox,
+    viewport: Viewport,
 ) -> Result<SharedImageSurface, InternalRenderingError> {
     let session = draw_ctx.session().clone();
 
@@ -271,8 +270,8 @@ pub fn render(
         stroke_paint_source,
         fill_paint_source,
         &source_surface,
-        transform,
         *node_bbox,
+        viewport,
     )
     .and_then(|mut filter_ctx| {
         // the message has an unclosed parenthesis; we'll close it below.
