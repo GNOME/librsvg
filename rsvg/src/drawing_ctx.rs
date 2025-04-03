@@ -969,7 +969,6 @@ impl DrawingCtx {
                         }
                     }
 
-                    self.cr.set_matrix(viewport.transform.into());
                     res
                 } else {
                     self.draw_in_optional_new_viewport(
