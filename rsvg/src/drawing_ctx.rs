@@ -833,10 +833,10 @@ impl DrawingCtx {
 
                 let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
-                let affine_at_start = get_transform(&self.cr);
+                let affine_at_start = viewport.transform;
 
                 if let Some(rect) = stacking_ctx.clip_rect.as_ref() {
-                    clip_to_rectangle(&self.cr, &get_transform(&self.cr), rect);
+                    clip_to_rectangle(&self.cr, &affine_at_start, rect);
                 }
 
                 // Here we are clipping in user space, so the bbox doesn't matter
