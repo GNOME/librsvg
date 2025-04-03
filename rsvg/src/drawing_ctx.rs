@@ -833,10 +833,8 @@ impl DrawingCtx {
 
                 let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
-                let affine_at_start = viewport.transform;
-
                 if let Some(rect) = stacking_ctx.clip_rect.as_ref() {
-                    clip_to_rectangle(&self.cr, &affine_at_start, rect);
+                    clip_to_rectangle(&self.cr, &viewport.transform, rect);
                 }
 
                 // Here we are clipping in user space, so the bbox doesn't matter
@@ -853,7 +851,7 @@ impl DrawingCtx {
                     // Compute our assortment of affines
 
                     let affines = Box::new(CompositingAffines::new(
-                        *affine_at_start,
+                        *viewport.transform,
                         *self.initial_viewport.transform,
                         self.cr_stack.borrow().len(),
                     ));
@@ -980,7 +978,7 @@ impl DrawingCtx {
                         }
                     }
 
-                    self.cr.set_matrix(affine_at_start.into());
+                    self.cr.set_matrix(viewport.transform.into());
                     res
                 } else {
                     self.draw_in_optional_new_viewport(
