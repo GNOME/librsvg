@@ -5,7 +5,7 @@ use std::rc::Rc;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::filter::UserSpaceFilter;
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
@@ -95,6 +95,9 @@ pub struct FilterContext {
     ///
     /// See the comments for `_affine`, they largely apply here.
     paffine: Transform,
+
+    /// Current viewport at the time the filter is invoked.
+    viewport: Viewport,
 }
 
 impl FilterContext {
@@ -106,6 +109,7 @@ impl FilterContext {
         source_surface: &SharedImageSurface,
         draw_transform: Transform,
         node_bbox: BoundingBox,
+        viewport: Viewport,
     ) -> Result<Self, FilterError> {
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
@@ -175,6 +179,7 @@ impl FilterContext {
             effects_region,
             _affine: affine,
             paffine,
+            viewport,
         })
     }
 
@@ -209,6 +214,7 @@ impl FilterContext {
                 self.source_surface.height(),
                 acquired_nodes,
                 &self.stroke_paint,
+                &self.viewport,
             )?)
         });
 
@@ -229,6 +235,7 @@ impl FilterContext {
                 self.source_surface.height(),
                 acquired_nodes,
                 &self.fill_paint,
+                &self.viewport,
             )?)
         });
 

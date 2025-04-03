@@ -1121,6 +1121,7 @@ impl DrawingCtx {
                         self,
                         *viewport.transform,
                         node_bbox,
+                        viewport.clone(),
                     )
                 })
             }
@@ -1178,6 +1179,7 @@ impl DrawingCtx {
         &mut self,
         pattern: &UserSpacePattern,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        _viewport: &Viewport,
     ) -> Result<bool, InternalRenderingError> {
         // Bail out early if the pattern has zero size, per the spec
         if approx_eq!(f64, pattern.width, 0.0) || approx_eq!(f64, pattern.height, 0.0) {
@@ -1302,6 +1304,7 @@ impl DrawingCtx {
         &mut self,
         paint_source: &UserSpacePaintSource,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        viewport: &Viewport,
     ) -> Result<bool, InternalRenderingError> {
         match *paint_source {
             UserSpacePaintSource::Gradient(ref gradient, _c) => {
@@ -1309,7 +1312,7 @@ impl DrawingCtx {
                 Ok(true)
             }
             UserSpacePaintSource::Pattern(ref pattern, ref c) => {
-                if self.set_pattern(pattern, acquired_nodes)? {
+                if self.set_pattern(pattern, acquired_nodes, viewport)? {
                     Ok(true)
                 } else if let Some(c) = c {
                     set_source_color_on_cairo(&self.cr, c);
@@ -1333,6 +1336,7 @@ impl DrawingCtx {
         height: i32,
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
+        viewport: &Viewport,
     ) -> Result<SharedImageSurface, InternalRenderingError> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
@@ -1342,7 +1346,7 @@ impl DrawingCtx {
             // FIXME: we are ignoring any error
 
             let had_paint_server =
-                temporary_draw_ctx.set_paint_source(paint_source, acquired_nodes)?;
+                temporary_draw_ctx.set_paint_source(paint_source, acquired_nodes, viewport)?;
             if had_paint_server {
                 temporary_draw_ctx.cr.paint()?;
             }
@@ -1358,8 +1362,9 @@ impl DrawingCtx {
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
+        viewport: &Viewport,
     ) -> Result<(), InternalRenderingError> {
-        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes)?;
+        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes, viewport)?;
         if had_paint_server {
             cr.stroke_preserve()?;
         }
@@ -1372,8 +1377,9 @@ impl DrawingCtx {
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
+        viewport: &Viewport,
     ) -> Result<(), InternalRenderingError> {
-        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes)?;
+        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes, viewport)?;
         if had_paint_server {
             cr.fill_preserve()?;
         }
@@ -1482,7 +1488,7 @@ impl DrawingCtx {
                         match target {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
-                                dc.fill(&cr, an, fill_paint)?;
+                                dc.fill(&cr, an, fill_paint, new_viewport)?;
                             }
 
                             PaintTarget::Stroke => {
@@ -1494,7 +1500,7 @@ impl DrawingCtx {
                                 } else {
                                     None
                                 };
-                                dc.stroke(&cr, an, stroke_paint)?;
+                                dc.stroke(&cr, an, stroke_paint, new_viewport)?;
                                 if let Some(matrix) = backup_matrix {
                                     cr.set_matrix(matrix);
                                 }
@@ -1622,6 +1628,7 @@ impl DrawingCtx {
         span: &TextSpan,
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
+        viewport: &Viewport,
     ) -> Result<BoundingBox, InternalRenderingError> {
         let path = pango_layout_to_cairo_path(span.x, span.y, &span.layout, span.gravity)?;
         if path.is_empty() {
@@ -1665,7 +1672,7 @@ impl DrawingCtx {
                     match target {
                         PaintTarget::Fill => {
                             let had_paint_server =
-                                self.set_paint_source(&span.fill_paint, acquired_nodes)?;
+                                self.set_paint_source(&span.fill_paint, acquired_nodes, viewport)?;
 
                             if had_paint_server {
                                 if can_use_text_as_path {
@@ -1691,8 +1698,11 @@ impl DrawingCtx {
                         }
 
                         PaintTarget::Stroke => {
-                            let had_paint_server =
-                                self.set_paint_source(&span.stroke_paint, acquired_nodes)?;
+                            let had_paint_server = self.set_paint_source(
+                                &span.stroke_paint,
+                                acquired_nodes,
+                                viewport,
+                            )?;
 
                             if had_paint_server {
                                 path.to_cairo_context(&self.cr)?;
@@ -1728,11 +1738,11 @@ impl DrawingCtx {
             viewport,
             None,
             clipping,
-            &mut |an, dc, _new_viewport| {
+            &mut |an, dc, new_viewport| {
                 let mut bbox = dc.empty_bbox();
 
                 for span in &text.spans {
-                    let span_bbox = dc.draw_text_span(span, an, clipping)?;
+                    let span_bbox = dc.draw_text_span(span, an, clipping, new_viewport)?;
                     bbox.insert(&span_bbox);
                 }
 
