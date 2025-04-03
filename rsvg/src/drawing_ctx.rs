@@ -2011,8 +2011,6 @@ impl DrawingCtx {
             )
         };
 
-        self.cr.set_matrix(viewport.transform.into());
-
         if let Ok(bbox) = res {
             let mut res_bbox = BoundingBox::new().with_transform(*viewport.transform);
             res_bbox.insert(&bbox);
