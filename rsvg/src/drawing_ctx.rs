@@ -555,7 +555,7 @@ impl DrawingCtx {
             let node_transform = values.transform().post_transform(&transform);
             let transform_for_clip = ValidTransform::try_from(node_transform)?;
 
-            let orig_transform = get_transform(&self.cr);
+            let orig_transform = viewport.transform;
             // FMQ: here
             let clip_viewport = viewport.with_composed_transform(transform_for_clip)?;
             self.cr.transform(transform_for_clip.into());
