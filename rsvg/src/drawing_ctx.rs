@@ -810,7 +810,6 @@ impl DrawingCtx {
         let orig_transform = viewport.transform;
 
         let viewport = viewport.with_composed_transform(stacking_ctx_transform)?;
-        self.cr.transform(stacking_ctx_transform.into());
 
         let res = if clipping {
             self.draw_in_optional_new_viewport(acquired_nodes, &viewport, &layout_viewport, draw_fn)
@@ -1531,6 +1530,7 @@ impl DrawingCtx {
         let interpolation = Interpolation::from(image_rendering);
 
         ptn.set_filter(cairo::Filter::from(interpolation));
+        cr.set_matrix(viewport.transform.into());
         cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
