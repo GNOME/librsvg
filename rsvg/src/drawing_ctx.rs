@@ -1531,6 +1531,7 @@ impl DrawingCtx {
         width: f64,
         height: f64,
         image_rendering: ImageRendering,
+        viewport: &Viewport,
     ) -> Result<(), cairo::Error> {
         let cr = self.cr.clone();
 
@@ -1552,7 +1553,7 @@ impl DrawingCtx {
         // Clip is needed due to extend being set to pad.
         clip_to_rectangle(
             &cr,
-            &get_transform(&self.cr),
+            &viewport.transform,
             &Rect::from_size(width, height),
         );
 
@@ -1595,12 +1596,13 @@ impl DrawingCtx {
                 viewport,
                 Some(layout_viewport),
                 clipping,
-                &mut |_an, dc, _new_viewport| {
+                &mut |_an, dc, new_viewport| {
                     dc.paint_surface(
                         &image.surface,
                         image_width,
                         image_height,
                         image.image_rendering,
+                        new_viewport
                     )?;
 
                     Ok(bounds)
