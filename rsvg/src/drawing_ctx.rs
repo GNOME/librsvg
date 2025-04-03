@@ -1937,7 +1937,7 @@ impl DrawingCtx {
         // FMQ: here
         let use_transform = ValidTransform::try_from(values.transform())?;
         self.cr.transform(use_transform.into());
-        let viewport = viewport.with_composed_transform(use_transform)?;
+        let use_viewport = viewport.with_composed_transform(use_transform)?;
 
         let use_element = node.borrow_element();
 
@@ -1979,7 +1979,7 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                &viewport,
+                &use_viewport,
                 Some(layout_viewport),
                 clipping,
                 &mut |an, dc, new_viewport| {
@@ -2012,7 +2012,7 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                &viewport,
+                &use_viewport,
                 None,
                 clipping,
                 &mut |an, dc, new_viewport| {
