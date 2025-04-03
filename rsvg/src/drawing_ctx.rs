@@ -917,9 +917,10 @@ impl DrawingCtx {
 
                     // Clip
 
-                    self.cr.set_matrix(
-                        ValidTransform::try_from(affines.outside_temporary_surface)?.into(),
-                    );
+                    let transform_for_clip = ValidTransform::try_from(affines.outside_temporary_surface)?;
+
+                    self.cr.set_matrix(transform_for_clip.into());
+
                     self.clip_to_node(
                         &stacking_ctx.clip_in_object_space,
                         acquired_nodes,
