@@ -185,9 +185,10 @@ impl Marker {
         // FIXME: This is the only place in the code where we pass a Some(rect) to
         // StackingContext::new() for its clip_rect argument.  The effect is to clip to
         // the viewport that the current marker should establish, but this code for
-        // drawing markers does not yet use the viewports machinery and instead does
-        // things by hand.  We should encode the information about the overflow property
-        // in the viewport, so it knows whether to clip or not.
+        // drawing markers does not yet use the layout_viewport argument in the call to
+        // with_discrete_layer() below and instead does things by hand.  We should do all
+        // this with the layout_viewport instead of clip_rect, and then we can remove the
+        // clip_rect field in StackingContext.
         let clip_rect = if values.is_overflow() {
             None
         } else if let Some(vbox) = self.vbox {
