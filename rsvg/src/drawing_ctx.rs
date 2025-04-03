@@ -628,7 +628,6 @@ impl DrawingCtx {
         // reference to the surface before we access the pixels
         {
             let mask_cr = cairo::Context::new(&mask_content_surface)?;
-            mask_cr.set_matrix(transform_for_mask.into());
             let viewport = viewport.with_explicit_transform(transform_for_mask);
 
             let clip_rect = (*bbtransform).transform_rect(&mask_rect);
