@@ -857,14 +857,12 @@ impl DrawingCtx {
 
                         // Draw!
 
-                        let res = with_saved_cr(&cr, || {
-                            temporary_draw_ctx.draw_in_optional_new_viewport(
-                                acquired_nodes,
-                                &viewport_for_temporary_surface,
-                                &layout_viewport,
-                                draw_fn,
-                            )
-                        });
+                        let res = temporary_draw_ctx.draw_in_optional_new_viewport(
+                            acquired_nodes,
+                            &viewport_for_temporary_surface,
+                            &layout_viewport,
+                            draw_fn,
+                        );
 
                         let bbox = if let Ok(ref bbox) = res {
                             *bbox
