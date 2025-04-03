@@ -848,10 +848,8 @@ impl DrawingCtx {
                         }
                     };
 
-                    // FMQ: here
                     let transform_for_temporary_surface =
                         ValidTransform::try_from(affines.for_temporary_surface)?;
-                    cr.set_matrix(transform_for_temporary_surface.into());
 
                     let (source_surface, mut res, bbox) = {
                         let mut temporary_draw_ctx = self.nested(cr.clone());
