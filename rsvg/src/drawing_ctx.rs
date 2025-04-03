@@ -635,8 +635,6 @@ impl DrawingCtx {
             clip_to_rectangle(&mask_cr, &transform_for_mask, &clip_rect);
 
             let mask_viewport = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
-                mask_cr.transform(bbtransform.into());
-                // FMQ: here
                 viewport
                     .with_units(mask.get_content_units())
                     .with_composed_transform(bbtransform)?
