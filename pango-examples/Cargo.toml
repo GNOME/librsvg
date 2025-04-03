@@ -1,0 +1,32 @@
+[package]
+name = "pango-examples"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cairo-rs = { version = "0.20", features = ["v1_16", "png"] }
+pango = { version = "0.20", features = ["v1_54"] }
+pangocairo = "0.20"
+
+[build-dependencies]
+system-deps = "7.0.0"
+
+[package.metadata.system-deps]
+cairo = "1.18"
+cairo-gobject = "1.18"
+cairo-png = "1.18"
+pangocairo = "1.50"
+
+[[bin]]
+name = "example_1_trivial"
+path = "src/example_1_trivial.rs"
+
+[[bin]]
+name = "example_2_attributes"
+path = "src/example_2_attributes.rs"
+
+[[bin]]
+name = "example_3_glyphs"
+path = "src/example_3_glyphs.rs"
+
+[workspace]
