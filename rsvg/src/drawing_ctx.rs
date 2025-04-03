@@ -2351,13 +2351,10 @@ fn escape_link_target(value: &str) -> Cow<'_, str> {
 }
 
 fn clip_to_rectangle(cr: &cairo::Context, transform: &ValidTransform, r: &Rect) {
-    let save_matrix = cr.matrix();
     cr.set_matrix((*transform).into());
 
     cr.rectangle(r.x0, r.y0, r.width(), r.height());
     cr.clip();
-
-    cr.set_matrix(save_matrix);
 }
 
 impl From<SpreadMethod> for cairo::Extend {
