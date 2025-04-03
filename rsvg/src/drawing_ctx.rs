@@ -1486,17 +1486,10 @@ impl DrawingCtx {
 
                             PaintTarget::Stroke => {
                                 path_helper.set()?;
-                                let backup_matrix = if shape.stroke.non_scaling {
-                                    let matrix = cr.matrix();
+                                if shape.stroke.non_scaling {
                                     cr.set_matrix(dc.initial_viewport.transform.into());
-                                    Some(matrix)
-                                } else {
-                                    None
-                                };
-                                dc.stroke(&cr, an, stroke_paint, new_viewport)?;
-                                if let Some(matrix) = backup_matrix {
-                                    cr.set_matrix(matrix);
                                 }
+                                dc.stroke(&cr, an, stroke_paint, new_viewport)?;
                             }
 
                             PaintTarget::Markers => {
