@@ -820,7 +820,6 @@ impl DrawingCtx {
 
         let orig_transform = viewport.transform;
 
-        // See the comment above about "not using that transform anywhere" (the viewport's).
         let viewport = viewport.with_composed_transform(stacking_ctx_transform)?;
         self.cr.transform(stacking_ctx_transform.into());
 
