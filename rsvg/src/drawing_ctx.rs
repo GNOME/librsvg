@@ -1551,11 +1551,7 @@ impl DrawingCtx {
         cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
-        clip_to_rectangle(
-            &cr,
-            &viewport.transform,
-            &Rect::from_size(width, height),
-        );
+        clip_to_rectangle(&cr, &viewport.transform, &Rect::from_size(width, height));
 
         cr.paint()
     }
@@ -1602,7 +1598,7 @@ impl DrawingCtx {
                         image_width,
                         image_height,
                         image.image_rendering,
-                        new_viewport
+                        new_viewport,
                     )?;
 
                     Ok(bounds)
@@ -1932,8 +1928,6 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        let orig_transform = get_transform(&self.cr);
-
         // FMQ: here
         let use_transform = ValidTransform::try_from(values.transform())?;
         self.cr.transform(use_transform.into());
@@ -2032,10 +2026,10 @@ impl DrawingCtx {
             )
         };
 
-        self.cr.set_matrix(orig_transform.into());
+        self.cr.set_matrix(viewport.transform.into());
 
         if let Ok(bbox) = res {
-            let mut res_bbox = BoundingBox::new().with_transform(*orig_transform);
+            let mut res_bbox = BoundingBox::new().with_transform(*viewport.transform);
             res_bbox.insert(&bbox);
             Ok(res_bbox)
         } else {
