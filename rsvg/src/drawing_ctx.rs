@@ -1607,87 +1607,82 @@ impl DrawingCtx {
         // viewers.
         let can_use_text_as_path = self.cr.target().type_() != cairo::SurfaceType::Pdf;
 
-        with_saved_cr(&self.cr.clone(), || {
-            self.cr
-                .set_antialias(cairo::Antialias::from(span.text_rendering));
+        self.cr
+            .set_antialias(cairo::Antialias::from(span.text_rendering));
 
-            setup_cr_for_stroke(&self.cr, &span.stroke);
+        setup_cr_for_stroke(&self.cr, &span.stroke);
 
-            self.cr.set_matrix(viewport.transform.into());
+        self.cr.set_matrix(viewport.transform.into());
 
-            if clipping {
-                path.to_cairo_context(&self.cr)?;
-                return Ok(viewport.empty_bbox());
-            }
-
+        if clipping {
             path.to_cairo_context(&self.cr)?;
-            let bbox = compute_stroke_and_fill_box(
-                &self.cr,
-                &span.stroke,
-                &span.stroke_paint,
-                &self.initial_viewport,
-            )?;
-            self.cr.new_path();
+            return Ok(viewport.empty_bbox());
+        }
 
-            if span.is_visible {
-                if let Some(ref link_target) = span.link_target {
-                    self.link_tag_begin(link_target);
-                }
+        path.to_cairo_context(&self.cr)?;
+        let bbox = compute_stroke_and_fill_box(
+            &self.cr,
+            &span.stroke,
+            &span.stroke_paint,
+            &self.initial_viewport,
+        )?;
+        self.cr.new_path();
 
-                for &target in &span.paint_order.targets {
-                    match target {
-                        PaintTarget::Fill => {
-                            let had_paint_server =
-                                self.set_paint_source(&span.fill_paint, acquired_nodes, viewport)?;
+        if span.is_visible {
+            if let Some(ref link_target) = span.link_target {
+                self.link_tag_begin(link_target);
+            }
 
-                            if had_paint_server {
-                                if can_use_text_as_path {
-                                    path.to_cairo_context(&self.cr)?;
-                                    self.cr.fill()?;
-                                    self.cr.new_path();
-                                } else {
-                                    self.cr.move_to(span.x, span.y);
+            for &target in &span.paint_order.targets {
+                match target {
+                    PaintTarget::Fill => {
+                        let had_paint_server =
+                            self.set_paint_source(&span.fill_paint, acquired_nodes, viewport)?;
 
-                                    let matrix = self.cr.matrix();
-
-                                    let rotation_from_gravity = span.gravity.to_rotation();
-                                    if !rotation_from_gravity.approx_eq_cairo(0.0) {
-                                        self.cr.rotate(-rotation_from_gravity);
-                                    }
-
-                                    pangocairo::functions::update_layout(&self.cr, &span.layout);
-                                    pangocairo::functions::show_layout(&self.cr, &span.layout);
-
-                                    self.cr.set_matrix(matrix);
-                                }
-                            }
-                        }
-
-                        PaintTarget::Stroke => {
-                            let had_paint_server = self.set_paint_source(
-                                &span.stroke_paint,
-                                acquired_nodes,
-                                viewport,
-                            )?;
-
-                            if had_paint_server {
+                        if had_paint_server {
+                            if can_use_text_as_path {
                                 path.to_cairo_context(&self.cr)?;
-                                self.cr.stroke()?;
+                                self.cr.fill()?;
                                 self.cr.new_path();
+                            } else {
+                                self.cr.move_to(span.x, span.y);
+
+                                let matrix = self.cr.matrix();
+
+                                let rotation_from_gravity = span.gravity.to_rotation();
+                                if !rotation_from_gravity.approx_eq_cairo(0.0) {
+                                    self.cr.rotate(-rotation_from_gravity);
+                                }
+
+                                pangocairo::functions::update_layout(&self.cr, &span.layout);
+                                pangocairo::functions::show_layout(&self.cr, &span.layout);
+
+                                self.cr.set_matrix(matrix);
                             }
                         }
-
-                        PaintTarget::Markers => {}
                     }
-                }
 
-                if span.link_target.is_some() {
-                    self.link_tag_end();
+                    PaintTarget::Stroke => {
+                        let had_paint_server =
+                            self.set_paint_source(&span.stroke_paint, acquired_nodes, viewport)?;
+
+                        if had_paint_server {
+                            path.to_cairo_context(&self.cr)?;
+                            self.cr.stroke()?;
+                            self.cr.new_path();
+                        }
+                    }
+
+                    PaintTarget::Markers => {}
                 }
             }
 
-            Ok(bbox)
-        })
+            if span.link_target.is_some() {
+                self.link_tag_end();
+            }
+        }
+
+        Ok(bbox)
     }
 
     fn draw_text(
