@@ -520,9 +520,6 @@ impl DrawingCtx {
                 None
             })
             .and_then(|t| {
-                // FMQ: here
-                self.cr.transform(t.into());
-
                 let transform =
                     ValidTransform::try_from(current_viewport.transform.pre_transform(&t)).ok()?;
 
