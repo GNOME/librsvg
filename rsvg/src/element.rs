@@ -66,12 +66,12 @@ pub trait ElementTrait {
         _node: &Node,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _cascaded: &CascadedValues<'_>,
-        _viewport: &Viewport,
-        draw_ctx: &mut DrawingCtx,
+        viewport: &Viewport,
+        _draw_ctx: &mut DrawingCtx,
         _clipping: bool,
     ) -> Result<BoundingBox, InternalRenderingError> {
         // by default elements don't draw themselves
-        Ok(draw_ctx.empty_bbox())
+        Ok(viewport.empty_bbox())
     }
 
     /// Create a layout object for the current element.
@@ -501,7 +501,7 @@ impl Element {
             self.element_data
                 .draw(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
         } else {
-            Ok(draw_ctx.empty_bbox())
+            Ok(viewport.empty_bbox())
         }
     }
 

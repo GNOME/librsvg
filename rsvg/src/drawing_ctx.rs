@@ -184,6 +184,10 @@ impl Viewport {
             transform: composed_transform,
         })
     }
+
+    pub fn empty_bbox(&self) -> BoundingBox {
+        BoundingBox::new().with_transform(*self.transform)
+    }
 }
 
 /// Values that stay constant during rendering with a DrawingCtx.
@@ -434,10 +438,6 @@ impl DrawingCtx {
 
     pub fn is_testing(&self) -> bool {
         self.config.testing
-    }
-
-    pub fn empty_bbox(&self) -> BoundingBox {
-        BoundingBox::new().with_transform(*get_transform(&self.cr))
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
@@ -796,7 +796,7 @@ impl DrawingCtx {
             if let Some(new_viewport) = self.push_new_viewport(viewport, layout_viewport) {
                 draw_fn(acquired_nodes, self, &new_viewport)
             } else {
-                Ok(self.empty_bbox())
+                Ok(viewport.empty_bbox())
             }
         } else {
             draw_fn(acquired_nodes, self, viewport)
@@ -842,7 +842,7 @@ impl DrawingCtx {
                     &stacking_ctx.clip_in_user_space,
                     acquired_nodes,
                     &viewport,
-                    &self.empty_bbox(),
+                    &viewport.empty_bbox(),
                 )?;
 
                 let should_isolate = stacking_ctx.should_isolate();
@@ -1441,8 +1441,8 @@ impl DrawingCtx {
                 fill_paint,
                 ..
             } => (cairo_path, stroke_paint, fill_paint),
-            layout::Path::Validated { extents: None, .. } => return Ok(self.empty_bbox()),
-            layout::Path::Invalid(_) => return Ok(self.empty_bbox()),
+            layout::Path::Validated { extents: None, .. } => return Ok(viewport.empty_bbox()),
+            layout::Path::Invalid(_) => return Ok(viewport.empty_bbox()),
         };
 
         self.with_discrete_layer(
@@ -1463,7 +1463,7 @@ impl DrawingCtx {
                         cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
                         path_helper.set()?;
                     }
-                    return Ok(dc.empty_bbox());
+                    return Ok(new_viewport.empty_bbox());
                 }
 
                 cr.set_antialias(cairo::Antialias::from(shape.shape_rendering));
@@ -1567,7 +1567,7 @@ impl DrawingCtx {
         let image_width = image.surface.width();
         let image_height = image.surface.height();
         if clipping || image.rect.is_empty() || image_width == 0 || image_height == 0 {
-            return Ok(self.empty_bbox());
+            return Ok(viewport.empty_bbox());
         }
 
         let image_width = f64::from(image_width);
@@ -1576,7 +1576,7 @@ impl DrawingCtx {
 
         // The bounding box for <image> is decided by the values of the image's x, y, w, h
         // and not by the final computed image bounds.
-        let bounds = self.empty_bbox().with_rect(image.rect);
+        let bounds = viewport.empty_bbox().with_rect(image.rect);
 
         let layout_viewport = LayoutViewport {
             vbox: Some(vbox),
@@ -1632,7 +1632,7 @@ impl DrawingCtx {
             // Empty strings, or only-whitespace text, get turned into empty paths.
             // In that case, we really want to return "no bounds" rather than an
             // empty rectangle.
-            return Ok(self.empty_bbox());
+            return Ok(viewport.empty_bbox());
         }
 
         // #851 - We can't just render all text as paths for PDF; it
@@ -1648,7 +1648,7 @@ impl DrawingCtx {
 
             if clipping {
                 path.to_cairo_context(&self.cr)?;
-                return Ok(self.empty_bbox());
+                return Ok(viewport.empty_bbox());
             }
 
             path.to_cairo_context(&self.cr)?;
@@ -1736,7 +1736,7 @@ impl DrawingCtx {
             None,
             clipping,
             &mut |an, dc, new_viewport| {
-                let mut bbox = dc.empty_bbox();
+                let mut bbox = new_viewport.empty_bbox();
 
                 for span in &text.spans {
                     let span_bbox = dc.draw_text_span(span, an, clipping, new_viewport)?;
@@ -1844,7 +1844,7 @@ impl DrawingCtx {
         let res = if draw {
             node.draw(acquired_nodes, cascaded, viewport, self, clipping)
         } else {
-            Ok(self.empty_bbox())
+            Ok(viewport.empty_bbox())
         };
 
         if let Some(top) = stack_top {
@@ -1912,20 +1912,20 @@ impl DrawingCtx {
                     node,
                     node_id
                 );
-                return Ok(self.empty_bbox());
+                return Ok(viewport.empty_bbox());
             }
         };
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
         if use_rect.is_empty() {
-            return Ok(self.empty_bbox());
+            return Ok(viewport.empty_bbox());
         }
 
         let child = acquired.get();
 
         if clipping && !element_can_be_used_inside_use_inside_clip_path(&child.borrow_element()) {
-            return Ok(self.empty_bbox());
+            return Ok(viewport.empty_bbox());
         }
 
         // FMQ: here
@@ -2051,13 +2051,6 @@ impl DrawingCtx {
 
         FontOptions { options }
     }
-}
-
-fn get_transform(cr: &cairo::Context) -> ValidTransform {
-    // FMQ: wherever this function is called, we should really be using the current viewport's transform instead.
-    let t = Transform::from(cr.matrix());
-    ValidTransform::try_from(t)
-        .expect("Cairo should already have checked that its current transform is valid")
 }
 
 impl From<ImageRendering> for Interpolation {

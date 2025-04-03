@@ -137,7 +137,7 @@ impl Marker {
         if marker_width.approx_eq_cairo(0.0) || marker_height.approx_eq_cairo(0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
             // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
-            return Ok(draw_ctx.empty_bbox());
+            return Ok(viewport.empty_bbox());
         }
 
         let rotation = match self.orient {
@@ -160,7 +160,7 @@ impl Marker {
 
         let content_viewport = if let Some(vbox) = self.vbox {
             if vbox.is_empty() {
-                return Ok(draw_ctx.empty_bbox());
+                return Ok(viewport.empty_bbox());
             }
 
             let r = self
@@ -633,7 +633,7 @@ fn emit_marker_by_node(
 
         Err(e) => {
             rsvg_log!(draw_ctx.session(), "could not acquire marker: {}", e);
-            Ok(draw_ctx.empty_bbox())
+            Ok(viewport.empty_bbox())
         }
     }
 }
@@ -679,24 +679,24 @@ pub fn render_markers_for_shape(
             extents: Some(_),
             ..
         } => path,
-        layout::Path::Validated { extents: None, .. } => return Ok(draw_ctx.empty_bbox()),
-        layout::Path::Invalid(_) => return Ok(draw_ctx.empty_bbox()),
+        layout::Path::Validated { extents: None, .. } => return Ok(viewport.empty_bbox()),
+        layout::Path::Invalid(_) => return Ok(viewport.empty_bbox()),
     };
 
     if shape.stroke.width.approx_eq_cairo(0.0) {
-        return Ok(draw_ctx.empty_bbox());
+        return Ok(viewport.empty_bbox());
     }
 
     if shape.marker_start.node_ref.is_none()
         && shape.marker_mid.node_ref.is_none()
         && shape.marker_end.node_ref.is_none()
     {
-        return Ok(draw_ctx.empty_bbox());
+        return Ok(viewport.empty_bbox());
     }
 
     emit_markers_for_path(
         path,
-        draw_ctx.empty_bbox(),
+        viewport.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
             let marker = match marker_type {
                 MarkerType::Start => &shape.marker_start,
@@ -718,7 +718,7 @@ pub fn render_markers_for_shape(
                     marker_type,
                 )
             } else {
-                Ok(draw_ctx.empty_bbox())
+                Ok(viewport.empty_bbox())
             }
         },
     )

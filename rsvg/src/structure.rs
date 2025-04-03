@@ -113,7 +113,7 @@ impl ElementTrait for Switch {
                         clipping,
                     )
                 } else {
-                    Ok(dc.empty_bbox())
+                    Ok(new_viewport.empty_bbox())
                 }
             },
         )
@@ -444,7 +444,7 @@ impl ElementTrait for Use {
                 stroke_paint,
             )
         } else {
-            Ok(draw_ctx.empty_bbox())
+            Ok(viewport.empty_bbox())
         }
     }
 }
@@ -607,7 +607,7 @@ impl ElementTrait for Link {
         // The <text> takes care of it.
         for an in node.ancestors() {
             if matches!(&*an.borrow_element_data(), ElementData::Text(_)) {
-                return Ok(draw_ctx.empty_bbox());
+                return Ok(viewport.empty_bbox());
             }
         }
 
