@@ -1633,6 +1633,8 @@ impl DrawingCtx {
 
             setup_cr_for_stroke(&self.cr, &span.stroke);
 
+            self.cr.set_matrix(viewport.transform.into());
+
             if clipping {
                 path.to_cairo_context(&self.cr)?;
                 return Ok(viewport.empty_bbox());
