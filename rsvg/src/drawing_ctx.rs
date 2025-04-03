@@ -628,7 +628,6 @@ impl DrawingCtx {
         // reference to the surface before we access the pixels
         {
             let mask_cr = cairo::Context::new(&mask_content_surface)?;
-            let viewport = viewport.with_explicit_transform(transform_for_mask);
 
             let clip_rect = (*bbtransform).transform_rect(&mask_rect);
             clip_to_rectangle(&mask_cr, &transform_for_mask, &clip_rect);
@@ -636,9 +635,12 @@ impl DrawingCtx {
             let mask_viewport = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 viewport
                     .with_units(mask.get_content_units())
+                    .with_explicit_transform(transform_for_mask)
                     .with_composed_transform(bbtransform)?
             } else {
-                viewport.with_units(mask.get_content_units())
+                viewport
+                    .with_units(mask.get_content_units())
+                    .with_explicit_transform(transform_for_mask)
             };
 
             let mut mask_draw_ctx = self.nested(mask_cr);
