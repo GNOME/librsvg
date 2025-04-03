@@ -1907,9 +1907,7 @@ impl DrawingCtx {
             return Ok(viewport.empty_bbox());
         }
 
-        // FMQ: here
         let use_transform = ValidTransform::try_from(values.transform())?;
-        self.cr.transform(use_transform.into());
         let use_viewport = viewport.with_composed_transform(use_transform)?;
 
         let use_element = node.borrow_element();
