@@ -406,9 +406,6 @@ impl DrawingCtx {
 
     /// Gets the transform that will be used on the target surface,
     /// whether using an isolated stacking context or not.
-    ///
-    /// FMQ: This is only used in the shape drawing code, and we should
-    /// remove it.  Use the viewport's transform instead.
     fn get_transform_for_stacking_ctx(
         &self,
         viewport: &Viewport,
