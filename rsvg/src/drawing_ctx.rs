@@ -1178,7 +1178,7 @@ impl DrawingCtx {
         &mut self,
         pattern: &UserSpacePattern,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        _viewport: &Viewport,
+        viewport: &Viewport,
     ) -> Result<bool, InternalRenderingError> {
         // Bail out early if the pattern has zero size, per the spec
         if approx_eq!(f64, pattern.width, 0.0) || approx_eq!(f64, pattern.height, 0.0) {
@@ -1199,7 +1199,7 @@ impl DrawingCtx {
 
         let pattern_node = pattern_node_acquired.get();
 
-        let taffine = get_transform(&self.cr).pre_transform(&pattern.transform);
+        let taffine = viewport.transform.pre_transform(&pattern.transform);
 
         let mut scwscale = (taffine.xx.powi(2) + taffine.xy.powi(2)).sqrt();
         let mut schscale = (taffine.yx.powi(2) + taffine.yy.powi(2)).sqrt();
