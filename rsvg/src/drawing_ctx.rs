@@ -552,9 +552,7 @@ impl DrawingCtx {
             let node_transform = values.transform().post_transform(&transform);
             let transform_for_clip = ValidTransform::try_from(node_transform)?;
 
-            // FMQ: here
             let clip_viewport = viewport.with_composed_transform(transform_for_clip)?;
-            self.cr.transform(transform_for_clip.into());
 
             for child in node.children().filter(|c| {
                 c.is_element() && element_can_be_used_inside_clip_path(&c.borrow_element())
