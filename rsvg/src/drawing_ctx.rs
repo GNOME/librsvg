@@ -801,8 +801,6 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, InternalRenderingError> {
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
-        let orig_transform = viewport.transform;
-
         let viewport = viewport.with_composed_transform(stacking_ctx_transform)?;
 
         let res = if clipping {
@@ -980,7 +978,6 @@ impl DrawingCtx {
             })
         };
 
-        self.cr.set_matrix(orig_transform.into());
         res
     }
 
