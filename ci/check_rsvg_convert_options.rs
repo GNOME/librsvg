@@ -504,11 +504,11 @@ fn check_description(
 
     check_description_indentation(long_name, &description_lines)?;
 
-    let description_segments = get_description_segments(&description_lines);
-
-    drop(description_lines);
-
     if value_range.takes_values() {
+        // If more description segments get checked at some point, the
+        // following statement should be moved outside this block.
+        let description_segments = get_description_segments(&description_lines);
+
         check_value_description(option, long_name, &description_segments)?;
     }
 
