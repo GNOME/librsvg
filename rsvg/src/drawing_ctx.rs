@@ -1181,11 +1181,9 @@ impl DrawingCtx {
         {
             let mut pattern_draw_ctx = self.nested(cr_pattern);
 
-            let pattern_viewport = Viewport {
-                dpi: self.config.dpi,
-                vbox: ViewBox::from(Rect::from_size(pattern.width, pattern.height)),
-                transform,
-            };
+            let pattern_viewport = viewport
+                .with_view_box(pattern.width, pattern.height)
+                .with_explicit_transform(transform);
 
             pattern_draw_ctx
                 .with_alpha(pattern.opacity, &mut |dc| {
