@@ -1329,36 +1329,6 @@ impl DrawingCtx {
         Ok(surface.share()?)
     }
 
-    fn stroke(
-        &mut self,
-        cr: &cairo::Context,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        paint_source: &UserSpacePaintSource,
-        viewport: &Viewport,
-    ) -> Result<(), InternalRenderingError> {
-        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes, viewport)?;
-        if had_paint_server {
-            cr.stroke_preserve()?;
-        }
-
-        Ok(())
-    }
-
-    fn fill(
-        &mut self,
-        cr: &cairo::Context,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        paint_source: &UserSpacePaintSource,
-        viewport: &Viewport,
-    ) -> Result<(), InternalRenderingError> {
-        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes, viewport)?;
-        if had_paint_server {
-            cr.fill_preserve()?;
-        }
-
-        Ok(())
-    }
-
     pub fn draw_layer(
         &mut self,
         layer: &Layer,
@@ -1460,7 +1430,11 @@ impl DrawingCtx {
                         match target {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
-                                dc.fill(&cr, an, fill_paint, new_viewport)?;
+                                let had_paint_server =
+                                    dc.set_paint_source(fill_paint, an, viewport)?;
+                                if had_paint_server {
+                                    cr.fill_preserve()?;
+                                }
                             }
 
                             PaintTarget::Stroke => {
@@ -1468,7 +1442,12 @@ impl DrawingCtx {
                                 if shape.stroke.non_scaling {
                                     cr.set_matrix(dc.initial_viewport.transform.into());
                                 }
-                                dc.stroke(&cr, an, stroke_paint, new_viewport)?;
+
+                                let had_paint_server =
+                                    dc.set_paint_source(stroke_paint, an, viewport)?;
+                                if had_paint_server {
+                                    cr.stroke_preserve()?;
+                                }
                             }
 
                             PaintTarget::Markers => {
