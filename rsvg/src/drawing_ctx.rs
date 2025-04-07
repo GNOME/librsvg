@@ -1111,42 +1111,6 @@ impl DrawingCtx {
         }
     }
 
-    fn set_gradient(&mut self, gradient: &UserSpaceGradient) -> Result<(), InternalRenderingError> {
-        let g = match gradient.variant {
-            GradientVariant::Linear { x1, y1, x2, y2 } => {
-                cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
-            }
-
-            GradientVariant::Radial {
-                cx,
-                cy,
-                r,
-                fx,
-                fy,
-                fr,
-            } => cairo::Gradient::clone(&cairo::RadialGradient::new(fx, fy, fr, cx, cy, r)),
-        };
-
-        g.set_matrix(ValidTransform::try_from(gradient.transform)?.into());
-        g.set_extend(cairo::Extend::from(gradient.spread));
-
-        for stop in &gradient.stops {
-            let UnitInterval(stop_offset) = stop.offset;
-
-            let rgba = color_to_rgba(&stop.color);
-
-            g.add_color_stop_rgba(
-                stop_offset,
-                f64::from(rgba.red.unwrap_or(0)) / 255.0,
-                f64::from(rgba.green.unwrap_or(0)) / 255.0,
-                f64::from(rgba.blue.unwrap_or(0)) / 255.0,
-                f64::from(rgba.alpha.unwrap_or(0.0)),
-            );
-        }
-
-        Ok(self.cr.set_source(&g)?)
-    }
-
     fn set_pattern(
         &mut self,
         pattern: &UserSpacePattern,
@@ -1280,7 +1244,7 @@ impl DrawingCtx {
     ) -> Result<bool, InternalRenderingError> {
         match *paint_source {
             UserSpacePaintSource::Gradient(ref gradient, _c) => {
-                self.set_gradient(gradient)?;
+                set_gradient_on_cairo(&self.cr, gradient)?;
                 Ok(true)
             }
             UserSpacePaintSource::Pattern(ref pattern, ref c) => {
@@ -2060,6 +2024,45 @@ pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &cssparser::Color) 
         f64::from(rgba.blue.unwrap_or(0)) / 255.0,
         f64::from(rgba.alpha.unwrap_or(0.0)),
     );
+}
+
+fn set_gradient_on_cairo(
+    cr: &cairo::Context,
+    gradient: &UserSpaceGradient,
+) -> Result<(), InternalRenderingError> {
+    let g = match gradient.variant {
+        GradientVariant::Linear { x1, y1, x2, y2 } => {
+            cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
+        }
+
+        GradientVariant::Radial {
+            cx,
+            cy,
+            r,
+            fx,
+            fy,
+            fr,
+        } => cairo::Gradient::clone(&cairo::RadialGradient::new(fx, fy, fr, cx, cy, r)),
+    };
+
+    g.set_matrix(ValidTransform::try_from(gradient.transform)?.into());
+    g.set_extend(cairo::Extend::from(gradient.spread));
+
+    for stop in &gradient.stops {
+        let UnitInterval(stop_offset) = stop.offset;
+
+        let rgba = color_to_rgba(&stop.color);
+
+        g.add_color_stop_rgba(
+            stop_offset,
+            f64::from(rgba.red.unwrap_or(0)) / 255.0,
+            f64::from(rgba.green.unwrap_or(0)) / 255.0,
+            f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+            f64::from(rgba.alpha.unwrap_or(0.0)),
+        );
+    }
+
+    Ok(cr.set_source(&g)?)
 }
 
 /// Converts a Pango layout to a Cairo path on the specified cr starting at (x, y).
