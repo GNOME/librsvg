@@ -699,7 +699,7 @@ impl DrawingCtx {
         Ok(())
     }
 
-    fn check_layer_nesting_depth(&mut self) -> Result<(), InternalRenderingError> {
+    fn check_layer_nesting_depth(&self) -> Result<(), InternalRenderingError> {
         if self.recursion_depth > limits::MAX_LAYER_NESTING_DEPTH {
             return Err(InternalRenderingError::LimitExceeded(
                 ImplementationLimit::MaximumLayerNestingDepthExceeded,
