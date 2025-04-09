@@ -1722,6 +1722,7 @@ impl DrawingCtx {
                 vbox: ViewBox::from(Rect::from_size(f64::from(width), f64::from(height))),
             };
 
+            // FIXME: if this returns an error, we will not restore the self.cr as per below
             let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, &viewport, false)?;
         }
 
