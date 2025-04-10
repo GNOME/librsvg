@@ -1185,22 +1185,22 @@ impl DrawingCtx {
                 .with_view_box(pattern.width, pattern.height)
                 .with_explicit_transform(transform);
 
+            let pattern_cascaded = CascadedValues::new_from_node(pattern_node);
+            let pattern_values = pattern_cascaded.get();
+
+            let elt = pattern_node.borrow_element();
+
+            let stacking_ctx = Box::new(StackingContext::new(
+                self.session(),
+                acquired_nodes,
+                &elt,
+                Transform::identity(),
+                None,
+                pattern_values,
+            ));
+
             pattern_draw_ctx
                 .with_alpha(pattern.opacity, &mut |dc| {
-                    let pattern_cascaded = CascadedValues::new_from_node(pattern_node);
-                    let pattern_values = pattern_cascaded.get();
-
-                    let elt = pattern_node.borrow_element();
-
-                    let stacking_ctx = Box::new(StackingContext::new(
-                        self.session(),
-                        acquired_nodes,
-                        &elt,
-                        Transform::identity(),
-                        None,
-                        pattern_values,
-                    ));
-
                     dc.with_discrete_layer(
                         &stacking_ctx,
                         acquired_nodes,
