@@ -266,15 +266,6 @@ probably called ``layer``, with something like this:
 That is, every stacking context should contain the thing that it will
 draw, and that thing may be a shape/text or another stacking context!
 
-As of 2023/03/30, the "current viewport" is no longer part of
-``DrawingCtx``'s mutable state.  Instead, a ``Viewport`` struct is passed
-down the call chain via a function argument.  This is not complete
-yet, since the code modifies the current ``cr``'s transform apart from
-the current viewport's transform.  The goal is to have the current
-viewport actually have the full transform to be applied to the object
-being rendered.  This should simplify gnarly code paths like the one
-for rendering ``<pattern>``.
-
 Bounding boxes
 --------------
 
@@ -310,3 +301,34 @@ blur to work around a shape.  Since librsvg cannot render the full
 shape if it lies partially outside of the toplevel viewport, the
 blurred result shows up with a halo near the image's edge, since
 transparent pixels get "blurred in" with the shape's pixels.
+
+Status
+------
+
+* 2023/Mar/30 - the "current viewport" is no longer part of
+  ``DrawingCtx``'s mutable state.  Instead, a ``Viewport`` struct is
+  passed down the call chain via a function argument.  This is not
+  complete yet, since the code modifies the current ``cr``'s transform
+  apart from the current viewport's transform.  The goal is to have
+  the current viewport actually have the full transform to be applied
+  to the object being rendered.  This should simplify gnarly code
+  paths like the one for rendering ``<pattern>``.
+
+* 2025/Apr/09 - The current ``Viewport`` is passed as an argument to
+  functions that need it, and it holds the current transform
+  correctly.  Evidence of this is that the code does not call
+  ``cr.transform()`` anymore; only
+  ``cr.set_matrix(viewport.transform)`` in the innermost code, right
+  before drawing operations on the ``cr``.
+
+  Elements that "establish a new viewport", per the SVG spec, use a
+  ``LayoutViewport`` and pass it to
+  ``DrawingCtx::with_discrete_layer()``.  This composes the
+  appropriate transform into the current ``Viewport`` and passes it on
+  to the drawing functions.  Only the markers code remains to be
+  cleaned up for this, see :issue:`1162`.
+
+  Next steps: :issue:`1162`, :issue:`1163`.
+
+  We can actually start defining ``layout::Group`` now, or rather, the
+  implementation for ``DrawingCtx::draw_group()``.

@@ -699,7 +699,7 @@ impl DrawingCtx {
         Ok(())
     }
 
-    fn check_layer_nesting_depth(&mut self) -> Result<(), InternalRenderingError> {
+    fn check_layer_nesting_depth(&self) -> Result<(), InternalRenderingError> {
         if self.recursion_depth > limits::MAX_LAYER_NESTING_DEPTH {
             return Err(InternalRenderingError::LimitExceeded(
                 ImplementationLimit::MaximumLayerNestingDepthExceeded,
@@ -1111,42 +1111,6 @@ impl DrawingCtx {
         }
     }
 
-    fn set_gradient(&mut self, gradient: &UserSpaceGradient) -> Result<(), InternalRenderingError> {
-        let g = match gradient.variant {
-            GradientVariant::Linear { x1, y1, x2, y2 } => {
-                cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
-            }
-
-            GradientVariant::Radial {
-                cx,
-                cy,
-                r,
-                fx,
-                fy,
-                fr,
-            } => cairo::Gradient::clone(&cairo::RadialGradient::new(fx, fy, fr, cx, cy, r)),
-        };
-
-        g.set_matrix(ValidTransform::try_from(gradient.transform)?.into());
-        g.set_extend(cairo::Extend::from(gradient.spread));
-
-        for stop in &gradient.stops {
-            let UnitInterval(stop_offset) = stop.offset;
-
-            let rgba = color_to_rgba(&stop.color);
-
-            g.add_color_stop_rgba(
-                stop_offset,
-                f64::from(rgba.red.unwrap_or(0)) / 255.0,
-                f64::from(rgba.green.unwrap_or(0)) / 255.0,
-                f64::from(rgba.blue.unwrap_or(0)) / 255.0,
-                f64::from(rgba.alpha.unwrap_or(0.0)),
-            );
-        }
-
-        Ok(self.cr.set_source(&g)?)
-    }
-
     fn set_pattern(
         &mut self,
         pattern: &UserSpacePattern,
@@ -1217,28 +1181,26 @@ impl DrawingCtx {
         {
             let mut pattern_draw_ctx = self.nested(cr_pattern);
 
-            let pattern_viewport = Viewport {
-                dpi: self.config.dpi,
-                vbox: ViewBox::from(Rect::from_size(pattern.width, pattern.height)),
-                transform,
-            };
+            let pattern_viewport = viewport
+                .with_view_box(pattern.width, pattern.height)
+                .with_explicit_transform(transform);
+
+            let pattern_cascaded = CascadedValues::new_from_node(pattern_node);
+            let pattern_values = pattern_cascaded.get();
+
+            let elt = pattern_node.borrow_element();
+
+            let stacking_ctx = Box::new(StackingContext::new(
+                self.session(),
+                acquired_nodes,
+                &elt,
+                Transform::identity(),
+                None,
+                pattern_values,
+            ));
 
             pattern_draw_ctx
                 .with_alpha(pattern.opacity, &mut |dc| {
-                    let pattern_cascaded = CascadedValues::new_from_node(pattern_node);
-                    let pattern_values = pattern_cascaded.get();
-
-                    let elt = pattern_node.borrow_element();
-
-                    let stacking_ctx = Box::new(StackingContext::new(
-                        self.session(),
-                        acquired_nodes,
-                        &elt,
-                        Transform::identity(),
-                        None,
-                        pattern_values,
-                    ));
-
                     dc.with_discrete_layer(
                         &stacking_ctx,
                         acquired_nodes,
@@ -1280,7 +1242,7 @@ impl DrawingCtx {
     ) -> Result<bool, InternalRenderingError> {
         match *paint_source {
             UserSpacePaintSource::Gradient(ref gradient, _c) => {
-                self.set_gradient(gradient)?;
+                set_gradient_on_cairo(&self.cr, gradient)?;
                 Ok(true)
             }
             UserSpacePaintSource::Pattern(ref pattern, ref c) => {
@@ -1327,36 +1289,6 @@ impl DrawingCtx {
         })?;
 
         Ok(surface.share()?)
-    }
-
-    fn stroke(
-        &mut self,
-        cr: &cairo::Context,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        paint_source: &UserSpacePaintSource,
-        viewport: &Viewport,
-    ) -> Result<(), InternalRenderingError> {
-        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes, viewport)?;
-        if had_paint_server {
-            cr.stroke_preserve()?;
-        }
-
-        Ok(())
-    }
-
-    fn fill(
-        &mut self,
-        cr: &cairo::Context,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        paint_source: &UserSpacePaintSource,
-        viewport: &Viewport,
-    ) -> Result<(), InternalRenderingError> {
-        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes, viewport)?;
-        if had_paint_server {
-            cr.fill_preserve()?;
-        }
-
-        Ok(())
     }
 
     pub fn draw_layer(
@@ -1460,7 +1392,11 @@ impl DrawingCtx {
                         match target {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
-                                dc.fill(&cr, an, fill_paint, new_viewport)?;
+                                let had_paint_server =
+                                    dc.set_paint_source(fill_paint, an, viewport)?;
+                                if had_paint_server {
+                                    cr.fill_preserve()?;
+                                }
                             }
 
                             PaintTarget::Stroke => {
@@ -1468,7 +1404,12 @@ impl DrawingCtx {
                                 if shape.stroke.non_scaling {
                                     cr.set_matrix(dc.initial_viewport.transform.into());
                                 }
-                                dc.stroke(&cr, an, stroke_paint, new_viewport)?;
+
+                                let had_paint_server =
+                                    dc.set_paint_source(stroke_paint, an, viewport)?;
+                                if had_paint_server {
+                                    cr.stroke_preserve()?;
+                                }
                             }
 
                             PaintTarget::Markers => {
@@ -1781,6 +1722,7 @@ impl DrawingCtx {
                 vbox: ViewBox::from(Rect::from_size(f64::from(width), f64::from(height))),
             };
 
+            // FIXME: if this returns an error, we will not restore the self.cr as per below
             let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, &viewport, false)?;
         }
 
@@ -2081,6 +2023,45 @@ pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &cssparser::Color) 
         f64::from(rgba.blue.unwrap_or(0)) / 255.0,
         f64::from(rgba.alpha.unwrap_or(0.0)),
     );
+}
+
+fn set_gradient_on_cairo(
+    cr: &cairo::Context,
+    gradient: &UserSpaceGradient,
+) -> Result<(), InternalRenderingError> {
+    let g = match gradient.variant {
+        GradientVariant::Linear { x1, y1, x2, y2 } => {
+            cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
+        }
+
+        GradientVariant::Radial {
+            cx,
+            cy,
+            r,
+            fx,
+            fy,
+            fr,
+        } => cairo::Gradient::clone(&cairo::RadialGradient::new(fx, fy, fr, cx, cy, r)),
+    };
+
+    g.set_matrix(ValidTransform::try_from(gradient.transform)?.into());
+    g.set_extend(cairo::Extend::from(gradient.spread));
+
+    for stop in &gradient.stops {
+        let UnitInterval(stop_offset) = stop.offset;
+
+        let rgba = color_to_rgba(&stop.color);
+
+        g.add_color_stop_rgba(
+            stop_offset,
+            f64::from(rgba.red.unwrap_or(0)) / 255.0,
+            f64::from(rgba.green.unwrap_or(0)) / 255.0,
+            f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+            f64::from(rgba.alpha.unwrap_or(0.0)),
+        );
+    }
+
+    Ok(cr.set_source(&g)?)
 }
 
 /// Converts a Pango layout to a Cairo path on the specified cr starting at (x, y).

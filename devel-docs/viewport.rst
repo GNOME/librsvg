@@ -1,6 +1,8 @@
 Viewport abstraction
 ====================
 
+**Status:** implemented as of 2025/Apr/09.
+
 :issue:`298` is about unifying several concepts into a Viewport abstraction.
 This chapter attempts to explain that.
 
