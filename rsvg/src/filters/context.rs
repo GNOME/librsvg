@@ -5,9 +5,8 @@ use std::rc::Rc;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{DrawingCtx, Viewport};
+use crate::drawing_ctx::DrawingCtx;
 use crate::filter::UserSpaceFilter;
-use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::{IRect, Rect};
@@ -15,7 +14,7 @@ use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
 
 use super::error::FilterError;
-use super::Input;
+use super::{FilterPlan, Input};
 
 /// A filter primitive output.
 #[derive(Debug, Clone)]
@@ -52,13 +51,12 @@ pub enum FilterInput {
 /// for each filter primitive (e.g. those that have an `output` attribute).  This struct
 /// maintains that information, plus all the extra data used during filtering.
 pub struct FilterContext {
-    /// Paint source for primitives which have an input value equal to `StrokePaint`.
-    stroke_paint: Rc<UserSpacePaintSource>,
-    /// Paint source for primitives which have an input value equal to `FillPaint`.
-    fill_paint: Rc<UserSpacePaintSource>,
+    /// Immutable values used during the execution of a `filter` property.
+    plan: Rc<FilterPlan>,
 
     /// The source graphic surface.
     source_surface: SharedImageSurface,
+
     /// Output of the last filter primitive.
     last_result: Option<FilterOutput>,
     /// Surfaces of the previous filter primitives by name.
@@ -99,27 +97,22 @@ pub struct FilterContext {
     ///
     /// See the comments for `_affine`, they largely apply here.
     paffine: Transform,
-
-    /// Current viewport at the time the filter is invoked.
-    viewport: Viewport,
 }
 
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
         filter: &UserSpaceFilter,
-        stroke_paint: Rc<UserSpacePaintSource>,
-        fill_paint: Rc<UserSpacePaintSource>,
-        source_surface: &SharedImageSurface,
+        plan: Rc<FilterPlan>,
+        source_surface: SharedImageSurface,
         node_bbox: BoundingBox,
-        viewport: Viewport,
     ) -> Result<Self, FilterError> {
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
         let bbox_rect = node_bbox.rect.unwrap_or_default();
 
         let affine = match filter.filter_units {
-            CoordUnits::UserSpaceOnUse => *viewport.transform,
+            CoordUnits::UserSpaceOnUse => *plan.viewport.transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
@@ -128,11 +121,11 @@ impl FilterContext {
                 bbox_rect.x0,
                 bbox_rect.y0,
             )
-            .post_transform(&viewport.transform),
+            .post_transform(&plan.viewport.transform),
         };
 
         let paffine = match filter.primitive_units {
-            CoordUnits::UserSpaceOnUse => *viewport.transform,
+            CoordUnits::UserSpaceOnUse => *plan.viewport.transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
@@ -141,7 +134,7 @@ impl FilterContext {
                 bbox_rect.x0,
                 bbox_rect.y0,
             )
-            .post_transform(&viewport.transform),
+            .post_transform(&plan.viewport.transform),
         };
 
         if !(affine.is_invertible() && paffine.is_invertible()) {
@@ -170,9 +163,8 @@ impl FilterContext {
         };
 
         Ok(Self {
-            stroke_paint,
-            fill_paint,
-            source_surface: source_surface.clone(),
+            plan,
+            source_surface,
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: OnceCell::new(),
@@ -182,7 +174,6 @@ impl FilterContext {
             effects_region,
             _affine: affine,
             paffine,
-            viewport,
         })
     }
 
@@ -216,8 +207,8 @@ impl FilterContext {
                 self.source_surface.width(),
                 self.source_surface.height(),
                 acquired_nodes,
-                &self.stroke_paint,
-                &self.viewport,
+                &self.plan.stroke_paint,
+                &self.plan.viewport,
             )?)
         });
 
@@ -237,8 +228,8 @@ impl FilterContext {
                 self.source_surface.width(),
                 self.source_surface.height(),
                 acquired_nodes,
-                &self.fill_paint,
-                &self.viewport,
+                &self.plan.fill_paint,
+                &self.plan.viewport,
             )?)
         });
 

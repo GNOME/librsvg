@@ -299,80 +299,83 @@ pub fn render(
 ) -> Result<SharedImageSurface, InternalRenderingError> {
     let session = draw_ctx.session().clone();
 
-    FilterContext::new(
-        &filter.user_space_filter,
-        stroke_paint_source,
-        fill_paint_source,
-        &source_surface,
-        *node_bbox,
+    let plan = Rc::new(FilterPlan {
+        stroke_paint: stroke_paint_source,
+        fill_paint: fill_paint_source,
         viewport,
-    )
-    .and_then(|mut filter_ctx| {
-        // the message has an unclosed parenthesis; we'll close it below.
-        rsvg_log!(
-            session,
-            "(filter \"{}\" with effects_region={:?}",
-            filter.name,
-            filter_ctx.effects_region()
-        );
-        for user_space_primitive in &filter.primitives {
-            let start = Instant::now();
+    });
 
-            match render_primitive(user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
-                Ok(output) => {
-                    let elapsed = start.elapsed();
-                    rsvg_log!(
-                        session,
-                        "(rendered filter primitive {} in {} seconds)",
-                        user_space_primitive.params.name(),
-                        elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
-                    );
+    let surface_width = source_surface.width();
+    let surface_height = source_surface.height();
 
-                    filter_ctx.store_result(FilterResult {
-                        name: user_space_primitive.result.clone(),
-                        output,
-                    });
-                }
+    FilterContext::new(&filter.user_space_filter, plan, source_surface, *node_bbox)
+        .and_then(|mut filter_ctx| {
+            // the message has an unclosed parenthesis; we'll close it below.
+            rsvg_log!(
+                session,
+                "(filter \"{}\" with effects_region={:?}",
+                filter.name,
+                filter_ctx.effects_region()
+            );
+            for user_space_primitive in &filter.primitives {
+                let start = Instant::now();
 
-                Err(err) => {
-                    rsvg_log!(
-                        session,
-                        "(filter primitive {} returned an error: {})",
-                        user_space_primitive.params.name(),
-                        err
-                    );
+                match render_primitive(user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx)
+                {
+                    Ok(output) => {
+                        let elapsed = start.elapsed();
+                        rsvg_log!(
+                            session,
+                            "(rendered filter primitive {} in {} seconds)",
+                            user_space_primitive.params.name(),
+                            elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+                        );
 
-                    // close the opening parenthesis from the message at the start of this function
-                    rsvg_log!(session, ")");
+                        filter_ctx.store_result(FilterResult {
+                            name: user_space_primitive.result.clone(),
+                            output,
+                        });
+                    }
 
-                    // Exit early on Cairo errors. Continue rendering otherwise.
-                    if let FilterError::CairoError(status) = err {
-                        return Err(FilterError::CairoError(status));
+                    Err(err) => {
+                        rsvg_log!(
+                            session,
+                            "(filter primitive {} returned an error: {})",
+                            user_space_primitive.params.name(),
+                            err
+                        );
+
+                        // close the opening parenthesis from the message at the start of this function
+                        rsvg_log!(session, ")");
+
+                        // Exit early on Cairo errors. Continue rendering otherwise.
+                        if let FilterError::CairoError(status) = err {
+                            return Err(FilterError::CairoError(status));
+                        }
                     }
                 }
             }
-        }
 
-        // close the opening parenthesis from the message at the start of this function
-        rsvg_log!(session, ")");
+            // close the opening parenthesis from the message at the start of this function
+            rsvg_log!(session, ")");
 
-        Ok(filter_ctx.into_output()?)
-    })
-    .or_else(|err| match err {
-        FilterError::CairoError(status) => {
-            // Exit early on Cairo errors
-            Err(InternalRenderingError::from(status))
-        }
+            Ok(filter_ctx.into_output()?)
+        })
+        .or_else(|err| match err {
+            FilterError::CairoError(status) => {
+                // Exit early on Cairo errors
+                Err(InternalRenderingError::from(status))
+            }
 
-        _ => {
-            // ignore other filter errors and just return an empty surface
-            Ok(SharedImageSurface::empty(
-                source_surface.width(),
-                source_surface.height(),
-                SurfaceType::AlphaOnly,
-            )?)
-        }
-    })
+            _ => {
+                // ignore other filter errors and just return an empty surface
+                Ok(SharedImageSurface::empty(
+                    surface_width,
+                    surface_height,
+                    SurfaceType::AlphaOnly,
+                )?)
+            }
+        })
 }
 
 #[rustfmt::skip]
