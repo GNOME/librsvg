@@ -76,6 +76,31 @@ pub struct FilterSpec {
     pub primitives: Vec<UserSpacePrimitive>,
 }
 
+/// Parameters using while rendering a whole `filter` property.
+///
+/// The `filter` property may contain a single primitive, like `filter="blur(2px)", or a
+/// list of filter specs like `filter="blur(2px) url(#filter_id) drop_shadow(5 5)"`.  Each
+/// of those specs may produce more than one primitive; for example, the `url(#filter_id)`
+/// there may refer to a `<filter>` element that has several primitives inside it.  Also,
+/// the `drop_shadow()` function will expand to the few primitives used to implement a
+/// drop shadow.
+///
+/// Each filter spec will be rendered within a [`FilterContext`], so that the context can maintain
+/// the list of named outputs within a `<filter>` element.
+///
+/// While rendering all those [`FilterContext`]s, there are some immutable parameters.
+/// This `FilterPlan` struct contains those parameters.
+pub struct FilterPlan {
+    /// Paint source for primitives which have an input value equal to `StrokePaint`.
+    stroke_paint: Rc<UserSpacePaintSource>,
+
+    /// Paint source for primitives which have an input value equal to `FillPaint`.
+    fill_paint: Rc<UserSpacePaintSource>,
+
+    /// Current viewport at the time the filter is invoked.
+    viewport: Viewport,
+}
+
 /// Resolved parameters for each filter primitive.
 ///
 /// These gather all the data that a primitive may need during rendering:
