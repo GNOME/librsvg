@@ -531,12 +531,9 @@ mod tests {
     use crate::node::NodeBorrow;
     use crate::properties::Filter;
 
-    #[test]
-    fn detects_source_alpha() {
-        let document = Document::load_from_bytes(include_bytes!("test_input_requirements.svg"));
-
-        let rect_1 = document.lookup_internal_node("rect_1").unwrap();
-        let elt = rect_1.borrow_element();
+    fn get_input_requirements_for_node(document: &Document, node_id: &str) -> InputRequirements {
+        let node = document.lookup_internal_node(node_id).unwrap();
+        let elt = node.borrow_element();
         let values = elt.get_computed_values();
 
         let session = Session::default();
@@ -570,16 +567,22 @@ mod tests {
             .collect::<Result<Vec<FilterSpec>, _>>()
             .unwrap();
 
-        let requirements = InputRequirements::new_from_filter_specs(&filter_specs);
+        InputRequirements::new_from_filter_specs(&filter_specs)
+    }
 
-        let expected = InputRequirements {
-            needs_source_alpha: true,
-            needs_background_image: false,
-            needs_background_alpha: false,
-            needs_stroke_paint_image: false,
-            needs_fill_paint_image: false,
-        };
+    #[test]
+    fn detects_source_alpha() {
+        let document = Document::load_from_bytes(include_bytes!("test_input_requirements.svg"));
 
-        assert_eq!(requirements, expected);
+        assert_eq!(
+            get_input_requirements_for_node(&document, "rect_1"),
+            InputRequirements {
+                needs_source_alpha: true,
+                needs_background_image: false,
+                needs_background_alpha: false,
+                needs_stroke_paint_image: false,
+                needs_fill_paint_image: false,
+            }
+        );
     }
 }
