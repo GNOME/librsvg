@@ -136,7 +136,15 @@ pub struct InputRequirements {
 
 impl InputRequirements {
     pub fn new_from_filter_specs(specs: &[FilterSpec]) -> InputRequirements {
-        unimplemented!()
+        specs
+            .iter()
+            .map(|spec| {
+                spec.primitives
+                    .iter()
+                    .map(|primitive| primitive.params.get_input_requirements())
+                    .fold(InputRequirements::default(), |a, b| a.fold(b))
+            })
+            .fold(InputRequirements::default(), |a, b| a.fold(b))
     }
 
     #[rustfmt::skip]
@@ -198,6 +206,29 @@ impl PrimitiveParams {
             SpecularLighting(..)  => "feSpecularLighting",
             Tile(..)              => "feTile",
             Turbulence(..)        => "feTurbulence",
+        }
+    }
+
+    #[rustfmt::skip]
+    fn get_input_requirements(&self) -> InputRequirements {
+        use PrimitiveParams::*;
+        match self {
+            Blend(p)             => p.get_input_requirements(),
+            ColorMatrix(p)       => p.get_input_requirements(),
+            ComponentTransfer(p) => p.get_input_requirements(),
+            Composite(p)         => p.get_input_requirements(),
+            ConvolveMatrix(p)    => p.get_input_requirements(),
+            DiffuseLighting(p)   => p.get_input_requirements(),
+            DisplacementMap(p)   => p.get_input_requirements(),
+            Flood(p)             => p.get_input_requirements(),
+            GaussianBlur(p)      => p.get_input_requirements(),
+            Image(p)             => p.get_input_requirements(),
+            Merge(p)             => p.get_input_requirements(),
+            Morphology(p)        => p.get_input_requirements(),
+            Offset(p)            => p.get_input_requirements(),
+            SpecularLighting(p)  => p.get_input_requirements(),
+            Tile(p)              => p.get_input_requirements(),
+            Turbulence(p)        => p.get_input_requirements(),
         }
     }
 }
