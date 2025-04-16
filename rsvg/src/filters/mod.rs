@@ -61,9 +61,18 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
+/// Parameters to apply a list of SVG filter primitives onto a surface.
+///
+/// This is almost everything needed to take a surface and apply a list of SVG filter
+/// primitives to it.
 pub struct FilterSpec {
+    /// Human-readable identifier for the filter, for logging/debugging purposes.
     pub name: String,
+
+    /// Coordinates and bounds.
     pub user_space_filter: UserSpaceFilter,
+
+    /// List of filter primitives to apply to the surface, in order.
     pub primitives: Vec<UserSpacePrimitive>,
 }
 
