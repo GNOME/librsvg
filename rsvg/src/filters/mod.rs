@@ -92,13 +92,13 @@ pub struct FilterSpec {
 /// This `FilterPlan` struct contains those parameters.
 pub struct FilterPlan {
     /// Paint source for primitives which have an input value equal to `StrokePaint`.
-    stroke_paint: Rc<UserSpacePaintSource>,
+    pub stroke_paint: Rc<UserSpacePaintSource>,
 
     /// Paint source for primitives which have an input value equal to `FillPaint`.
-    fill_paint: Rc<UserSpacePaintSource>,
+    pub fill_paint: Rc<UserSpacePaintSource>,
 
     /// Current viewport at the time the filter is invoked.
-    viewport: Viewport,
+    pub viewport: Viewport,
 }
 
 /// Resolved parameters for each filter primitive.
@@ -288,22 +288,14 @@ impl Primitive {
 
 /// Applies a filter and returns the resulting surface.
 pub fn render(
+    plan: Rc<FilterPlan>,
     filter: &FilterSpec,
-    stroke_paint_source: Rc<UserSpacePaintSource>,
-    fill_paint_source: Rc<UserSpacePaintSource>,
     source_surface: SharedImageSurface,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
     node_bbox: &BoundingBox,
-    viewport: Viewport,
 ) -> Result<SharedImageSurface, InternalRenderingError> {
     let session = draw_ctx.session().clone();
-
-    let plan = Rc::new(FilterPlan {
-        stroke_paint: stroke_paint_source,
-        fill_paint: fill_paint_source,
-        viewport,
-    });
 
     let surface_width = source_surface.width();
     let surface_height = source_surface.height();

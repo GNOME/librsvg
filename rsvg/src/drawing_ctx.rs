@@ -20,7 +20,7 @@ use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
 use crate::dpi::Dpi;
 use crate::element::{Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, InternalRenderingError, InvalidTransform};
-use crate::filters::{self, FilterSpec};
+use crate::filters::{self, FilterPlan, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
@@ -102,7 +102,7 @@ impl<'a> PathHelper<'a> {
 }
 
 /// Holds the size of the current viewport in the user's coordinate system.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Viewport {
     pub dpi: Dpi,
 
@@ -1082,19 +1082,16 @@ impl DrawingCtx {
 
         match filter_specs {
             Ok(specs) => {
+                let plan = Rc::new(FilterPlan {
+                    stroke_paint: stroke_paint_source,
+                    fill_paint: fill_paint_source,
+                    viewport: *viewport,
+                });
+
                 // Start with the surface_to_filter, and apply each filter spec in turn;
                 // the final result is our return value.
                 specs.iter().try_fold(surface_to_filter, |surface, spec| {
-                    filters::render(
-                        spec,
-                        stroke_paint_source.clone(),
-                        fill_paint_source.clone(),
-                        surface,
-                        acquired_nodes,
-                        self,
-                        node_bbox,
-                        viewport.clone(),
-                    )
+                    filters::render(plan.clone(), spec, surface, acquired_nodes, self, node_bbox)
                 })
             }
 
