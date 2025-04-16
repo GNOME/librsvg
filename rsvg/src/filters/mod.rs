@@ -570,19 +570,23 @@ mod tests {
         InputRequirements::new_from_filter_specs(&filter_specs)
     }
 
+    fn input_requirements_with_only_source_alpha() -> InputRequirements {
+        InputRequirements {
+            needs_source_alpha: true,
+            needs_background_image: false,
+            needs_background_alpha: false,
+            needs_stroke_paint_image: false,
+            needs_fill_paint_image: false,
+        }
+    }
+
     #[test]
     fn detects_source_alpha() {
         let document = Document::load_from_bytes(include_bytes!("test_input_requirements.svg"));
 
         assert_eq!(
             get_input_requirements_for_node(&document, "rect_1"),
-            InputRequirements {
-                needs_source_alpha: true,
-                needs_background_image: false,
-                needs_background_alpha: false,
-                needs_stroke_paint_image: false,
-                needs_fill_paint_image: false,
-            }
+            input_requirements_with_only_source_alpha(),
         );
     }
 }
