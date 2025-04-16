@@ -1082,11 +1082,11 @@ impl DrawingCtx {
 
         match filter_specs {
             Ok(specs) => {
-                let plan = Rc::new(FilterPlan {
-                    stroke_paint: stroke_paint_source,
-                    fill_paint: fill_paint_source,
-                    viewport: *viewport,
-                });
+                let plan = Rc::new(FilterPlan::new(
+                    stroke_paint_source,
+                    fill_paint_source,
+                    *viewport,
+                )?);
 
                 // Start with the surface_to_filter, and apply each filter spec in turn;
                 // the final result is our return value.

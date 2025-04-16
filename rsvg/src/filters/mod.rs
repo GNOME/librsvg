@@ -101,6 +101,20 @@ pub struct FilterPlan {
     pub viewport: Viewport,
 }
 
+impl FilterPlan {
+    pub fn new(
+        stroke_paint: Rc<UserSpacePaintSource>,
+        fill_paint: Rc<UserSpacePaintSource>,
+        viewport: Viewport,
+    ) -> Result<FilterPlan, InternalRenderingError> {
+        Ok(FilterPlan {
+            stroke_paint,
+            fill_paint,
+            viewport,
+        })
+    }
+}
+
 /// Resolved parameters for each filter primitive.
 ///
 /// These gather all the data that a primitive may need during rendering:
