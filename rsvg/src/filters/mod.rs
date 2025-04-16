@@ -115,6 +115,35 @@ impl FilterPlan {
     }
 }
 
+/// Which surfaces need to be provided as inputs for a [`FilterPlan`].
+///
+/// The various filters in a `filter` property may require different source images that
+/// the calling [`DrawingCtx`] is able to compute.  For example, if a primitive inside a
+/// `<filter>` element has `in="FillPaint"`, then the calling [`DrawingCtx`] must supply a
+/// surface filled as per the `fill` property of the element being filtered.
+///
+/// This struct holds the requirements for which such surfaces are needed.  The caller is
+/// expected to construct it from an array of [`FilterSpec`], and then to create the
+/// corresponding [`Inputs`] to create a [`FilterPlan`].
+///
+/// Not all the fields are `pub`, so that this struct *cannot* be created by the caller: it must be
+/// the result of calling [`InputRequirements::new_from_filter_specs()`].
+#[derive(Debug, PartialEq)]
+pub struct InputRequirements {
+    needs_source_alpha: bool,
+    pub needs_background_image: bool,
+    pub needs_background_alpha: bool,
+    pub needs_stroke_paint_image: bool,
+    pub needs_fill_paint_image: bool,
+    _caller_cannot_construct_this: (),
+}
+
+impl InputRequirements {
+    pub fn new_from_filter_specs(specs: &[FilterSpec]) -> InputRequirements {
+        unimplemented!()
+    }
+}
+
 /// Resolved parameters for each filter primitive.
 ///
 /// These gather all the data that a primitive may need during rendering:
@@ -436,5 +465,68 @@ impl Parse for EdgeMode {
             "wrap" => EdgeMode::Wrap,
             "none" => EdgeMode::None,
         )?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::document::Document;
+    use crate::dpi::Dpi;
+    use crate::node::NodeBorrow;
+    use crate::properties::Filter;
+
+    #[test]
+    fn detects_source_alpha() {
+        let document = Document::load_from_bytes(include_bytes!("test_input_requirements.svg"));
+
+        let rect_1 = document.lookup_internal_node("rect_1").unwrap();
+        let elt = rect_1.borrow_element();
+        let values = elt.get_computed_values();
+
+        let session = Session::default();
+        let mut acquired_nodes = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 100.0, 100.0);
+
+        let filter = values.filter();
+
+        let filter_list = match filter {
+            Filter::None => {
+                panic!("the referenced node should have a filter property that is not 'none'")
+            }
+            Filter::List(filter_list) => filter_list,
+        };
+
+        let params = NormalizeParams::new(&values, &viewport);
+
+        let filter_specs = filter_list
+            .iter()
+            .map(|filter_value| {
+                filter_value.to_filter_spec(
+                    &mut acquired_nodes,
+                    &params,
+                    cssparser::Color::parse_str("black").unwrap(),
+                    &viewport,
+                    &session,
+                    "rect",
+                )
+            })
+            .collect::<Result<Vec<FilterSpec>, _>>()
+            .unwrap();
+
+        let requirements = InputRequirements::new_from_filter_specs(&filter_specs);
+
+        let expected = InputRequirements {
+            needs_source_alpha: true,
+            needs_background_image: false,
+            needs_background_alpha: false,
+            needs_stroke_paint_image: false,
+            needs_fill_paint_image: false,
+            _caller_cannot_construct_this: (),
+        };
+
+        assert_eq!(requirements, expected);
     }
 }
