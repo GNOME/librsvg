@@ -46,7 +46,11 @@ pub enum FilterInput {
     PrimitiveOutput(FilterOutput),
 }
 
-/// The filter rendering context.
+/// Context for rendering a single [`filters::FilterSpec`].
+///
+/// Rendering a [`filters::FilterSpec`] involves keeping track of possibly-named results
+/// for each filter primitive (e.g. those that have an `output` attribute).  This struct
+/// maintains that information, plus all the extra data used during filtering.
 pub struct FilterContext {
     /// Paint source for primitives which have an input value equal to `StrokePaint`.
     stroke_paint: Rc<UserSpacePaintSource>,
