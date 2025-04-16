@@ -14,8 +14,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 
 /// The `feMerge` filter primitive.
@@ -134,6 +134,13 @@ impl Merge {
         };
 
         Ok(FilterOutput { surface, bounds })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        self.merge_nodes
+            .iter()
+            .map(|mn| mn.in1.get_requirements())
+            .fold(InputRequirements::default(), |a, b| a.fold(b))
     }
 }
 

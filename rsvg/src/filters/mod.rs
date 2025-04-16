@@ -125,22 +125,29 @@ impl FilterPlan {
 /// This struct holds the requirements for which such surfaces are needed.  The caller is
 /// expected to construct it from an array of [`FilterSpec`], and then to create the
 /// corresponding [`Inputs`] to create a [`FilterPlan`].
-///
-/// Not all the fields are `pub`, so that this struct *cannot* be created by the caller: it must be
-/// the result of calling [`InputRequirements::new_from_filter_specs()`].
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct InputRequirements {
-    needs_source_alpha: bool,
+    pub needs_source_alpha: bool,
     pub needs_background_image: bool,
     pub needs_background_alpha: bool,
     pub needs_stroke_paint_image: bool,
     pub needs_fill_paint_image: bool,
-    _caller_cannot_construct_this: (),
 }
 
 impl InputRequirements {
     pub fn new_from_filter_specs(specs: &[FilterSpec]) -> InputRequirements {
         unimplemented!()
+    }
+
+    #[rustfmt::skip]
+    fn fold(self, r: InputRequirements) -> InputRequirements {
+        InputRequirements {
+            needs_source_alpha:       self.needs_source_alpha       || r.needs_source_alpha,
+            needs_background_image:   self.needs_background_image   || r.needs_background_image,
+            needs_background_alpha:   self.needs_background_alpha   || r.needs_background_alpha,
+            needs_stroke_paint_image: self.needs_stroke_paint_image || r.needs_stroke_paint_image,
+            needs_fill_paint_image:   self.needs_fill_paint_image   || r.needs_fill_paint_image,
+        }
     }
 }
 
@@ -233,6 +240,25 @@ pub enum Input {
     FillPaint,
     StrokePaint,
     FilterOutput(CustomIdent),
+}
+
+impl Input {
+    pub fn get_requirements(&self) -> InputRequirements {
+        use Input::*;
+
+        let mut reqs = InputRequirements::default();
+
+        match self {
+            SourceAlpha => reqs.needs_source_alpha = true,
+            BackgroundImage => reqs.needs_background_image = true,
+            BackgroundAlpha => reqs.needs_background_alpha = true,
+            FillPaint => reqs.needs_fill_paint_image = true,
+            StrokePaint => reqs.needs_stroke_paint_image = true,
+            _ => (),
+        }
+
+        reqs
+    }
 }
 
 impl Parse for Input {
@@ -524,7 +550,6 @@ mod tests {
             needs_background_alpha: false,
             needs_stroke_paint_image: false,
             needs_fill_paint_image: false,
-            _caller_cannot_construct_this: (),
         };
 
         assert_eq!(requirements, expected);

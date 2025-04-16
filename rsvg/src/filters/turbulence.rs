@@ -22,7 +22,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, InputRequirements, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
 };
 
 /// Limit the `numOctaves` parameter to avoid unbounded CPU consumption.
@@ -453,6 +454,10 @@ impl Turbulence {
             surface: surface.share()?,
             bounds,
         })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        InputRequirements::default()
     }
 }
 

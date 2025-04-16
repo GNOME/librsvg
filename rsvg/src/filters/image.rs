@@ -20,7 +20,8 @@ use crate::xml::Attributes;
 use super::bounds::{Bounds, BoundsBuilder};
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, InputRequirements, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
 };
 
 /// The `feImage` filter primitive.
@@ -115,6 +116,10 @@ impl Image {
             surface,
             bounds: bounds.clipped.into(),
         })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        InputRequirements::default()
     }
 
     /// Renders the filter if the source is an existing node.

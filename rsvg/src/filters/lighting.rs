@@ -15,8 +15,8 @@ use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::filters::{
     bounds::BoundsBuilder,
     context::{FilterContext, FilterOutput},
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
@@ -672,6 +672,10 @@ macro_rules! impl_lighting_filter {
                 }
 
                 Ok(FilterOutput { surface, bounds })
+            }
+
+            pub fn get_input_requirements(&self) -> InputRequirements {
+                self.params.in1.get_requirements()
             }
         }
 
