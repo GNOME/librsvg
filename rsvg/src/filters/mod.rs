@@ -588,5 +588,21 @@ mod tests {
             get_input_requirements_for_node(&document, "rect_1"),
             input_requirements_with_only_source_alpha(),
         );
+
+        assert_eq!(
+            get_input_requirements_for_node(&document, "rect_2"),
+            input_requirements_with_only_source_alpha(),
+        );
+
+        assert_eq!(
+            get_input_requirements_for_node(&document, "rect_3"),
+            InputRequirements {
+                needs_source_alpha: false,
+                needs_background_image: true,
+                needs_background_alpha: true,
+                needs_stroke_paint_image: true,
+                needs_fill_paint_image: true,
+            }
+        );
     }
 }

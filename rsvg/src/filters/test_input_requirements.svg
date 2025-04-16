@@ -15,5 +15,17 @@
     <feBlend in2="SourceAlpha"/>
   </filter>
 
+  <filter id="filter_3">
+    <feGaussianBlur/>
+    <feDisplacementMap in2="BackgroundImage"/>
+    <feMerge>
+      <feMergeNode in="BackgroundAlpha"/>
+      <feMergeNode in="StrokePaint"/>
+      <feMergeNode in="FillPaint"/>
+    </feMerge>
+  </filter>
+
   <rect id="rect_1" filter="url(#filter_1)"/>
+  <rect id="rect_2" filter="url(#filter_2)"/>
+  <rect id="rect_3" filter="url(#filter_3)"/>
 </svg>
