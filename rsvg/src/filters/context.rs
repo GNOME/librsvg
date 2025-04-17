@@ -3,8 +3,6 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::filter::UserSpaceFilter;
 use crate::parsers::CustomIdent;
 use crate::properties::ColorInterpolationFilters;
@@ -255,12 +253,7 @@ impl FilterContext {
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
-    fn get_input_raw(
-        &self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-        in_: &Input,
-    ) -> Result<FilterInput, FilterError> {
+    fn get_input_raw(&self, in_: &Input) -> Result<FilterInput, FilterError> {
         match *in_ {
             Input::Unspecified => Ok(self.get_unspecified_input()),
 
@@ -311,12 +304,10 @@ impl FilterContext {
     /// The surface will be converted to the color space specified by `color_interpolation_filters`.
     pub fn get_input(
         &self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
         in_: &Input,
         color_interpolation_filters: ColorInterpolationFilters,
     ) -> Result<FilterInput, FilterError> {
-        let raw = self.get_input_raw(acquired_nodes, draw_ctx, in_)?;
+        let raw = self.get_input_raw(in_)?;
 
         // Convert the input surface to the desired format.
         let (surface, bounds) = match raw {

@@ -66,12 +66,7 @@ impl Offset {
         // filter primitives like feOffset"
         //
         // This is why we pass Auto here.
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            ColorInterpolationFilters::Auto,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, ColorInterpolationFilters::Auto)?;
         let bounds = bounds_builder.add_input(&input_1).compute(ctx).clipped;
 
         rsvg_log!(draw_ctx.session(), "(feOffset bounds={:?}", bounds);

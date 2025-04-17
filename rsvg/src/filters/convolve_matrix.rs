@@ -145,12 +145,7 @@ impl ConvolveMatrix {
     ) -> Result<FilterOutput, FilterError> {
         #![allow(clippy::many_single_char_names)]
 
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            self.color_interpolation_filters,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, self.color_interpolation_filters)?;
         let mut bounds: IRect = bounds_builder
             .add_input(&input_1)
             .compute(ctx)

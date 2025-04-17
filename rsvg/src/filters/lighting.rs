@@ -467,12 +467,8 @@ macro_rules! impl_lighting_filter {
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<FilterOutput, FilterError> {
-                let input_1 = ctx.get_input(
-                    acquired_nodes,
-                    draw_ctx,
-                    &self.params.in1,
-                    self.light.color_interpolation_filters,
-                )?;
+                let input_1 =
+                    ctx.get_input(&self.params.in1, self.light.color_interpolation_filters)?;
                 let mut bounds: IRect = bounds_builder
                     .add_input(&input_1)
                     .compute(ctx)

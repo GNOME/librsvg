@@ -49,12 +49,7 @@ impl Tile {
         // filter primitives like [...], feTile"
         //
         // This is why we pass Auto here.
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            ColorInterpolationFilters::Auto,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, ColorInterpolationFilters::Auto)?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
         let bounds: IRect = bounds_builder.compute(ctx).clipped.into();

@@ -76,12 +76,7 @@ impl MergeNode {
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
-        let input = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            self.color_interpolation_filters,
-        )?;
+        let input = ctx.get_input(&self.in1, self.color_interpolation_filters)?;
 
         if output_surface.is_none() {
             return Ok(input.surface().clone());
@@ -105,12 +100,7 @@ impl Merge {
         // Compute the filter bounds, taking each feMergeNode's input into account.
         let mut bounds_builder = bounds_builder;
         for merge_node in &self.merge_nodes {
-            let input = ctx.get_input(
-                acquired_nodes,
-                draw_ctx,
-                &merge_node.in1,
-                merge_node.color_interpolation_filters,
-            )?;
+            let input = ctx.get_input(&merge_node.in1, merge_node.color_interpolation_filters)?;
             bounds_builder = bounds_builder.add_input(&input);
         }
 

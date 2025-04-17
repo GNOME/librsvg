@@ -94,18 +94,8 @@ impl DisplacementMap {
         // image. The in source image must remain in its current color
         // space.
 
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            ColorInterpolationFilters::Auto,
-        )?;
-        let displacement_input = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in2,
-            self.color_interpolation_filters,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, ColorInterpolationFilters::Auto)?;
+        let displacement_input = ctx.get_input(&self.in2, self.color_interpolation_filters)?;
         let bounds: IRect = bounds_builder
             .add_input(&input_1)
             .add_input(&displacement_input)
