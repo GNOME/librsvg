@@ -91,6 +91,8 @@ pub struct FilterSpec {
 /// While rendering all those [`FilterContext`]s, there are some immutable parameters.
 /// This `FilterPlan` struct contains those parameters.
 pub struct FilterPlan {
+    session: Session,
+
     /// Paint source for primitives which have an input value equal to `StrokePaint`.
     pub stroke_paint: Rc<UserSpacePaintSource>,
 
@@ -116,6 +118,7 @@ pub struct FilterPlan {
 
 impl FilterPlan {
     pub fn new(
+        session: &Session,
         stroke_paint: Rc<UserSpacePaintSource>,
         fill_paint: Rc<UserSpacePaintSource>,
         viewport: Viewport,
@@ -140,6 +143,7 @@ impl FilterPlan {
         );
 
         Ok(FilterPlan {
+            session: session.clone(),
             stroke_paint,
             fill_paint,
             viewport,

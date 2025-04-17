@@ -1087,6 +1087,7 @@ impl DrawingCtx {
         };
 
         Ok(Rc::new(FilterPlan::new(
+            self.session(),
             stroke_paint_source,
             fill_paint_source,
             *viewport,
