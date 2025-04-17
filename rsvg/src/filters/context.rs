@@ -1,4 +1,3 @@
-use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -61,9 +60,6 @@ pub struct FilterContext {
     last_result: Option<FilterOutput>,
     /// Surfaces of the previous filter primitives by name.
     previous_results: HashMap<CustomIdent, FilterOutput>,
-
-    // Input surface for primitives that require an input of `FillPaint`, Computed lazily.
-    fill_paint_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
 
     /// Primtive units
     primitive_units: CoordUnits,
@@ -161,7 +157,6 @@ impl FilterContext {
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
-            fill_paint_surface: OnceCell::new(),
             primitive_units: filter.primitive_units,
             effects_region,
             _affine: affine,
@@ -194,22 +189,10 @@ impl FilterContext {
     /// Returns a surface filled with the current fill's paint, for `FillPaint` inputs in primitives.
     ///
     /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-fillpaint>
-    fn fill_paint_image(
-        &self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<SharedImageSurface, FilterError> {
-        let res = self.fill_paint_surface.get_or_init(|| {
-            Ok(draw_ctx.get_paint_source_surface(
-                self.source_surface.width(),
-                self.source_surface.height(),
-                acquired_nodes,
-                &self.plan.fill_paint,
-                &self.plan.viewport,
-            )?)
-        });
-
-        res.clone().map_err(|e| e.clone())
+    fn fill_paint_image(&self) -> SharedImageSurface {
+        self.plan.fill_paint_image.clone().expect(
+            "the calling DrawingCtx should have passed a fill_paint_image to the FilterPlan",
+        )
     }
 
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter
@@ -297,9 +280,7 @@ impl FilterContext {
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
-            Input::FillPaint => self
-                .fill_paint_image(acquired_nodes, draw_ctx)
-                .map(FilterInput::StandardInput),
+            Input::FillPaint => Ok(FilterInput::StandardInput(self.fill_paint_image())),
 
             Input::StrokePaint => Ok(FilterInput::StandardInput(self.stroke_paint_image())),
 
