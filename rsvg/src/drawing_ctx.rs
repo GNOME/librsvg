@@ -346,7 +346,7 @@ impl DrawingCtx {
     ) -> DrawingCtx {
         DrawingCtx {
             session,
-            initial_viewport: initial_viewport.clone(),
+            initial_viewport: *initial_viewport,
             cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
             drawsub_stack,
@@ -372,7 +372,7 @@ impl DrawingCtx {
 
         Box::new(DrawingCtx {
             session: self.session.clone(),
-            initial_viewport: self.initial_viewport.clone(),
+            initial_viewport: self.initial_viewport,
             cr_stack,
             cr,
             drawsub_stack: self.drawsub_stack.clone(),
