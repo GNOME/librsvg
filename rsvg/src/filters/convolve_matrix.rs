@@ -7,7 +7,6 @@ use crate::bench_only::{
     EdgeMode, ExclusiveImageSurface, ImageSurfaceDataExt, Pixel, PixelRectangle, Pixels,
 };
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
@@ -140,8 +139,6 @@ impl ConvolveMatrix {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         #![allow(clippy::many_single_char_names)]
 

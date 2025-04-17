@@ -1,7 +1,6 @@
 use cssparser::Color;
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementTrait;
 use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
@@ -39,8 +38,6 @@ impl Flood {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        _acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
         rsvg_log!(ctx.session(), "(feFlood bounds={:?}", bounds);

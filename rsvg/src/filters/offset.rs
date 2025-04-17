@@ -1,7 +1,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::node::Node;
 use crate::parsers::ParseValue;
@@ -56,8 +55,6 @@ impl Offset {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#ColorInterpolationFiltersProperty
         //

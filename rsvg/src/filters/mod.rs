@@ -522,22 +522,22 @@ fn render_primitive(
     // the drop-shadow effect.
 
     match primitive.params {
-        Blend(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ColorMatrix(ref p)       => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ComponentTransfer(ref p) => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Composite(ref p)         => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ConvolveMatrix(ref p)    => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        DiffuseLighting(ref p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        DisplacementMap(ref p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Flood(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        GaussianBlur(ref p)      => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Blend(ref p)             => p.render(bounds_builder, ctx),
+        ColorMatrix(ref p)       => p.render(bounds_builder, ctx),
+        ComponentTransfer(ref p) => p.render(bounds_builder, ctx),
+        Composite(ref p)         => p.render(bounds_builder, ctx),
+        ConvolveMatrix(ref p)    => p.render(bounds_builder, ctx),
+        DiffuseLighting(ref p)   => p.render(bounds_builder, ctx),
+        DisplacementMap(ref p)   => p.render(bounds_builder, ctx),
+        Flood(ref p)             => p.render(bounds_builder, ctx),
+        GaussianBlur(ref p)      => p.render(bounds_builder, ctx),
         Image(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Merge(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Morphology(ref p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Offset(ref p)            => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        SpecularLighting(ref p)  => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Tile(ref p)              => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Turbulence(ref p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Merge(ref p)             => p.render(bounds_builder, ctx),
+        Morphology(ref p)        => p.render(bounds_builder, ctx),
+        Offset(ref p)            => p.render(bounds_builder, ctx),
+        SpecularLighting(ref p)  => p.render(bounds_builder, ctx),
+        Tile(ref p)              => p.render(bounds_builder, ctx),
+        Turbulence(ref p)        => p.render(bounds_builder, ctx),
     }
 }
 

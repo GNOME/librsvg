@@ -10,7 +10,6 @@ use std::cmp::max;
 
 use crate::color::color_to_rgba;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::filters::{
     bounds::BoundsBuilder,
@@ -464,8 +463,6 @@ macro_rules! impl_lighting_filter {
                 &self,
                 bounds_builder: BoundsBuilder,
                 ctx: &FilterContext,
-                acquired_nodes: &mut AcquiredNodes<'_>,
-                draw_ctx: &mut DrawingCtx,
             ) -> Result<FilterOutput, FilterError> {
                 let input_1 =
                     ctx.get_input(&self.params.in1, self.light.color_interpolation_filters)?;

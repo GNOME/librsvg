@@ -5,7 +5,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{DMatrix, Dyn, VecStorage};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
@@ -210,8 +209,6 @@ impl GaussianBlur {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         let input_1 = ctx.get_input(&self.in1, self.color_interpolation_filters)?;
         let bounds: IRect = bounds_builder

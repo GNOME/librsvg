@@ -1,7 +1,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -71,8 +70,6 @@ impl MergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
@@ -94,8 +91,6 @@ impl Merge {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // Compute the filter bounds, taking each feMergeNode's input into account.
         let mut bounds_builder = bounds_builder;
@@ -109,9 +104,7 @@ impl Merge {
         // Now merge them all.
         let mut output_surface = None;
         for merge_node in &self.merge_nodes {
-            output_surface = merge_node
-                .render(ctx, acquired_nodes, draw_ctx, bounds, output_surface)
-                .ok();
+            output_surface = merge_node.render(ctx, bounds, output_surface).ok();
         }
 
         let surface = match output_surface {

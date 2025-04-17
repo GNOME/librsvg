@@ -4,7 +4,6 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::Node;
@@ -84,8 +83,6 @@ impl Morphology {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // Although https://www.w3.org/TR/filter-effects/#propdef-color-interpolation-filters does not mention
         // feMorphology as being one of the primitives that does *not* use that property,
