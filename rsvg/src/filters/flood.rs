@@ -43,7 +43,7 @@ impl Flood {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
-        rsvg_log!(draw_ctx.session(), "(feFlood bounds={:?}", bounds);
+        rsvg_log!(ctx.session(), "(feFlood bounds={:?}", bounds);
 
         let surface = ctx.source_graphic().flood(bounds, self.color)?;
 

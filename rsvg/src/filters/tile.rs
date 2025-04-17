@@ -62,14 +62,14 @@ impl Tile {
             }) => {
                 if input_bounds.is_empty() {
                     rsvg_log!(
-                        draw_ctx.session(),
+                        ctx.session(),
                         "(feTile with empty input_bounds; returning just the input surface)"
                     );
 
                     input_surface
                 } else {
                     rsvg_log!(
-                        draw_ctx.session(),
+                        ctx.session(),
                         "(feTile bounds={:?}, input_bounds={:?})",
                         bounds,
                         input_bounds

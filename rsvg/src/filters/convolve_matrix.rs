@@ -204,7 +204,7 @@ impl ConvolveMatrix {
             //
             // https://drafts.fxtf.org/filter-effects/#element-attrdef-feconvolvematrix-kernelmatrix
             rsvg_log!(
-                draw_ctx.session(),
+                ctx.session(),
                 "feConvolveMatrix got {} elements when it expected {}; ignoring it",
                 numbers.len(),
                 number_of_elements

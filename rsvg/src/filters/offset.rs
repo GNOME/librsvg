@@ -69,7 +69,7 @@ impl Offset {
         let input_1 = ctx.get_input(&self.in1, ColorInterpolationFilters::Auto)?;
         let bounds = bounds_builder.add_input(&input_1).compute(ctx).clipped;
 
-        rsvg_log!(draw_ctx.session(), "(feOffset bounds={:?}", bounds);
+        rsvg_log!(ctx.session(), "(feOffset bounds={:?}", bounds);
 
         let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 

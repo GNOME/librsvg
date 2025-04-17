@@ -7,6 +7,7 @@ use crate::filter::UserSpaceFilter;
 use crate::parsers::CustomIdent;
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::{IRect, Rect};
+use crate::session::Session;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
 
@@ -160,6 +161,10 @@ impl FilterContext {
             _affine: affine,
             paffine,
         })
+    }
+
+    pub fn session(&self) -> &Session {
+        &self.plan.session
     }
 
     /// Returns the surface corresponding to the source graphic.
