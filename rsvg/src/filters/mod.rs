@@ -166,8 +166,7 @@ impl InputRequirements {
     pub fn new_from_filter_specs(specs: &[FilterSpec]) -> InputRequirements {
         specs
             .iter()
-            .map(|spec| spec.primitives.iter())
-            .flatten()
+            .flat_map(|spec| spec.primitives.iter())
             .map(|primitive| primitive.params.get_input_requirements())
             .fold(InputRequirements::default(), |a, b| a.fold(b))
     }
