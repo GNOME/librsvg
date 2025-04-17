@@ -20,7 +20,7 @@ use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
 use crate::dpi::Dpi;
 use crate::element::{Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, InternalRenderingError, InvalidTransform};
-use crate::filters::{self, FilterPlan, FilterSpec};
+use crate::filters::{self, FilterPlan, FilterSpec, InputRequirements};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
@@ -1043,6 +1043,60 @@ impl DrawingCtx {
         self.cr.tag_end(CAIRO_TAG_LINK);
     }
 
+    fn make_filter_plan(
+        &mut self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        specs: &[FilterSpec],
+        source_image_width: i32,
+        source_image_height: i32,
+        stroke_paint_source: Rc<UserSpacePaintSource>,
+        fill_paint_source: Rc<UserSpacePaintSource>,
+        viewport: &Viewport,
+    ) -> Result<Rc<FilterPlan>, InternalRenderingError> {
+        let requirements = InputRequirements::new_from_filter_specs(specs);
+
+        let background_image =
+            if requirements.needs_background_image || requirements.needs_background_alpha {
+                Some(self.get_snapshot(source_image_width, source_image_height)?)
+            } else {
+                None
+            };
+
+        let stroke_paint_image = if requirements.needs_stroke_paint_image {
+            Some(self.get_paint_source_surface(
+                source_image_width,
+                source_image_height,
+                acquired_nodes,
+                &stroke_paint_source,
+                viewport,
+            )?)
+        } else {
+            None
+        };
+
+        let fill_paint_image = if requirements.needs_fill_paint_image {
+            Some(self.get_paint_source_surface(
+                source_image_width,
+                source_image_height,
+                acquired_nodes,
+                &fill_paint_source,
+                viewport,
+            )?)
+        } else {
+            None
+        };
+
+        Ok(Rc::new(FilterPlan::new(
+            stroke_paint_source,
+            fill_paint_source,
+            *viewport,
+            requirements,
+            background_image,
+            stroke_paint_image,
+            fill_paint_image,
+        )?))
+    }
+
     fn run_filters(
         &mut self,
         viewport: &Viewport,
@@ -1082,11 +1136,15 @@ impl DrawingCtx {
 
         match filter_specs {
             Ok(specs) => {
-                let plan = Rc::new(FilterPlan::new(
+                let plan = self.make_filter_plan(
+                    acquired_nodes,
+                    &specs,
+                    surface_to_filter.width(),
+                    surface_to_filter.height(),
                     stroke_paint_source,
                     fill_paint_source,
-                    *viewport,
-                )?);
+                    viewport,
+                )?;
 
                 // Start with the surface_to_filter, and apply each filter spec in turn;
                 // the final result is our return value.

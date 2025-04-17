@@ -99,6 +99,19 @@ pub struct FilterPlan {
 
     /// Current viewport at the time the filter is invoked.
     pub viewport: Viewport,
+
+    /// Surface corresponding to the background image snapshot, for `in="BackgroundImage"`.
+    background_image: Option<SharedImageSurface>,
+
+    /// Surface filled with the current stroke paint, for `in="StrokePaint"`.
+    ///
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-strokepaint>
+    stroke_paint_image: Option<SharedImageSurface>,
+
+    /// Surface filled with the current fill paint, for `in="FillPaint"`.
+    ///
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-fillpaint>
+    fill_paint_image: Option<SharedImageSurface>,
 }
 
 impl FilterPlan {
@@ -106,11 +119,33 @@ impl FilterPlan {
         stroke_paint: Rc<UserSpacePaintSource>,
         fill_paint: Rc<UserSpacePaintSource>,
         viewport: Viewport,
+        requirements: InputRequirements,
+        background_image: Option<SharedImageSurface>,
+        stroke_paint_image: Option<SharedImageSurface>,
+        fill_paint_image: Option<SharedImageSurface>,
     ) -> Result<FilterPlan, InternalRenderingError> {
+        assert_eq!(
+            requirements.needs_background_image || requirements.needs_background_alpha,
+            background_image.is_some()
+        );
+
+        assert_eq!(
+            requirements.needs_stroke_paint_image,
+            stroke_paint_image.is_some()
+        );
+
+        assert_eq!(
+            requirements.needs_fill_paint_image,
+            fill_paint_image.is_some()
+        );
+
         Ok(FilterPlan {
             stroke_paint,
             fill_paint,
             viewport,
+            background_image,
+            stroke_paint_image,
+            fill_paint_image,
         })
     }
 }
