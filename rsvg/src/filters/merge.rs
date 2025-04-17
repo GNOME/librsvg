@@ -1,7 +1,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -14,8 +13,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 
 /// The `feMerge` filter primitive.
@@ -71,17 +70,10 @@ impl MergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
-        let input = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            self.color_interpolation_filters,
-        )?;
+        let input = ctx.get_input(&self.in1, self.color_interpolation_filters)?;
 
         if output_surface.is_none() {
             return Ok(input.surface().clone());
@@ -99,18 +91,11 @@ impl Merge {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // Compute the filter bounds, taking each feMergeNode's input into account.
         let mut bounds_builder = bounds_builder;
         for merge_node in &self.merge_nodes {
-            let input = ctx.get_input(
-                acquired_nodes,
-                draw_ctx,
-                &merge_node.in1,
-                merge_node.color_interpolation_filters,
-            )?;
+            let input = ctx.get_input(&merge_node.in1, merge_node.color_interpolation_filters)?;
             bounds_builder = bounds_builder.add_input(&input);
         }
 
@@ -119,9 +104,7 @@ impl Merge {
         // Now merge them all.
         let mut output_surface = None;
         for merge_node in &self.merge_nodes {
-            output_surface = merge_node
-                .render(ctx, acquired_nodes, draw_ctx, bounds, output_surface)
-                .ok();
+            output_surface = merge_node.render(ctx, bounds, output_surface).ok();
         }
 
         let surface = match output_surface {
@@ -134,6 +117,13 @@ impl Merge {
         };
 
         Ok(FilterOutput { surface, bounds })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        self.merge_nodes
+            .iter()
+            .map(|mn| mn.in1.get_requirements())
+            .fold(InputRequirements::default(), |a, b| a.fold(b))
     }
 }
 

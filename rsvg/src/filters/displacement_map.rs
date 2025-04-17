@@ -2,7 +2,6 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
@@ -17,8 +16,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 
 /// Enumeration of the color channels the displacement map can source.
@@ -85,8 +84,6 @@ impl DisplacementMap {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#feDisplacementMapElement
         // "The color-interpolation-filters property only applies to
@@ -94,18 +91,8 @@ impl DisplacementMap {
         // image. The in source image must remain in its current color
         // space.
 
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            ColorInterpolationFilters::Auto,
-        )?;
-        let displacement_input = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in2,
-            self.color_interpolation_filters,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, ColorInterpolationFilters::Auto)?;
+        let displacement_input = ctx.get_input(&self.in2, self.color_interpolation_filters)?;
         let bounds: IRect = bounds_builder
             .add_input(&input_1)
             .add_input(&displacement_input)
@@ -160,6 +147,12 @@ impl DisplacementMap {
             surface: surface.share()?,
             bounds,
         })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        self.in1
+            .get_requirements()
+            .fold(self.in2.get_requirements())
     }
 }
 

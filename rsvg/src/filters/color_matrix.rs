@@ -3,7 +3,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
@@ -22,8 +21,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 
 /// Color matrix operation types.
@@ -182,15 +181,8 @@ impl ColorMatrix {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            self.color_interpolation_filters,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, self.color_interpolation_filters)?;
         let bounds: IRect = bounds_builder
             .add_input(&input_1)
             .compute(ctx)
@@ -308,6 +300,10 @@ impl ColorMatrix {
     /// <https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values>
     fn default_matrix() -> Matrix5<f64> {
         Matrix5::identity()
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        self.in1.get_requirements()
     }
 }
 

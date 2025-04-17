@@ -1,7 +1,6 @@
 use cssparser::Color;
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementTrait;
 use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
@@ -13,7 +12,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, InputRequirements, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
 };
 
 /// The `feFlood` filter primitive.
@@ -38,15 +38,17 @@ impl Flood {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        _acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
-        rsvg_log!(draw_ctx.session(), "(feFlood bounds={:?}", bounds);
+        rsvg_log!(ctx.session(), "(feFlood bounds={:?}", bounds);
 
         let surface = ctx.source_graphic().flood(bounds, self.color)?;
 
         Ok(FilterOutput { surface, bounds })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        InputRequirements::default()
     }
 }
 

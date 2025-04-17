@@ -7,7 +7,6 @@ use crate::bench_only::{
     EdgeMode, ExclusiveImageSurface, ImageSurfaceDataExt, Pixel, PixelRectangle, Pixels,
 };
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
@@ -23,8 +22,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 
 /// The `feConvolveMatrix` filter primitive.
@@ -140,17 +139,10 @@ impl ConvolveMatrix {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         #![allow(clippy::many_single_char_names)]
 
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            self.color_interpolation_filters,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, self.color_interpolation_filters)?;
         let mut bounds: IRect = bounds_builder
             .add_input(&input_1)
             .compute(ctx)
@@ -209,7 +201,7 @@ impl ConvolveMatrix {
             //
             // https://drafts.fxtf.org/filter-effects/#element-attrdef-feconvolvematrix-kernelmatrix
             rsvg_log!(
-                draw_ctx.session(),
+                ctx.session(),
                 "feConvolveMatrix got {} elements when it expected {}; ignoring it",
                 numbers.len(),
                 number_of_elements
@@ -320,6 +312,10 @@ impl ConvolveMatrix {
         }
 
         Ok(FilterOutput { surface, bounds })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        self.in1.get_requirements()
     }
 }
 

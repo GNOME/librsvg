@@ -20,7 +20,8 @@ use crate::xml::Attributes;
 use super::bounds::{Bounds, BoundsBuilder};
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, InputRequirements, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
 };
 
 /// The `feImage` filter primitive.
@@ -91,7 +92,7 @@ impl Image {
 
             Source::Node(node, ref name) => {
                 if let Ok(acquired) = acquired_nodes.acquire_ref(node) {
-                    rsvg_log!(draw_ctx.session(), "(feImage \"{}\"", name);
+                    rsvg_log!(ctx.session(), "(feImage \"{}\"", name);
                     let res = self.render_node(
                         ctx,
                         acquired_nodes,
@@ -99,7 +100,7 @@ impl Image {
                         bounds.clipped,
                         acquired.get(),
                     );
-                    rsvg_log!(draw_ctx.session(), ")");
+                    rsvg_log!(ctx.session(), ")");
                     res?
                 } else {
                     return Err(FilterError::InvalidInput);
@@ -115,6 +116,10 @@ impl Image {
             surface,
             bounds: bounds.clipped.into(),
         })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        InputRequirements::default()
     }
 
     /// Renders the filter if the source is an existing node.
@@ -175,7 +180,7 @@ impl Image {
 
             Err(e) => {
                 rsvg_log!(
-                    draw_ctx.session(),
+                    ctx.session(),
                     "could not load image \"{}\" for feImage: {}",
                     url,
                     e
@@ -268,7 +273,7 @@ impl Image {
             let options = draw_ctx.rendering_options(SvgNesting::ReferencedFromImageElement);
 
             document.render_document(
-                draw_ctx.session(),
+                ctx.session(),
                 &cr,
                 &cairo::Rectangle::from(surface_dest_rect),
                 &options,

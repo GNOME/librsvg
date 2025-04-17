@@ -4,7 +4,6 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::Node;
@@ -23,8 +22,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 
 /// Enumeration of the possible morphology operations.
@@ -84,8 +83,6 @@ impl Morphology {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // Although https://www.w3.org/TR/filter-effects/#propdef-color-interpolation-filters does not mention
         // feMorphology as being one of the primitives that does *not* use that property,
@@ -95,12 +92,7 @@ impl Morphology {
         //
         // I suppose erosion/dilation doesn't care about the color space of the source image?
 
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            ColorInterpolationFilters::Auto,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, ColorInterpolationFilters::Auto)?;
         let bounds: IRect = bounds_builder
             .add_input(&input_1)
             .compute(ctx)
@@ -173,6 +165,10 @@ impl Morphology {
             surface: surface.share()?,
             bounds,
         })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        self.in1.get_requirements()
     }
 }
 

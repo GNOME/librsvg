@@ -1,21 +1,18 @@
-use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::filter::UserSpaceFilter;
-use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::{IRect, Rect};
+use crate::session::Session;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
 
 use super::error::FilterError;
-use super::Input;
+use super::{FilterPlan, Input};
 
 /// A filter primitive output.
 #[derive(Debug, Clone)]
@@ -46,28 +43,22 @@ pub enum FilterInput {
     PrimitiveOutput(FilterOutput),
 }
 
-/// The filter rendering context.
+/// Context for rendering a single [`filters::FilterSpec`].
+///
+/// Rendering a [`filters::FilterSpec`] involves keeping track of possibly-named results
+/// for each filter primitive (e.g. those that have an `output` attribute).  This struct
+/// maintains that information, plus all the extra data used during filtering.
 pub struct FilterContext {
-    /// Paint source for primitives which have an input value equal to `StrokePaint`.
-    stroke_paint: Rc<UserSpacePaintSource>,
-    /// Paint source for primitives which have an input value equal to `FillPaint`.
-    fill_paint: Rc<UserSpacePaintSource>,
+    /// Immutable values used during the execution of a `filter` property.
+    plan: Rc<FilterPlan>,
 
     /// The source graphic surface.
     source_surface: SharedImageSurface,
+
     /// Output of the last filter primitive.
     last_result: Option<FilterOutput>,
     /// Surfaces of the previous filter primitives by name.
     previous_results: HashMap<CustomIdent, FilterOutput>,
-
-    /// Input surface for primitives that require an input of `BackgroundImage` or `BackgroundAlpha`. Computed lazily.
-    background_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
-
-    // Input surface for primitives that require an input of `StrokePaint`, Computed lazily.
-    stroke_paint_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
-
-    // Input surface for primitives that require an input of `FillPaint`, Computed lazily.
-    fill_paint_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
 
     /// Primtive units
     primitive_units: CoordUnits,
@@ -95,27 +86,22 @@ pub struct FilterContext {
     ///
     /// See the comments for `_affine`, they largely apply here.
     paffine: Transform,
-
-    /// Current viewport at the time the filter is invoked.
-    viewport: Viewport,
 }
 
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
         filter: &UserSpaceFilter,
-        stroke_paint: Rc<UserSpacePaintSource>,
-        fill_paint: Rc<UserSpacePaintSource>,
-        source_surface: &SharedImageSurface,
+        plan: Rc<FilterPlan>,
+        source_surface: SharedImageSurface,
         node_bbox: BoundingBox,
-        viewport: Viewport,
     ) -> Result<Self, FilterError> {
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
         let bbox_rect = node_bbox.rect.unwrap_or_default();
 
         let affine = match filter.filter_units {
-            CoordUnits::UserSpaceOnUse => *viewport.transform,
+            CoordUnits::UserSpaceOnUse => *plan.viewport.transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
@@ -124,11 +110,11 @@ impl FilterContext {
                 bbox_rect.x0,
                 bbox_rect.y0,
             )
-            .post_transform(&viewport.transform),
+            .post_transform(&plan.viewport.transform),
         };
 
         let paffine = match filter.primitive_units {
-            CoordUnits::UserSpaceOnUse => *viewport.transform,
+            CoordUnits::UserSpaceOnUse => *plan.viewport.transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
@@ -137,7 +123,7 @@ impl FilterContext {
                 bbox_rect.x0,
                 bbox_rect.y0,
             )
-            .post_transform(&viewport.transform),
+            .post_transform(&plan.viewport.transform),
         };
 
         if !(affine.is_invertible() && paffine.is_invertible()) {
@@ -166,20 +152,19 @@ impl FilterContext {
         };
 
         Ok(Self {
-            stroke_paint,
-            fill_paint,
-            source_surface: source_surface.clone(),
+            plan,
+            source_surface,
             last_result: None,
             previous_results: HashMap::new(),
-            background_surface: OnceCell::new(),
-            stroke_paint_surface: OnceCell::new(),
-            fill_paint_surface: OnceCell::new(),
             primitive_units: filter.primitive_units,
             effects_region,
             _affine: affine,
             paffine,
-            viewport,
         })
+    }
+
+    pub fn session(&self) -> &Session {
+        &self.plan.session
     }
 
     /// Returns the surface corresponding to the source graphic.
@@ -189,56 +174,28 @@ impl FilterContext {
     }
 
     /// Returns the surface corresponding to the background image snapshot.
-    fn background_image(&self, draw_ctx: &DrawingCtx) -> Result<SharedImageSurface, FilterError> {
-        let res = self.background_surface.get_or_init(|| {
-            draw_ctx
-                .get_snapshot(self.source_surface.width(), self.source_surface.height())
-                .map_err(FilterError::Rendering)
-        });
-
-        res.clone().map_err(|e| e.clone())
+    fn background_image(&self) -> SharedImageSurface {
+        self.plan.background_image.clone().expect(
+            "the calling DrawingCtx should have passed a background_image to the FilterPlan",
+        )
     }
 
     /// Returns a surface filled with the current stroke's paint, for `StrokePaint` inputs in primitives.
     ///
     /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-strokepaint>
-    fn stroke_paint_image(
-        &self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<SharedImageSurface, FilterError> {
-        let res = self.stroke_paint_surface.get_or_init(|| {
-            Ok(draw_ctx.get_paint_source_surface(
-                self.source_surface.width(),
-                self.source_surface.height(),
-                acquired_nodes,
-                &self.stroke_paint,
-                &self.viewport,
-            )?)
-        });
-
-        res.clone().map_err(|e| e.clone())
+    fn stroke_paint_image(&self) -> SharedImageSurface {
+        self.plan.stroke_paint_image.clone().expect(
+            "the calling DrawingCtx should have passed a stroke_paint_image to the FilterPlan",
+        )
     }
 
     /// Returns a surface filled with the current fill's paint, for `FillPaint` inputs in primitives.
     ///
     /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-fillpaint>
-    fn fill_paint_image(
-        &self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<SharedImageSurface, FilterError> {
-        let res = self.fill_paint_surface.get_or_init(|| {
-            Ok(draw_ctx.get_paint_source_surface(
-                self.source_surface.width(),
-                self.source_surface.height(),
-                acquired_nodes,
-                &self.fill_paint,
-                &self.viewport,
-            )?)
-        });
-
-        res.clone().map_err(|e| e.clone())
+    fn fill_paint_image(&self) -> SharedImageSurface {
+        self.plan.fill_paint_image.clone().expect(
+            "the calling DrawingCtx should have passed a fill_paint_image to the FilterPlan",
+        )
     }
 
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter
@@ -301,12 +258,7 @@ impl FilterContext {
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
-    fn get_input_raw(
-        &self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-        in_: &Input,
-    ) -> Result<FilterInput, FilterError> {
+    fn get_input_raw(&self, in_: &Input) -> Result<FilterInput, FilterError> {
         match *in_ {
             Input::Unspecified => Ok(self.get_unspecified_input()),
 
@@ -318,26 +270,17 @@ impl FilterContext {
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
-            Input::BackgroundImage => self
-                .background_image(draw_ctx)
-                .map(FilterInput::StandardInput),
+            Input::BackgroundImage => Ok(FilterInput::StandardInput(self.background_image())),
 
             Input::BackgroundAlpha => self
-                .background_image(draw_ctx)
-                .and_then(|surface| {
-                    surface
-                        .extract_alpha(self.effects_region().into())
-                        .map_err(FilterError::CairoError)
-                })
+                .background_image()
+                .extract_alpha(self.effects_region().into())
+                .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
-            Input::FillPaint => self
-                .fill_paint_image(acquired_nodes, draw_ctx)
-                .map(FilterInput::StandardInput),
+            Input::FillPaint => Ok(FilterInput::StandardInput(self.fill_paint_image())),
 
-            Input::StrokePaint => self
-                .stroke_paint_image(acquired_nodes, draw_ctx)
-                .map(FilterInput::StandardInput),
+            Input::StrokePaint => Ok(FilterInput::StandardInput(self.stroke_paint_image())),
 
             Input::FilterOutput(ref name) => {
                 let input = match self.previous_results.get(name).cloned() {
@@ -366,12 +309,10 @@ impl FilterContext {
     /// The surface will be converted to the color space specified by `color_interpolation_filters`.
     pub fn get_input(
         &self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
         in_: &Input,
         color_interpolation_filters: ColorInterpolationFilters,
     ) -> Result<FilterInput, FilterError> {
-        let raw = self.get_input_raw(acquired_nodes, draw_ctx, in_)?;
+        let raw = self.get_input_raw(in_)?;
 
         // Convert the input surface to the desired format.
         let (surface, bounds) = match raw {

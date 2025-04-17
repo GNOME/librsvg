@@ -2,7 +2,6 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
@@ -22,7 +21,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, InputRequirements, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
 };
 
 /// Limit the `numOctaves` parameter to avoid unbounded CPU consumption.
@@ -355,8 +355,6 @@ impl Turbulence {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        _acquired_nodes: &mut AcquiredNodes<'_>,
-        _draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
@@ -453,6 +451,10 @@ impl Turbulence {
             surface: surface.share()?,
             bounds,
         })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        InputRequirements::default()
     }
 }
 

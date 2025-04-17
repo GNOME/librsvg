@@ -13,7 +13,6 @@ use crate::error::{InternalRenderingError, ParseError};
 use crate::filter::UserSpaceFilter;
 use crate::length::*;
 use crate::node::Node;
-use crate::paint_server::UserSpacePaintSource;
 use crate::parse_identifiers;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
@@ -61,10 +60,127 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
+/// Parameters to apply a list of SVG filter primitives onto a surface.
+///
+/// This is almost everything needed to take a surface and apply a list of SVG filter
+/// primitives to it.
 pub struct FilterSpec {
+    /// Human-readable identifier for the filter, for logging/debugging purposes.
     pub name: String,
+
+    /// Coordinates and bounds.
     pub user_space_filter: UserSpaceFilter,
+
+    /// List of filter primitives to apply to the surface, in order.
     pub primitives: Vec<UserSpacePrimitive>,
+}
+
+/// Parameters using while rendering a whole `filter` property.
+///
+/// The `filter` property may contain a single primitive, like `filter="blur(2px)", or a
+/// list of filter specs like `filter="blur(2px) url(#filter_id) drop_shadow(5 5)"`.  Each
+/// of those specs may produce more than one primitive; for example, the `url(#filter_id)`
+/// there may refer to a `<filter>` element that has several primitives inside it.  Also,
+/// the `drop_shadow()` function will expand to the few primitives used to implement a
+/// drop shadow.
+///
+/// Each filter spec will be rendered within a [`FilterContext`], so that the context can maintain
+/// the list of named outputs within a `<filter>` element.
+///
+/// While rendering all those [`FilterContext`]s, there are some immutable parameters.
+/// This `FilterPlan` struct contains those parameters.
+pub struct FilterPlan {
+    session: Session,
+
+    /// Current viewport at the time the filter is invoked.
+    pub viewport: Viewport,
+
+    /// Surface corresponding to the background image snapshot, for `in="BackgroundImage"`.
+    background_image: Option<SharedImageSurface>,
+
+    /// Surface filled with the current stroke paint, for `in="StrokePaint"`.
+    ///
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-strokepaint>
+    stroke_paint_image: Option<SharedImageSurface>,
+
+    /// Surface filled with the current fill paint, for `in="FillPaint"`.
+    ///
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-fillpaint>
+    fill_paint_image: Option<SharedImageSurface>,
+}
+
+impl FilterPlan {
+    pub fn new(
+        session: &Session,
+        viewport: Viewport,
+        requirements: InputRequirements,
+        background_image: Option<SharedImageSurface>,
+        stroke_paint_image: Option<SharedImageSurface>,
+        fill_paint_image: Option<SharedImageSurface>,
+    ) -> Result<FilterPlan, InternalRenderingError> {
+        assert_eq!(
+            requirements.needs_background_image || requirements.needs_background_alpha,
+            background_image.is_some()
+        );
+
+        assert_eq!(
+            requirements.needs_stroke_paint_image,
+            stroke_paint_image.is_some()
+        );
+
+        assert_eq!(
+            requirements.needs_fill_paint_image,
+            fill_paint_image.is_some()
+        );
+
+        Ok(FilterPlan {
+            session: session.clone(),
+            viewport,
+            background_image,
+            stroke_paint_image,
+            fill_paint_image,
+        })
+    }
+}
+
+/// Which surfaces need to be provided as inputs for a [`FilterPlan`].
+///
+/// The various filters in a `filter` property may require different source images that
+/// the calling [`DrawingCtx`] is able to compute.  For example, if a primitive inside a
+/// `<filter>` element has `in="FillPaint"`, then the calling [`DrawingCtx`] must supply a
+/// surface filled as per the `fill` property of the element being filtered.
+///
+/// This struct holds the requirements for which such surfaces are needed.  The caller is
+/// expected to construct it from an array of [`FilterSpec`], and then to create the
+/// corresponding [`Inputs`] to create a [`FilterPlan`].
+#[derive(Debug, Default, PartialEq)]
+pub struct InputRequirements {
+    pub needs_source_alpha: bool,
+    pub needs_background_image: bool,
+    pub needs_background_alpha: bool,
+    pub needs_stroke_paint_image: bool,
+    pub needs_fill_paint_image: bool,
+}
+
+impl InputRequirements {
+    pub fn new_from_filter_specs(specs: &[FilterSpec]) -> InputRequirements {
+        specs
+            .iter()
+            .flat_map(|spec| spec.primitives.iter())
+            .map(|primitive| primitive.params.get_input_requirements())
+            .fold(InputRequirements::default(), |a, b| a.fold(b))
+    }
+
+    #[rustfmt::skip]
+    fn fold(self, r: InputRequirements) -> InputRequirements {
+        InputRequirements {
+            needs_source_alpha:       self.needs_source_alpha       || r.needs_source_alpha,
+            needs_background_image:   self.needs_background_image   || r.needs_background_image,
+            needs_background_alpha:   self.needs_background_alpha   || r.needs_background_alpha,
+            needs_stroke_paint_image: self.needs_stroke_paint_image || r.needs_stroke_paint_image,
+            needs_fill_paint_image:   self.needs_fill_paint_image   || r.needs_fill_paint_image,
+        }
+    }
 }
 
 /// Resolved parameters for each filter primitive.
@@ -116,6 +232,29 @@ impl PrimitiveParams {
             Turbulence(..)        => "feTurbulence",
         }
     }
+
+    #[rustfmt::skip]
+    fn get_input_requirements(&self) -> InputRequirements {
+        use PrimitiveParams::*;
+        match self {
+            Blend(p)             => p.get_input_requirements(),
+            ColorMatrix(p)       => p.get_input_requirements(),
+            ComponentTransfer(p) => p.get_input_requirements(),
+            Composite(p)         => p.get_input_requirements(),
+            ConvolveMatrix(p)    => p.get_input_requirements(),
+            DiffuseLighting(p)   => p.get_input_requirements(),
+            DisplacementMap(p)   => p.get_input_requirements(),
+            Flood(p)             => p.get_input_requirements(),
+            GaussianBlur(p)      => p.get_input_requirements(),
+            Image(p)             => p.get_input_requirements(),
+            Merge(p)             => p.get_input_requirements(),
+            Morphology(p)        => p.get_input_requirements(),
+            Offset(p)            => p.get_input_requirements(),
+            SpecularLighting(p)  => p.get_input_requirements(),
+            Tile(p)              => p.get_input_requirements(),
+            Turbulence(p)        => p.get_input_requirements(),
+        }
+    }
 }
 
 /// The base filter primitive node containing common properties.
@@ -156,6 +295,25 @@ pub enum Input {
     FillPaint,
     StrokePaint,
     FilterOutput(CustomIdent),
+}
+
+impl Input {
+    pub fn get_requirements(&self) -> InputRequirements {
+        use Input::*;
+
+        let mut reqs = InputRequirements::default();
+
+        match self {
+            SourceAlpha => reqs.needs_source_alpha = true,
+            BackgroundImage => reqs.needs_background_image = true,
+            BackgroundAlpha => reqs.needs_background_alpha = true,
+            FillPaint => reqs.needs_fill_paint_image = true,
+            StrokePaint => reqs.needs_stroke_paint_image = true,
+            _ => (),
+        }
+
+        reqs
+    }
 }
 
 impl Parse for Input {
@@ -254,91 +412,86 @@ impl Primitive {
 
 /// Applies a filter and returns the resulting surface.
 pub fn render(
+    plan: Rc<FilterPlan>,
     filter: &FilterSpec,
-    stroke_paint_source: Rc<UserSpacePaintSource>,
-    fill_paint_source: Rc<UserSpacePaintSource>,
     source_surface: SharedImageSurface,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
     node_bbox: &BoundingBox,
-    viewport: Viewport,
 ) -> Result<SharedImageSurface, InternalRenderingError> {
     let session = draw_ctx.session().clone();
 
-    FilterContext::new(
-        &filter.user_space_filter,
-        stroke_paint_source,
-        fill_paint_source,
-        &source_surface,
-        *node_bbox,
-        viewport,
-    )
-    .and_then(|mut filter_ctx| {
-        // the message has an unclosed parenthesis; we'll close it below.
-        rsvg_log!(
-            session,
-            "(filter \"{}\" with effects_region={:?}",
-            filter.name,
-            filter_ctx.effects_region()
-        );
-        for user_space_primitive in &filter.primitives {
-            let start = Instant::now();
+    let surface_width = source_surface.width();
+    let surface_height = source_surface.height();
 
-            match render_primitive(user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
-                Ok(output) => {
-                    let elapsed = start.elapsed();
-                    rsvg_log!(
-                        session,
-                        "(rendered filter primitive {} in {} seconds)",
-                        user_space_primitive.params.name(),
-                        elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
-                    );
+    FilterContext::new(&filter.user_space_filter, plan, source_surface, *node_bbox)
+        .and_then(|mut filter_ctx| {
+            // the message has an unclosed parenthesis; we'll close it below.
+            rsvg_log!(
+                session,
+                "(filter \"{}\" with effects_region={:?}",
+                filter.name,
+                filter_ctx.effects_region()
+            );
+            for user_space_primitive in &filter.primitives {
+                let start = Instant::now();
 
-                    filter_ctx.store_result(FilterResult {
-                        name: user_space_primitive.result.clone(),
-                        output,
-                    });
-                }
+                match render_primitive(user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx)
+                {
+                    Ok(output) => {
+                        let elapsed = start.elapsed();
+                        rsvg_log!(
+                            session,
+                            "(rendered filter primitive {} in {} seconds)",
+                            user_space_primitive.params.name(),
+                            elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+                        );
 
-                Err(err) => {
-                    rsvg_log!(
-                        session,
-                        "(filter primitive {} returned an error: {})",
-                        user_space_primitive.params.name(),
-                        err
-                    );
+                        filter_ctx.store_result(FilterResult {
+                            name: user_space_primitive.result.clone(),
+                            output,
+                        });
+                    }
 
-                    // close the opening parenthesis from the message at the start of this function
-                    rsvg_log!(session, ")");
+                    Err(err) => {
+                        rsvg_log!(
+                            session,
+                            "(filter primitive {} returned an error: {})",
+                            user_space_primitive.params.name(),
+                            err
+                        );
 
-                    // Exit early on Cairo errors. Continue rendering otherwise.
-                    if let FilterError::CairoError(status) = err {
-                        return Err(FilterError::CairoError(status));
+                        // close the opening parenthesis from the message at the start of this function
+                        rsvg_log!(session, ")");
+
+                        // Exit early on Cairo errors. Continue rendering otherwise.
+                        if let FilterError::CairoError(status) = err {
+                            return Err(FilterError::CairoError(status));
+                        }
                     }
                 }
             }
-        }
 
-        // close the opening parenthesis from the message at the start of this function
-        rsvg_log!(session, ")");
+            // close the opening parenthesis from the message at the start of this function
+            rsvg_log!(session, ")");
 
-        Ok(filter_ctx.into_output()?)
-    })
-    .or_else(|err| match err {
-        FilterError::CairoError(status) => {
-            // Exit early on Cairo errors
-            Err(InternalRenderingError::from(status))
-        }
+            Ok(filter_ctx.into_output()?)
+        })
+        .or_else(|err| match err {
+            FilterError::CairoError(status) => {
+                // Exit early on Cairo errors
+                Err(InternalRenderingError::from(status))
+            }
 
-        _ => {
-            // ignore other filter errors and just return an empty surface
-            Ok(SharedImageSurface::empty(
-                source_surface.width(),
-                source_surface.height(),
-                SurfaceType::AlphaOnly,
-            )?)
-        }
-    })
+            _ => {
+                // ignore other filter errors and just return an empty surface
+                Ok(SharedImageSurface::empty(
+                    surface_width,
+                    surface_height,
+                    SurfaceType::AlphaOnly,
+                )?)
+            }
+        })
 }
 
 #[rustfmt::skip]
@@ -357,22 +510,22 @@ fn render_primitive(
     // the drop-shadow effect.
 
     match primitive.params {
-        Blend(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ColorMatrix(ref p)       => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ComponentTransfer(ref p) => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Composite(ref p)         => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ConvolveMatrix(ref p)    => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        DiffuseLighting(ref p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        DisplacementMap(ref p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Flood(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        GaussianBlur(ref p)      => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Blend(ref p)             => p.render(bounds_builder, ctx),
+        ColorMatrix(ref p)       => p.render(bounds_builder, ctx),
+        ComponentTransfer(ref p) => p.render(bounds_builder, ctx),
+        Composite(ref p)         => p.render(bounds_builder, ctx),
+        ConvolveMatrix(ref p)    => p.render(bounds_builder, ctx),
+        DiffuseLighting(ref p)   => p.render(bounds_builder, ctx),
+        DisplacementMap(ref p)   => p.render(bounds_builder, ctx),
+        Flood(ref p)             => p.render(bounds_builder, ctx),
+        GaussianBlur(ref p)      => p.render(bounds_builder, ctx),
         Image(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Merge(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Morphology(ref p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Offset(ref p)            => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        SpecularLighting(ref p)  => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Tile(ref p)              => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Turbulence(ref p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Merge(ref p)             => p.render(bounds_builder, ctx),
+        Morphology(ref p)        => p.render(bounds_builder, ctx),
+        Offset(ref p)            => p.render(bounds_builder, ctx),
+        SpecularLighting(ref p)  => p.render(bounds_builder, ctx),
+        Tile(ref p)              => p.render(bounds_builder, ctx),
+        Turbulence(ref p)        => p.render(bounds_builder, ctx),
     }
 }
 
@@ -393,5 +546,90 @@ impl Parse for EdgeMode {
             "wrap" => EdgeMode::Wrap,
             "none" => EdgeMode::None,
         )?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::document::Document;
+    use crate::dpi::Dpi;
+    use crate::node::NodeBorrow;
+    use crate::properties::Filter;
+
+    fn get_input_requirements_for_node(document: &Document, node_id: &str) -> InputRequirements {
+        let node = document.lookup_internal_node(node_id).unwrap();
+        let elt = node.borrow_element();
+        let values = elt.get_computed_values();
+
+        let session = Session::default();
+        let mut acquired_nodes = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 100.0, 100.0);
+
+        let filter = values.filter();
+
+        let filter_list = match filter {
+            Filter::None => {
+                panic!("the referenced node should have a filter property that is not 'none'")
+            }
+            Filter::List(filter_list) => filter_list,
+        };
+
+        let params = NormalizeParams::new(&values, &viewport);
+
+        let filter_specs = filter_list
+            .iter()
+            .map(|filter_value| {
+                filter_value.to_filter_spec(
+                    &mut acquired_nodes,
+                    &params,
+                    cssparser::Color::parse_str("black").unwrap(),
+                    &viewport,
+                    &session,
+                    "rect",
+                )
+            })
+            .collect::<Result<Vec<FilterSpec>, _>>()
+            .unwrap();
+
+        InputRequirements::new_from_filter_specs(&filter_specs)
+    }
+
+    fn input_requirements_with_only_source_alpha() -> InputRequirements {
+        InputRequirements {
+            needs_source_alpha: true,
+            needs_background_image: false,
+            needs_background_alpha: false,
+            needs_stroke_paint_image: false,
+            needs_fill_paint_image: false,
+        }
+    }
+
+    #[test]
+    fn detects_source_alpha() {
+        let document = Document::load_from_bytes(include_bytes!("test_input_requirements.svg"));
+
+        assert_eq!(
+            get_input_requirements_for_node(&document, "rect_1"),
+            input_requirements_with_only_source_alpha(),
+        );
+
+        assert_eq!(
+            get_input_requirements_for_node(&document, "rect_2"),
+            input_requirements_with_only_source_alpha(),
+        );
+
+        assert_eq!(
+            get_input_requirements_for_node(&document, "rect_3"),
+            InputRequirements {
+                needs_source_alpha: false,
+                needs_background_image: true,
+                needs_background_alpha: true,
+                needs_stroke_paint_image: true,
+                needs_fill_paint_image: true,
+            }
+        );
     }
 }

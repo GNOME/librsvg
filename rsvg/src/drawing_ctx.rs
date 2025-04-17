@@ -20,7 +20,7 @@ use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
 use crate::dpi::Dpi;
 use crate::element::{Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, InternalRenderingError, InvalidTransform};
-use crate::filters::{self, FilterSpec};
+use crate::filters::{self, FilterPlan, FilterSpec, InputRequirements};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
@@ -102,7 +102,7 @@ impl<'a> PathHelper<'a> {
 }
 
 /// Holds the size of the current viewport in the user's coordinate system.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Viewport {
     pub dpi: Dpi,
 
@@ -346,7 +346,7 @@ impl DrawingCtx {
     ) -> DrawingCtx {
         DrawingCtx {
             session,
-            initial_viewport: initial_viewport.clone(),
+            initial_viewport: *initial_viewport,
             cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
             drawsub_stack,
@@ -372,7 +372,7 @@ impl DrawingCtx {
 
         Box::new(DrawingCtx {
             session: self.session.clone(),
-            initial_viewport: self.initial_viewport.clone(),
+            initial_viewport: self.initial_viewport,
             cr_stack,
             cr,
             drawsub_stack: self.drawsub_stack.clone(),
@@ -1043,6 +1043,59 @@ impl DrawingCtx {
         self.cr.tag_end(CAIRO_TAG_LINK);
     }
 
+    fn make_filter_plan(
+        &mut self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        specs: &[FilterSpec],
+        source_image_width: i32,
+        source_image_height: i32,
+        stroke_paint_source: Rc<UserSpacePaintSource>,
+        fill_paint_source: Rc<UserSpacePaintSource>,
+        viewport: &Viewport,
+    ) -> Result<Rc<FilterPlan>, InternalRenderingError> {
+        let requirements = InputRequirements::new_from_filter_specs(specs);
+
+        let background_image =
+            if requirements.needs_background_image || requirements.needs_background_alpha {
+                Some(self.get_snapshot(source_image_width, source_image_height)?)
+            } else {
+                None
+            };
+
+        let stroke_paint_image = if requirements.needs_stroke_paint_image {
+            Some(self.get_paint_source_surface(
+                source_image_width,
+                source_image_height,
+                acquired_nodes,
+                &stroke_paint_source,
+                viewport,
+            )?)
+        } else {
+            None
+        };
+
+        let fill_paint_image = if requirements.needs_fill_paint_image {
+            Some(self.get_paint_source_surface(
+                source_image_width,
+                source_image_height,
+                acquired_nodes,
+                &fill_paint_source,
+                viewport,
+            )?)
+        } else {
+            None
+        };
+
+        Ok(Rc::new(FilterPlan::new(
+            self.session(),
+            *viewport,
+            requirements,
+            background_image,
+            stroke_paint_image,
+            fill_paint_image,
+        )?))
+    }
+
     fn run_filters(
         &mut self,
         viewport: &Viewport,
@@ -1082,19 +1135,20 @@ impl DrawingCtx {
 
         match filter_specs {
             Ok(specs) => {
+                let plan = self.make_filter_plan(
+                    acquired_nodes,
+                    &specs,
+                    surface_to_filter.width(),
+                    surface_to_filter.height(),
+                    stroke_paint_source,
+                    fill_paint_source,
+                    viewport,
+                )?;
+
                 // Start with the surface_to_filter, and apply each filter spec in turn;
                 // the final result is our return value.
                 specs.iter().try_fold(surface_to_filter, |surface, spec| {
-                    filters::render(
-                        spec,
-                        stroke_paint_source.clone(),
-                        fill_paint_source.clone(),
-                        surface,
-                        acquired_nodes,
-                        self,
-                        node_bbox,
-                        viewport.clone(),
-                    )
+                    filters::render(plan.clone(), spec, surface, acquired_nodes, self, node_bbox)
                 })
             }
 

@@ -1,7 +1,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::node::Node;
 use crate::parsers::ParseValue;
@@ -14,8 +13,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 
 /// The `feOffset` filter primitive.
@@ -56,8 +55,6 @@ impl Offset {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#ColorInterpolationFiltersProperty
         //
@@ -66,15 +63,10 @@ impl Offset {
         // filter primitives like feOffset"
         //
         // This is why we pass Auto here.
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            ColorInterpolationFilters::Auto,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, ColorInterpolationFilters::Auto)?;
         let bounds = bounds_builder.add_input(&input_1).compute(ctx).clipped;
 
-        rsvg_log!(draw_ctx.session(), "(feOffset bounds={:?}", bounds);
+        rsvg_log!(ctx.session(), "(feOffset bounds={:?}", bounds);
 
         let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
@@ -86,6 +78,10 @@ impl Offset {
             surface,
             bounds: ibounds,
         })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        self.in1.get_requirements()
     }
 }
 

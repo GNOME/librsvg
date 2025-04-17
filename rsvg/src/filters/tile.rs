@@ -1,5 +1,4 @@
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementTrait;
 use crate::node::Node;
 use crate::properties::ColorInterpolationFilters;
@@ -11,8 +10,8 @@ use crate::xml::Attributes;
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterInput, FilterOutput};
 use super::{
-    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
+    PrimitiveParams, ResolvedPrimitive,
 };
 
 /// The `feTile` filter primitive.
@@ -39,8 +38,6 @@ impl Tile {
         &self,
         bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#ColorInterpolationFiltersProperty
         //
@@ -49,12 +46,7 @@ impl Tile {
         // filter primitives like [...], feTile"
         //
         // This is why we pass Auto here.
-        let input_1 = ctx.get_input(
-            acquired_nodes,
-            draw_ctx,
-            &self.in1,
-            ColorInterpolationFilters::Auto,
-        )?;
+        let input_1 = ctx.get_input(&self.in1, ColorInterpolationFilters::Auto)?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
         let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
@@ -67,14 +59,14 @@ impl Tile {
             }) => {
                 if input_bounds.is_empty() {
                     rsvg_log!(
-                        draw_ctx.session(),
+                        ctx.session(),
                         "(feTile with empty input_bounds; returning just the input surface)"
                     );
 
                     input_surface
                 } else {
                     rsvg_log!(
-                        draw_ctx.session(),
+                        ctx.session(),
                         "(feTile bounds={:?}, input_bounds={:?})",
                         bounds,
                         input_bounds
@@ -93,6 +85,10 @@ impl Tile {
         };
 
         Ok(FilterOutput { surface, bounds })
+    }
+
+    pub fn get_input_requirements(&self) -> InputRequirements {
+        self.in1.get_requirements()
     }
 }
 

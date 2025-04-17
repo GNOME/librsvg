@@ -886,7 +886,7 @@ impl ElementTrait for Text {
                 writing_mode: values.writing_mode(),
                 transform,
                 font_options: draw_ctx.get_font_options(),
-                viewport: viewport.clone(),
+                viewport: *viewport,
                 session: session.clone(),
             };
 
