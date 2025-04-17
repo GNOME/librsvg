@@ -13,7 +13,6 @@ use crate::error::{InternalRenderingError, ParseError};
 use crate::filter::UserSpaceFilter;
 use crate::length::*;
 use crate::node::Node;
-use crate::paint_server::UserSpacePaintSource;
 use crate::parse_identifiers;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
@@ -93,12 +92,6 @@ pub struct FilterSpec {
 pub struct FilterPlan {
     session: Session,
 
-    /// Paint source for primitives which have an input value equal to `StrokePaint`.
-    pub stroke_paint: Rc<UserSpacePaintSource>,
-
-    /// Paint source for primitives which have an input value equal to `FillPaint`.
-    pub fill_paint: Rc<UserSpacePaintSource>,
-
     /// Current viewport at the time the filter is invoked.
     pub viewport: Viewport,
 
@@ -119,8 +112,6 @@ pub struct FilterPlan {
 impl FilterPlan {
     pub fn new(
         session: &Session,
-        stroke_paint: Rc<UserSpacePaintSource>,
-        fill_paint: Rc<UserSpacePaintSource>,
         viewport: Viewport,
         requirements: InputRequirements,
         background_image: Option<SharedImageSurface>,
@@ -144,8 +135,6 @@ impl FilterPlan {
 
         Ok(FilterPlan {
             session: session.clone(),
-            stroke_paint,
-            fill_paint,
             viewport,
             background_image,
             stroke_paint_image,
