@@ -62,9 +62,6 @@ pub struct FilterContext {
     /// Surfaces of the previous filter primitives by name.
     previous_results: HashMap<CustomIdent, FilterOutput>,
 
-    // Input surface for primitives that require an input of `StrokePaint`, Computed lazily.
-    stroke_paint_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
-
     // Input surface for primitives that require an input of `FillPaint`, Computed lazily.
     fill_paint_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
 
@@ -164,7 +161,6 @@ impl FilterContext {
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
-            stroke_paint_surface: OnceCell::new(),
             fill_paint_surface: OnceCell::new(),
             primitive_units: filter.primitive_units,
             effects_region,
@@ -189,22 +185,10 @@ impl FilterContext {
     /// Returns a surface filled with the current stroke's paint, for `StrokePaint` inputs in primitives.
     ///
     /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-strokepaint>
-    fn stroke_paint_image(
-        &self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<SharedImageSurface, FilterError> {
-        let res = self.stroke_paint_surface.get_or_init(|| {
-            Ok(draw_ctx.get_paint_source_surface(
-                self.source_surface.width(),
-                self.source_surface.height(),
-                acquired_nodes,
-                &self.plan.stroke_paint,
-                &self.plan.viewport,
-            )?)
-        });
-
-        res.clone().map_err(|e| e.clone())
+    fn stroke_paint_image(&self) -> SharedImageSurface {
+        self.plan.stroke_paint_image.clone().expect(
+            "the calling DrawingCtx should have passed a stroke_paint_image to the FilterPlan",
+        )
     }
 
     /// Returns a surface filled with the current fill's paint, for `FillPaint` inputs in primitives.
@@ -317,9 +301,7 @@ impl FilterContext {
                 .fill_paint_image(acquired_nodes, draw_ctx)
                 .map(FilterInput::StandardInput),
 
-            Input::StrokePaint => self
-                .stroke_paint_image(acquired_nodes, draw_ctx)
-                .map(FilterInput::StandardInput),
+            Input::StrokePaint => Ok(FilterInput::StandardInput(self.stroke_paint_image())),
 
             Input::FilterOutput(ref name) => {
                 let input = match self.previous_results.get(name).cloned() {
