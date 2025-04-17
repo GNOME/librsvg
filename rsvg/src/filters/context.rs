@@ -62,9 +62,6 @@ pub struct FilterContext {
     /// Surfaces of the previous filter primitives by name.
     previous_results: HashMap<CustomIdent, FilterOutput>,
 
-    /// Input surface for primitives that require an input of `BackgroundImage` or `BackgroundAlpha`. Computed lazily.
-    background_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
-
     // Input surface for primitives that require an input of `StrokePaint`, Computed lazily.
     stroke_paint_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
 
@@ -167,7 +164,6 @@ impl FilterContext {
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
-            background_surface: OnceCell::new(),
             stroke_paint_surface: OnceCell::new(),
             fill_paint_surface: OnceCell::new(),
             primitive_units: filter.primitive_units,
@@ -184,14 +180,10 @@ impl FilterContext {
     }
 
     /// Returns the surface corresponding to the background image snapshot.
-    fn background_image(&self, draw_ctx: &DrawingCtx) -> Result<SharedImageSurface, FilterError> {
-        let res = self.background_surface.get_or_init(|| {
-            draw_ctx
-                .get_snapshot(self.source_surface.width(), self.source_surface.height())
-                .map_err(FilterError::Rendering)
-        });
-
-        res.clone().map_err(|e| e.clone())
+    fn background_image(&self) -> SharedImageSurface {
+        self.plan.background_image.clone().expect(
+            "the calling DrawingCtx should have passed a background_image to the FilterPlan",
+        )
     }
 
     /// Returns a surface filled with the current stroke's paint, for `StrokePaint` inputs in primitives.
@@ -313,17 +305,12 @@ impl FilterContext {
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
-            Input::BackgroundImage => self
-                .background_image(draw_ctx)
-                .map(FilterInput::StandardInput),
+            Input::BackgroundImage => Ok(FilterInput::StandardInput(self.background_image())),
 
             Input::BackgroundAlpha => self
-                .background_image(draw_ctx)
-                .and_then(|surface| {
-                    surface
-                        .extract_alpha(self.effects_region().into())
-                        .map_err(FilterError::CairoError)
-                })
+                .background_image()
+                .extract_alpha(self.effects_region().into())
+                .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
             Input::FillPaint => self
