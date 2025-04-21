@@ -57,10 +57,18 @@ fn draw_basic_shape(
     let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
 
+    let stroke = Stroke::new(values, &params);
+    let path = match validate_path(&shape_def.path, &stroke, viewport)? {
+        ValidatedPath::Invalid(ref reason) => {
+            rsvg_log!(session, "will not render {node}: {reason}");
+            return Ok(None);
+        }
+
+        ValidatedPath::Validated(path) => path,
+    };
+
     let is_visible = values.is_visible();
     let paint_order = values.paint_order();
-
-    let stroke = Stroke::new(values, &params);
 
     let stroke_paint = values.stroke().0.resolve(
         acquired_nodes,
@@ -118,51 +126,39 @@ fn draw_basic_shape(
 
     let normalize_values = NormalizeValues::new(values);
 
-    let vpath = validate_path(&shape_def.path, &stroke, viewport)?;
+    let stroke_paint_source =
+        stroke_paint.to_user_space(&path.extents, viewport, &normalize_values);
+    let fill_paint_source = fill_paint.to_user_space(&path.extents, viewport, &normalize_values);
 
-    match vpath {
-        ValidatedPath::Invalid(ref reason) => {
-            rsvg_log!(session, "will not render {node}: {reason}");
-            Ok(None)
-        }
+    let shape = Box::new(Shape {
+        path,
+        is_visible,
+        paint_order,
+        stroke_paint: stroke_paint_source,
+        fill_paint: fill_paint_source,
+        stroke,
+        fill_rule,
+        clip_rule,
+        shape_rendering,
+        marker_start,
+        marker_mid,
+        marker_end,
+    });
 
-        ValidatedPath::Validated(path) => {
-            let stroke_paint_source =
-                stroke_paint.to_user_space(&path.extents, viewport, &normalize_values);
-            let fill_paint_source =
-                fill_paint.to_user_space(&path.extents, viewport, &normalize_values);
+    let elt = node.borrow_element();
+    let stacking_ctx = StackingContext::new(
+        session,
+        acquired_nodes,
+        &elt,
+        values.transform(),
+        None,
+        values,
+    );
 
-            let shape = Box::new(Shape {
-                path,
-                is_visible,
-                paint_order,
-                stroke_paint: stroke_paint_source,
-                fill_paint: fill_paint_source,
-                stroke,
-                fill_rule,
-                clip_rule,
-                shape_rendering,
-                marker_start,
-                marker_mid,
-                marker_end,
-            });
-
-            let elt = node.borrow_element();
-            let stacking_ctx = StackingContext::new(
-                session,
-                acquired_nodes,
-                &elt,
-                values.transform(),
-                None,
-                values,
-            );
-
-            Ok(Some(Layer {
-                kind: LayerKind::Shape(shape),
-                stacking_ctx,
-            }))
-        }
-    }
+    Ok(Some(Layer {
+        kind: LayerKind::Shape(shape),
+        stacking_ctx,
+    }))
 }
 
 macro_rules! impl_draw {
