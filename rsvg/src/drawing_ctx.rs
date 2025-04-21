@@ -24,8 +24,8 @@ use crate::filters::{self, FilterPlan, FilterSpec, InputRequirements};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
-    self, Filter, Group, Image, Layer, LayerKind, LayoutViewport, Shape, StackingContext, Stroke,
-    Text, TextSpan,
+    Filter, Group, Image, Layer, LayerKind, LayoutViewport, Shape, StackingContext, Stroke, Text,
+    TextSpan,
 };
 use crate::length::*;
 use crate::limits;
@@ -1392,18 +1392,6 @@ impl DrawingCtx {
         clipping: bool,
         viewport: &Viewport,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        let (cairo_path, stroke_paint, fill_paint) = match &shape.path {
-            layout::Path::Validated {
-                cairo_path,
-                extents: Some(_),
-                stroke_paint,
-                fill_paint,
-                ..
-            } => (cairo_path, stroke_paint, fill_paint),
-            layout::Path::Validated { extents: None, .. } => return Ok(viewport.empty_bbox()),
-            layout::Path::Invalid(_) => return Ok(viewport.empty_bbox()),
-        };
-
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
@@ -1415,7 +1403,7 @@ impl DrawingCtx {
 
                 let transform =
                     dc.get_transform_for_stacking_ctx(new_viewport, stacking_ctx, clipping)?;
-                let mut path_helper = PathHelper::new(&cr, transform, cairo_path);
+                let mut path_helper = PathHelper::new(&cr, transform, &shape.path.cairo_path);
 
                 if clipping {
                     if shape.is_visible {
@@ -1435,7 +1423,7 @@ impl DrawingCtx {
                 let bbox = compute_stroke_and_fill_box(
                     &cr,
                     &shape.stroke,
-                    stroke_paint,
+                    &shape.path.stroke_paint,
                     &dc.initial_viewport,
                 )?;
 
@@ -1447,7 +1435,7 @@ impl DrawingCtx {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
                                 let had_paint_server =
-                                    dc.set_paint_source(fill_paint, an, viewport)?;
+                                    dc.set_paint_source(&shape.path.fill_paint, an, viewport)?;
                                 if had_paint_server {
                                     cr.fill_preserve()?;
                                 }
@@ -1460,7 +1448,7 @@ impl DrawingCtx {
                                 }
 
                                 let had_paint_server =
-                                    dc.set_paint_source(stroke_paint, an, viewport)?;
+                                    dc.set_paint_source(&shape.path.stroke_paint, an, viewport)?;
                                 if had_paint_server {
                                     cr.stroke_preserve()?;
                                 }

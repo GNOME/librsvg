@@ -22,6 +22,33 @@ use crate::transform::Transform;
 
 use cairo::PathSegment;
 
+/// A path that has been validated for being suitable for Cairo.
+///
+/// As of 2024/Sep/25, Cairo converts path coordinates to fixed point, but it has several problems:
+///
+/// * For coordinates that are outside of the representable range in
+///   fixed point, Cairo just clamps them.  It is not able to return
+///   this condition as an error to the caller.
+///
+/// * Then, it has multiple cases of possible arithmetic overflow
+///   while processing the paths for rendering.  Fixing this is an
+///   ongoing project.
+///
+/// While Cairo gets better in these respects, librsvg will try to do
+/// some mitigations, mainly about catching problematic coordinates
+/// early and not passing them on to Cairo.
+pub enum ValidatedPath {
+    /// Path that has been checked for being suitable for Cairo.
+    ///
+    /// Note that this also keeps a reference to the original [SvgPath], in addition to
+    /// the lowered [CairoPath].  This is because the markers code still needs the former.
+    Validated(layout::Path),
+
+    /// Reason why the path was determined to be not suitable for Cairo.  This
+    /// is just used for logging purposes.
+    Invalid(String),
+}
+
 /// Sees if any of the coordinates in the segment is not representable in Cairo's fixed-point numbers.
 ///
 /// See the documentation for [`CairoPath::has_unsuitable_coordinates`].
@@ -238,12 +265,12 @@ pub fn validate_path(
     normalize_values: &NormalizeValues,
     stroke_paint: &PaintSource,
     fill_paint: &PaintSource,
-) -> Result<layout::Path, InternalRenderingError> {
+) -> Result<ValidatedPath, InternalRenderingError> {
     let is_square_linecap = stroke.line_cap == StrokeLinecap::Square;
     let cairo_path = path.to_cairo_path(is_square_linecap)?;
 
     if cairo_path.has_unsuitable_coordinates(&viewport.transform) {
-        return Ok(layout::Path::Invalid(String::from(
+        return Ok(ValidatedPath::Invalid(String::from(
             "path has coordinates that are unsuitable for Cairo",
         )));
     }
@@ -252,13 +279,13 @@ pub fn validate_path(
     let stroke_paint = stroke_paint.to_user_space(&extents, viewport, normalize_values);
     let fill_paint = fill_paint.to_user_space(&extents, viewport, normalize_values);
 
-    Ok(layout::Path::Validated {
+    Ok(ValidatedPath::Validated(layout::Path {
         cairo_path,
         path: Rc::clone(path),
         extents,
         stroke_paint,
         fill_paint,
-    })
+    }))
 }
 
 #[cfg(test)]

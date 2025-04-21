@@ -110,37 +110,13 @@ pub struct Stroke {
     pub non_scaling: bool,
 }
 
-/// A path that has been validated for being suitable for Cairo.
-///
-/// As of 2024/Sep/25, Cairo converts path coordinates to fixed point, but it has several problems:
-///
-/// * For coordinates that are outside of the representable range in
-///   fixed point, Cairo just clamps them.  It is not able to return
-///   this condition as an error to the caller.
-///
-/// * Then, it has multiple cases of possible arithmetic overflow
-///   while processing the paths for rendering.  Fixing this is an
-///   ongoing project.
-///
-/// While Cairo gets better in these respects, librsvg will try to do
-/// some mitigations, mainly about catching problematic coordinates
-/// early and not passing them on to Cairo.
-pub enum Path {
-    /// Path that has been checked for being suitable for Cairo.
-    ///
-    /// Note that this also keeps a reference to the original [SvgPath], in addition to
-    /// the lowered [CairoPath].  This is because the markers code still needs the former.
-    Validated {
-        cairo_path: CairoPath,
-        path: Rc<SvgPath>,
-        extents: Option<Rect>,
-        stroke_paint: UserSpacePaintSource,
-        fill_paint: UserSpacePaintSource,
-    },
-
-    /// Reason why the path was determined to be not suitable for Cairo.  This
-    /// is just used for logging purposes.
-    Invalid(String),
+/// A path known to be representable by Cairo.
+pub struct Path {
+    pub cairo_path: CairoPath,
+    pub path: Rc<SvgPath>,
+    pub extents: Option<Rect>,
+    pub stroke_paint: UserSpacePaintSource,
+    pub fill_paint: UserSpacePaintSource,
 }
 
 /// Paths and basic shapes resolved to a path.
