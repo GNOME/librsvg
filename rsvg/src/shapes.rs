@@ -118,14 +118,7 @@ fn draw_basic_shape(
 
     let normalize_values = NormalizeValues::new(values);
 
-    let vpath = validate_path(
-        &shape_def.path,
-        &stroke,
-        viewport,
-        &normalize_values,
-        &stroke_paint,
-        &fill_paint,
-    )?;
+    let vpath = validate_path(&shape_def.path, &stroke, viewport)?;
 
     match vpath {
         ValidatedPath::Invalid(ref reason) => {
@@ -134,10 +127,17 @@ fn draw_basic_shape(
         }
 
         ValidatedPath::Validated(path) => {
+            let stroke_paint_source =
+                stroke_paint.to_user_space(&path.extents, viewport, &normalize_values);
+            let fill_paint_source =
+                fill_paint.to_user_space(&path.extents, viewport, &normalize_values);
+
             let shape = Box::new(Shape {
                 path,
                 is_visible,
                 paint_order,
+                stroke_paint: stroke_paint_source,
+                fill_paint: fill_paint_source,
                 stroke,
                 fill_rule,
                 clip_rule,

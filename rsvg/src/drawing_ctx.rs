@@ -1423,7 +1423,7 @@ impl DrawingCtx {
                 let bbox = compute_stroke_and_fill_box(
                     &cr,
                     &shape.stroke,
-                    &shape.path.stroke_paint,
+                    &shape.stroke_paint,
                     &dc.initial_viewport,
                 )?;
 
@@ -1435,7 +1435,7 @@ impl DrawingCtx {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
                                 let had_paint_server =
-                                    dc.set_paint_source(&shape.path.fill_paint, an, viewport)?;
+                                    dc.set_paint_source(&shape.fill_paint, an, viewport)?;
                                 if had_paint_server {
                                     cr.fill_preserve()?;
                                 }
@@ -1448,7 +1448,7 @@ impl DrawingCtx {
                                 }
 
                                 let had_paint_server =
-                                    dc.set_paint_source(&shape.path.stroke_paint, an, viewport)?;
+                                    dc.set_paint_source(&shape.stroke_paint, an, viewport)?;
                                 if had_paint_server {
                                     cr.stroke_preserve()?;
                                 }

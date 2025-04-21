@@ -11,8 +11,6 @@ use crate::drawing_ctx::Viewport;
 use crate::error::InternalRenderingError;
 use crate::float_eq_cairo::{CAIRO_FIXED_MAX_DOUBLE, CAIRO_FIXED_MIN_DOUBLE};
 use crate::layout::{self, Stroke};
-use crate::length::NormalizeValues;
-use crate::paint_server::PaintSource;
 use crate::path_builder::{
     arc_segment, ArcParameterization, CubicBezierCurve, EllipticalArc, Path, PathCommand,
 };
@@ -262,9 +260,6 @@ pub fn validate_path(
     path: &Rc<Path>,
     stroke: &Stroke,
     viewport: &Viewport,
-    normalize_values: &NormalizeValues,
-    stroke_paint: &PaintSource,
-    fill_paint: &PaintSource,
 ) -> Result<ValidatedPath, InternalRenderingError> {
     let is_square_linecap = stroke.line_cap == StrokeLinecap::Square;
     let cairo_path = path.to_cairo_path(is_square_linecap)?;
@@ -276,15 +271,11 @@ pub fn validate_path(
     }
 
     let extents = compute_path_extents(path)?;
-    let stroke_paint = stroke_paint.to_user_space(&extents, viewport, normalize_values);
-    let fill_paint = fill_paint.to_user_space(&extents, viewport, normalize_values);
 
     Ok(ValidatedPath::Validated(layout::Path {
         cairo_path,
         path: Rc::clone(path),
         extents,
-        stroke_paint,
-        fill_paint,
     }))
 }
 

@@ -115,8 +115,6 @@ pub struct Path {
     pub cairo_path: CairoPath,
     pub path: Rc<SvgPath>,
     pub extents: Option<Rect>,
-    pub stroke_paint: UserSpacePaintSource,
-    pub fill_paint: UserSpacePaintSource,
 }
 
 /// Paths and basic shapes resolved to a path.
@@ -124,6 +122,8 @@ pub struct Shape {
     pub path: Path,
     pub is_visible: bool,
     pub paint_order: PaintOrder,
+    pub stroke_paint: UserSpacePaintSource,
+    pub fill_paint: UserSpacePaintSource,
     pub stroke: Stroke,
     pub fill_rule: FillRule,
     pub clip_rule: ClipRule,
