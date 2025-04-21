@@ -11,7 +11,7 @@ use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
-use crate::layout::{LayoutViewport, StackingContext};
+use crate::layout::{self, Layer, LayerKind, LayoutViewport, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -56,6 +56,57 @@ impl ElementTrait for Group {
                 node.draw_children(an, cascaded, new_viewport, dc, clipping)
             },
         )
+    }
+
+    fn layout(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<Option<Layer>, InternalRenderingError> {
+        let mut child_layers = Vec::new();
+
+        for child in node.children().filter(|c| c.is_element()) {
+            let elt = child.borrow_element();
+
+            let layer = elt.layout(
+                &child,
+                acquired_nodes,
+                &CascadedValues::clone_with_node(cascaded, &child),
+                viewport,
+                draw_ctx,
+                clipping,
+            )?;
+
+            if let Some(layer) = layer {
+                child_layers.push(layer);
+            }
+        }
+
+        let values = cascaded.get();
+
+        let group = Box::new(layout::Group {
+            children: child_layers,
+            establish_viewport: None,
+        });
+
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(
+            draw_ctx.session(),
+            acquired_nodes,
+            &elt,
+            values.transform(),
+            None,
+            values,
+        );
+
+        Ok(Some(Layer {
+            kind: LayerKind::Group(group),
+            stacking_ctx,
+        }))
     }
 }
 
