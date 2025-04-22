@@ -1406,7 +1406,7 @@ impl DrawingCtx {
                 let mut path_helper = PathHelper::new(&cr, transform, &shape.path.cairo_path);
 
                 if clipping {
-                    if shape.is_visible {
+                    if stacking_ctx.is_visible {
                         cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
                         path_helper.set()?;
                     }
@@ -1427,7 +1427,7 @@ impl DrawingCtx {
                     &dc.initial_viewport,
                 )?;
 
-                if shape.is_visible {
+                if stacking_ctx.is_visible {
                     for &target in &shape.paint_order.targets {
                         // fill and stroke operations will preserve the path.
                         // markers operation will clear the path.
@@ -1535,7 +1535,7 @@ impl DrawingCtx {
             overflow: image.overflow,
         };
 
-        if image.is_visible {
+        if stacking_ctx.is_visible {
             self.with_discrete_layer(
                 stacking_ctx,
                 acquired_nodes,

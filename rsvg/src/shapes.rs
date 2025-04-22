@@ -67,7 +67,6 @@ fn draw_basic_shape(
         ValidatedPath::Validated(path) => path,
     };
 
-    let is_visible = values.is_visible();
     let paint_order = values.paint_order();
 
     let stroke_paint = values.stroke().0.resolve(
@@ -132,7 +131,6 @@ fn draw_basic_shape(
 
     let shape = Box::new(Shape {
         path,
-        is_visible,
         paint_order,
         stroke_paint: stroke_paint_source,
         fill_paint: fill_paint_source,

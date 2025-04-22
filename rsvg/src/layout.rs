@@ -50,6 +50,7 @@ use crate::{borrow_element_as, is_element_of_type};
 pub struct StackingContext {
     pub element_name: String,
     pub transform: Transform,
+    pub is_visible: bool,
     pub opacity: Opacity,
     pub filter: Option<Filter>,
     pub clip_rect: Option<Rect>,
@@ -77,7 +78,6 @@ pub enum LayerKind {
 
 pub struct Group {
     pub children: Vec<Layer>,
-    pub is_visible: bool, // FIXME: move to Layer?  All of them have this...
     pub establish_viewport: Option<LayoutViewport>,
 }
 
@@ -120,7 +120,6 @@ pub struct Path {
 /// Paths and basic shapes resolved to a path.
 pub struct Shape {
     pub path: Path,
-    pub is_visible: bool,
     pub paint_order: PaintOrder,
     pub stroke_paint: UserSpacePaintSource,
     pub fill_paint: UserSpacePaintSource,
@@ -142,7 +141,6 @@ pub struct Marker {
 /// Image in user-space coordinates.
 pub struct Image {
     pub surface: SharedImageSurface,
-    pub is_visible: bool,
     pub rect: Rect,
     pub aspect: AspectRatio,
     pub overflow: Overflow,
@@ -258,6 +256,8 @@ impl StackingContext {
     ) -> StackingContext {
         let element_name = format!("{element}");
 
+        let is_visible = values.is_visible();
+
         let opacity;
         let filter;
 
@@ -331,6 +331,7 @@ impl StackingContext {
         StackingContext {
             element_name,
             transform,
+            is_visible,
             opacity,
             filter,
             clip_rect,
