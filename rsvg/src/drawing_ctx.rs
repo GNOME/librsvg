@@ -1567,7 +1567,21 @@ impl DrawingCtx {
         _clipping: bool,
         _viewport: &Viewport,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        unimplemented!()
+        unimplemented!();
+        /*
+        self.with_discrete_layer(
+            stacking_ctx,
+            acquired_nodes,
+            viewport,
+            group.establish_viewport,
+            clipping,
+            &mut |an, dc, new_viewport| {
+                for layer in &group.children {
+                    dc.draw_layer(layer, an, clipping, &new_viewport)?;
+                }
+            },
+        )
+        */
     }
 
     fn draw_text_span(
