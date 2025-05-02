@@ -149,15 +149,12 @@ impl Image {
             LengthOrAuto::Auto => surface.height() as f64,
         };
 
-        let is_visible = values.is_visible();
-
         let rect = Rect::new(x, y, x + w, y + h);
 
         let overflow = values.overflow();
 
         let image = Box::new(layout::Image {
             surface: surface.clone(),
-            is_visible,
             rect,
             aspect: self.aspect,
             overflow,
@@ -217,8 +214,6 @@ impl Image {
             LengthOrAuto::Auto => dimensions.height.to_user(&params),
         };
 
-        let is_visible = values.is_visible();
-
         let rect = Rect::new(x, y, x + w, y + h);
 
         let overflow = values.overflow();
@@ -255,7 +250,6 @@ impl Image {
 
         let image = Box::new(layout::Image {
             surface,
-            is_visible,
             rect,
             aspect: self.aspect,
             overflow,

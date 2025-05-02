@@ -7,14 +7,14 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
-use crate::cairo_path::validate_path;
+use crate::cairo_path::{validate_path, ValidatedPath};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
 use crate::is_element_of_type;
-use crate::layout::{self, Layer, LayerKind, Marker, Shape, StackingContext, Stroke};
+use crate::layout::{Layer, LayerKind, Marker, Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
@@ -52,15 +52,22 @@ fn draw_basic_shape(
     cascaded: &CascadedValues<'_>,
     viewport: &Viewport,
     session: &Session,
-) -> Result<Layer, InternalRenderingError> {
+) -> Result<Option<Layer>, InternalRenderingError> {
     let values = cascaded.get();
     let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
 
-    let is_visible = values.is_visible();
-    let paint_order = values.paint_order();
-
     let stroke = Stroke::new(values, &params);
+    let path = match validate_path(&shape_def.path, &stroke, viewport)? {
+        ValidatedPath::Invalid(ref reason) => {
+            rsvg_log!(session, "will not render {node}: {reason}");
+            return Ok(None);
+        }
+
+        ValidatedPath::Validated(path) => path,
+    };
+
+    let paint_order = values.paint_order();
 
     let stroke_paint = values.stroke().0.resolve(
         acquired_nodes,
@@ -118,23 +125,15 @@ fn draw_basic_shape(
 
     let normalize_values = NormalizeValues::new(values);
 
-    let path = validate_path(
-        &shape_def.path,
-        &stroke,
-        viewport,
-        &normalize_values,
-        &stroke_paint,
-        &fill_paint,
-    )?;
-
-    if let layout::Path::Invalid(ref reason) = path {
-        rsvg_log!(session, "will not render {node}: {reason}");
-    }
+    let stroke_paint_source =
+        stroke_paint.to_user_space(&path.extents, viewport, &normalize_values);
+    let fill_paint_source = fill_paint.to_user_space(&path.extents, viewport, &normalize_values);
 
     let shape = Box::new(Shape {
         path,
-        is_visible,
         paint_order,
+        stroke_paint: stroke_paint_source,
+        fill_paint: fill_paint_source,
         stroke,
         fill_rule,
         clip_rule,
@@ -154,10 +153,10 @@ fn draw_basic_shape(
         values,
     );
 
-    Ok(Layer {
+    Ok(Some(Layer {
         kind: LayerKind::Shape(shape),
         stacking_ctx,
-    })
+    }))
 }
 
 macro_rules! impl_draw {
@@ -179,7 +178,6 @@ macro_rules! impl_draw {
                 viewport,
                 &draw_ctx.session().clone(),
             )
-            .map(Some)
         }
 
         fn draw(
@@ -193,7 +191,11 @@ macro_rules! impl_draw {
         ) -> Result<BoundingBox, InternalRenderingError> {
             self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
                 .and_then(|layer| {
-                    draw_ctx.draw_layer(layer.as_ref().unwrap(), acquired_nodes, clipping, viewport)
+                    if let Some(layer) = layer {
+                        draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
+                    } else {
+                        Ok(viewport.empty_bbox())
+                    }
                 })
         }
     };
