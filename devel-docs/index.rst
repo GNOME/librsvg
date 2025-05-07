@@ -45,6 +45,7 @@ Development guide for librsvg
    viewport
    custom_properties
    building_deps_in_ci
+   xml_parser
 
 .. toctree::
    :caption: Info for Maintainers
