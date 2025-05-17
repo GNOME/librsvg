@@ -297,6 +297,12 @@ fn compute_baseline_offset(
 
         if run.is_some() {
             let item = run.unwrap().item();
+            unsafe {
+                let analysis = (*item.as_ptr()).analysis;
+                if analysis.font.is_null() {
+                    break;
+                }
+            }
             let font = item.analysis().font();
 
             let metrics = font.metrics(None);
