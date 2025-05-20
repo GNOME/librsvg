@@ -86,6 +86,9 @@ impl ElementTrait for Group {
             }
         }
 
+        let mut extents = viewport.empty_bbox();
+        // FIXME: add the children's bounding boxes
+
         self.layout_with_children(
             draw_ctx.session(),
             node,
@@ -110,6 +113,7 @@ impl Group {
         let group = Box::new(layout::Group {
             children: child_layers,
             establish_viewport: None,
+            extents: todo!("add the extents; what about the transforms?"),
         });
 
         let elt = node.borrow_element();

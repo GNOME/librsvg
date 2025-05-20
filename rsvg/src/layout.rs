@@ -68,6 +68,7 @@ pub struct Layer {
     pub kind: LayerKind,
     pub stacking_ctx: StackingContext,
 }
+
 pub enum LayerKind {
     Shape(Box<Shape>),
     Text(Box<Text>),
@@ -78,6 +79,7 @@ pub enum LayerKind {
 pub struct Group {
     pub children: Vec<Layer>,
     pub establish_viewport: Option<LayoutViewport>,
+    pub extents: Option<Rect>,
 }
 
 /// Used for elements that need to establish a new viewport, like `<svg>`.
@@ -370,6 +372,17 @@ impl StackingContext {
                     && self.clip_in_object_space.is_none())
             }
             Isolation::Isolate => true,
+        }
+    }
+}
+
+impl LayerKind {
+    pub fn extents(&self) -> Option<Rect> {
+        match *self {
+            LayerKind::Shape(ref shape) => shape.path.extents,
+            LayerKind::Text(ref text) => todo!("layout::Text has a BoundingBox, not a rect"),
+            LayerKind::Image(ref image) => Some(image.rect),
+            LayerKind::Group(ref group) => group.extents,
         }
     }
 }
