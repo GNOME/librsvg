@@ -958,7 +958,10 @@ impl ElementTrait for Text {
                 text_spans.push(text_span);
             }
 
-            layout::Text { spans: text_spans }
+            layout::Text {
+                spans: text_spans,
+                extents: text_extents,
+            }
         };
 
         Ok(Some(Layer {

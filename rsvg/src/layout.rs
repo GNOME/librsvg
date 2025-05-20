@@ -167,6 +167,7 @@ pub struct TextSpan {
 /// Fully laid-out text in user-space coordinates.
 pub struct Text {
     pub spans: Vec<TextSpan>,
+    pub extents: Option<Rect>,
 }
 
 /// Font-related properties extracted from `ComputedValues`.
@@ -380,7 +381,7 @@ impl LayerKind {
     pub fn extents(&self) -> Option<Rect> {
         match *self {
             LayerKind::Shape(ref shape) => shape.path.extents,
-            LayerKind::Text(ref text) => todo!("layout::Text has a BoundingBox, not a rect"),
+            LayerKind::Text(ref text) => text.extents,
             LayerKind::Image(ref image) => Some(image.rect),
             LayerKind::Group(ref group) => group.extents,
         }
