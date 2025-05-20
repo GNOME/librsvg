@@ -86,6 +86,25 @@ impl ElementTrait for Group {
             }
         }
 
+        self.layout_with_children(
+            draw_ctx.session(),
+            node,
+            acquired_nodes,
+            cascaded,
+            child_layers,
+        )
+    }
+}
+
+impl Group {
+    fn layout_with_children(
+        &self,
+        session: &Session,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        child_layers: Vec<Layer>,
+    ) -> Result<Option<Layer>, InternalRenderingError> {
         let values = cascaded.get();
 
         let group = Box::new(layout::Group {
@@ -95,7 +114,7 @@ impl ElementTrait for Group {
 
         let elt = node.borrow_element();
         let stacking_ctx = StackingContext::new(
-            draw_ctx.session(),
+            session,
             acquired_nodes,
             &elt,
             values.transform(),
