@@ -2,8 +2,6 @@
 
 use float_cmp::approx_eq;
 use gio::prelude::*;
-use glib::translate::*;
-use pango::ffi::PangoMatrix;
 use pango::prelude::FontMapExt;
 use regex::{Captures, Regex};
 use std::cell::RefCell;
@@ -2027,25 +2025,11 @@ impl From<ImageRendering> for Interpolation {
 }
 
 /// Create a Pango context with a particular configuration.
-pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -> pango::Context {
+pub fn create_pango_context(font_options: &FontOptions) -> pango::Context {
     let font_map = pangocairo::FontMap::default();
     let context = font_map.create_context();
 
     context.set_round_glyph_positions(false);
-
-    let pango_matrix = PangoMatrix {
-        xx: transform.xx,
-        xy: transform.xy,
-        yx: transform.yx,
-        yy: transform.yy,
-        x0: transform.x0,
-        y0: transform.y0,
-    };
-
-    let pango_matrix_ptr: *const PangoMatrix = &pango_matrix;
-
-    let matrix = unsafe { pango::Matrix::from_glib_none(pango_matrix_ptr) };
-    context.set_matrix(Some(&matrix));
 
     pangocairo::functions::context_set_font_options(&context, Some(&font_options.options));
 

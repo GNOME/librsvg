@@ -8,7 +8,6 @@ use cssparser::Color;
 use float_cmp::approx_eq;
 
 use crate::aspect_ratio::AspectRatio;
-use crate::bbox::BoundingBox;
 use crate::cairo_path::CairoPath;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
@@ -151,7 +150,7 @@ pub struct Image {
 pub struct TextSpan {
     pub layout: pango::Layout,
     pub gravity: pango::Gravity,
-    pub bbox: Option<BoundingBox>,
+    pub extents: Option<Rect>,
     pub is_visible: bool,
     pub x: f64,
     pub y: f64,
