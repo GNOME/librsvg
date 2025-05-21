@@ -1,0 +1,9 @@
+[wrap-git]
+directory = libxml2
+url = https://gitlab.gnome.org/GNOME/libxml2.git
+push-url = ssh://git@ssh.gitlab.gnome.org:GNOME/libxml2.git
+revision = v2.13.8
+depth = 1
+
+[provide]
+libxml-2.0 = xml_dep
