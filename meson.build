@@ -21,7 +21,7 @@ librsvg_api_minor = api_split[1]
 
 rsvg_ver = 'rsvg-@0@'.format(librsvg_api_major)
 
-glib_required          = '>= 2.24.0'
+glib_required          = '>= 2.38.0'
 libxml_required        = '>= 2.9.0'
 cairo_required         = '>= 1.2.0'
 pango_required         = '>= 1.38.0'
@@ -169,6 +169,8 @@ gtk3_required = '>= 3.10.0'
 gtk3_dep = dependency('gtk+-3.0', version: gtk3_required, required: get_option('rsvg-view-3'))
 if gtk3_dep.found()
   executable('rsvg-view-3', 'test-display.c',
+    # These are GTK3 deprecations, so we can ignore them; they're going to stay
+    c_args: ['-Wno-deprecated-declarations'],
     include_directories: librsvg_inc_priv,
     dependencies: [
       librsvg_dep,

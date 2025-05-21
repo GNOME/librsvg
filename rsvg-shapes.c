@@ -382,15 +382,11 @@ _rsvg_node_rect_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     if (w == 0. || h == 0.)
         return;
 
-    if (rect->got_rx)
-        rx = rx;
-    else
+    if (!rect->got_rx)
         rx = ry;
 
-    if (rect->got_ry)
-        ry = ry;
-    else
-        ry = rx;
+    if (!rect->got_ry)
+       ry = rx;
 
     half_w = w / 2;
     half_h = h / 2;

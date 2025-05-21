@@ -1197,7 +1197,7 @@ rsvg_error_quark (void)
 static void
 rsvg_set_error (GError **error, xmlParserCtxtPtr ctxt)
 {
-    xmlErrorPtr xerr;
+    const xmlError *xerr;
 
     xerr = xmlCtxtGetLastError (ctxt);
     if (xerr) {
@@ -1852,7 +1852,7 @@ rsvg_handle_write (RsvgHandle * handle, const guchar * buf, gsize count, GError 
 
         case RSVG_HANDLE_STATE_READING_COMPRESSED:
             g_memory_input_stream_add_data (G_MEMORY_INPUT_STREAM (priv->compressed_input_stream),
-                                            g_memdup (buf, count), count, (GDestroyNotify) g_free);
+                                            g_memdup2 (buf, count), count, (GDestroyNotify) g_free);
             return TRUE;
 
         case RSVG_HANDLE_STATE_READING:

@@ -31,8 +31,8 @@ AC_SUBST([RSVG_API_VERSION_U],[AS_TR_SH([$RSVG_API_VERSION])])
 
 dnl ===========================================================================
 
-GLIB_REQUIRED=2.12.0
-GIO_REQUIRED=2.24.0
+GLIB_REQUIRED=2.38.0
+GIO_REQUIRED=2.38.0
 LIBXML_REQUIRED=2.9.0
 CAIRO_REQUIRED=1.2.0
 PANGO_REQUIRED=1.38.0
