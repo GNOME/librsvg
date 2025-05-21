@@ -1,5 +1,6 @@
 project('librsvg', 'c',
         version: '2.40.22',
+        meson_version: '>= 1.1',
         default_options: [
           'c_std=gnu11', 'warning_level=1', 'werror=false'
         ]
@@ -138,3 +139,34 @@ librsvg_dep = declare_dependency(
     cairo_dep
   ]
 )
+
+
+if get_option('rsvg-convert').allowed()
+  executable('rsvg-convert', 'rsvg-convert.c', 'rsvg-size-callback.c',
+    include_directories: librsvg_inc_priv,
+    dependencies: [
+      librsvg_dep,
+      dependency('gio-unix-2.0', version: glib_required, required: false),
+      dependency('gio-windows-2.0', version: glib_required, required: false),
+      libm
+    ],
+    install: true
+  )
+endif
+
+gtk3_required = '>= 3.10.0'
+gtk3_dep = dependency('gtk+-3.0', version: gtk3_required, required: get_option('rsvg-view-3'))
+if gtk3_dep.found()
+  executable('rsvg-view-3', 'test-display.c',
+    include_directories: librsvg_inc_priv,
+    dependencies: [
+      librsvg_dep,
+      # needed due to rsvg-private.h include
+      libxml_dep.partial_dependency(compile_args: true, includes: true),
+      pangocairo_dep.partial_dependency(compile_args: true, includes: true),
+      gtk3_dep,
+      libm
+    ],
+    install: true
+  )
+endif
