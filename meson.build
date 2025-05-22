@@ -151,6 +151,9 @@ librsvg_dep = declare_dependency(
   ]
 )
 
+if get_option('tests').allowed()
+  subdir('tests')
+endif
 
 if get_option('rsvg-convert').allowed()
   executable('rsvg-convert', 'rsvg-convert.c', 'rsvg-size-callback.c',
