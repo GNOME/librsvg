@@ -456,6 +456,39 @@ rsvg_cairo_create_pango_context (RsvgDrawingCtx * ctx)
     return context;
 }
 
+static cairo_path_t *
+rsvg_cairo_pango_layout_as_path (PangoLayout *layout, double x, double y, double s)
+{
+    cairo_surface_t *record;
+    cairo_t *cr;
+    PangoGravity gravity;
+    double rotation;
+
+    record = cairo_recording_surface_create (CAIRO_CONTENT_COLOR_ALPHA, NULL);
+    cr = cairo_create (record);
+
+    gravity = pango_context_get_gravity (pango_layout_get_context (layout));
+    rotation = pango_gravity_to_rotation (gravity);
+
+    if (rotation != 0.)
+        cairo_rotate (cr, -rotation);
+
+    // I have no idea why I get away with scaling this here without
+    // scaling it back in rsvg_cairo_render_pango_layout.
+    cairo_scale (cr, s, s);
+    cairo_move_to (cr, x, y);
+
+    pango_cairo_update_layout (cr, layout);
+    pango_cairo_layout_path (cr, layout);
+
+    cairo_path_t *ret = cairo_copy_path (cr);
+
+    cairo_destroy (cr);
+    cairo_surface_destroy (record);
+
+    return ret;
+}
+
 void
 rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, double x, double y)
 {
@@ -464,7 +497,9 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     PangoRectangle ink;
     RsvgBbox bbox;
     PangoGravity gravity = pango_context_get_gravity (pango_layout_get_context (layout));
-    double rotation;
+    cairo_matrix_t ctm;
+    double sx,sy,s;
+    cairo_path_t *layout_path;
 
     pango_layout_get_extents(layout, &ink, NULL);
 
@@ -490,27 +525,46 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
     }
     bbox.virgin = 0;
 
-    rotation = pango_gravity_to_rotation (gravity);
+    // Workaround to pango#520, see librsvg#599 for more details.
+    // This isn't going to work with Emojis, but this matches the
+    // behaviour of newer rsvg.
+    // Besides getthing this fixed in pango, a method to get emojis
+    // working could be to do cairo_set_source_surface here with the
+    // recording surface created in the function. This would require
+    // extending set_source_rsvg_paint_server to operate on the
+    // abitrary cairo_t from the recording surface, as we cannot apply
+    // cairo patterns here onto the recording surface source.
+    //
+    // We extract a uniform scale from the current affine first (pango
+    // is fine with that), this way we don't encounter issues with very
+    // small font sizes but transformation matrices with large scale
+    // factors (like the 587721 testcase).
+
+    cairo_get_matrix (render->cr, &ctm);
+    sx = sqrt(ctm.xx*ctm.xx + ctm.xy*ctm.xy);
+    sy = sqrt(ctm.yx*ctm.yx + ctm.yy*ctm.yy);
+    s = MIN(sx,sy);
+
+    layout_path = rsvg_cairo_pango_layout_as_path (layout, x, y, s);
+
     if (state->fill) {
         cairo_save (render->cr);
-        cairo_move_to (render->cr, x, y);
         rsvg_bbox_insert (&render->bbox, &bbox);
+
         _set_source_rsvg_paint_server (ctx,
                                        state->current_color,
                                        state->fill,
                                        state->fill_opacity,
                                        bbox, rsvg_current_state (ctx)->current_color);
-        if (rotation != 0.)
-            cairo_rotate (render->cr, -rotation);
 
-        pango_cairo_update_layout (render->cr, layout);
-        pango_cairo_show_layout (render->cr, layout);
+        cairo_append_path (render->cr, layout_path);
+        cairo_fill (render->cr);
+
         cairo_restore (render->cr);
     }
 
     if (state->stroke) {
         cairo_save (render->cr);
-        cairo_move_to (render->cr, x, y);
         rsvg_bbox_insert (&render->bbox, &bbox);
 
         _set_source_rsvg_paint_server (ctx,
@@ -519,12 +573,7 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
                                        state->stroke_opacity,
                                        bbox, rsvg_current_state (ctx)->current_color);
 
-        if (rotation != 0.)
-            cairo_rotate (render->cr, -rotation);
-
-        pango_cairo_update_layout (render->cr, layout);
-        pango_cairo_layout_path (render->cr, layout);
-
+        cairo_append_path (render->cr, layout_path);
         cairo_set_line_width (render->cr, _rsvg_css_normalize_length (&state->stroke_width, ctx, 'h'));
         cairo_set_miter_limit (render->cr, state->miter_limit);
         cairo_set_line_cap (render->cr, (cairo_line_cap_t) state->cap);
@@ -532,8 +581,11 @@ rsvg_cairo_render_pango_layout (RsvgDrawingCtx * ctx, PangoLayout * layout, doub
         cairo_set_dash (render->cr, state->dash.dash, state->dash.n_dash,
                         _rsvg_css_normalize_length (&state->dash.offset, ctx, 'o'));
         cairo_stroke (render->cr);
+
         cairo_restore (render->cr);
     }
+
+    cairo_path_destroy (layout_path);
 }
 
 void

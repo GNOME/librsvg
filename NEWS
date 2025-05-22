@@ -1,4 +1,9 @@
 Version 2.40.22
+- #599 - Convert pango layout to paths before drawing, to work
+  arround a pango regression (pango#520) that causes it to improperly
+  render pango layouts in cairo contexts with a CTM that has non
+  uniform scaling factors.
+
 - Moved rsvg.h into librsvg/rsvg.h to match real-world include
   behaviour.
 
