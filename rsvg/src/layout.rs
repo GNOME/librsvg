@@ -378,7 +378,13 @@ impl StackingContext {
 }
 
 impl LayerKind {
-    pub fn extents(&self) -> Option<Rect> {
+    /// Gets the extents of a layer in its local coordinate system.
+    ///
+    /// Each object or layer is able to compute its own extents, in its local coordinate
+    /// system.  When the parent group layer wants to take the union of the extents of its
+    /// children, that parent group will need to convert the children's extents using each
+    /// child layer's transform.
+    pub fn local_extents(&self) -> Option<Rect> {
         match *self {
             LayerKind::Shape(ref shape) => shape.path.extents,
             LayerKind::Text(ref text) => text.extents,
