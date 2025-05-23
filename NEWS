@@ -1,4 +1,7 @@
 Version 2.40.22
+- Removed remnants from libxml2s SAX1 parser. We weren't actually
+  using it and some environments have dropped support for it.
+
 - #599 - Convert pango layout to paths before drawing, to work
   arround a pango regression (pango#520) that causes it to improperly
   render pango layouts in cairo contexts with a CTM that has non

@@ -40,6 +40,7 @@
 #include <math.h>
 
 #include <libxml/parser.h>
+#include <libxml/SAX2.h>
 
 #include <libcroco/libcroco.h>
 
