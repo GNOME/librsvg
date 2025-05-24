@@ -54,6 +54,7 @@ struct _RSVGParsePathCtx {
     cairo_path_data_t cp;       /* current point */
     cairo_path_data_t rp;       /* reflection point (for 's' and 't' commands) */
     char cmd;                   /* current command (lowercase) */
+    guint flags_required;       /* number of flags left to read (for 'a' command) */
     int param;                  /* parameter number */
     gboolean rel;               /* true if relative coords */
     double params[7];           /* parameters that have been parsed */
@@ -510,6 +511,8 @@ rsvg_parse_path_do_cmd (RSVGParsePathCtx * ctx, gboolean final)
         }
         break;
     case 'a':
+        if (ctx->param == 3)
+          ctx->flags_required = 2;
         if (ctx->param == 7 || final) {
             double x1, y1;
             double rx, ry;
@@ -709,6 +712,32 @@ rsvg_parse_path_data (RSVGParsePathCtx * ctx, const char *data)
 
     for (i = 0; data[i] != '\0'; i++) {
         c = data[i];
+
+        // Flag tokens are *really* annoying, as we don't have any way
+        // to distinguish between numbers and flags without context from
+        // the parser. The only time we need to return flags is within
+        // the argument sequence of an elliptical arc at the fourth
+        // position. So, when the parser gets to that point, it sets
+        // flags_required and we switch from our usual mode of handling
+        // digits as numbers to looking for as many 'flag' characters
+        // (either 0 or 1, with optional intervening whitespace, and
+        // possibly comma tokens.) Every time we find a flag we
+        // decrement flags_required.
+        if (ctx->flags_required > 0) {
+            if (c == '0') {
+                ctx->params[ctx->param++] = 0.;
+                --ctx->flags_required;
+                rsvg_parse_path_do_cmd (ctx, FALSE);
+            } else if (c == '1') {
+                ctx->params[ctx->param++] = 1.;
+                --ctx->flags_required;
+                rsvg_parse_path_do_cmd (ctx, FALSE);
+            } else {
+                g_warn_if_fail (c == '\t' || c == ' ' || c == '\n' || c == '\f' || c == '\r' || c != ',');
+            }
+            continue;
+        }
+
         if ((c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.') {
             /* digit */
             i += rsvg_parse_number(ctx, data + i) - 1;
@@ -745,6 +774,7 @@ rsvg_parse_path (const char *path_str)
     ctx.rp.point.x = 0.0;
     ctx.rp.point.y = 0.0;
     ctx.cmd = 0;
+    ctx.flags_required = 0;
     ctx.param = 0;
 
     rsvg_parse_path_data (&ctx, path_str);

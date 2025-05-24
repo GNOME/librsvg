@@ -1,4 +1,8 @@
 Version 2.40.22
+- Fixed parsing of arc flags in paths. The arc command has two flags
+  next to eachother and they don't have to be seperated by spaces,
+  which the code previously didn't handle.
+
 - Removed remnants from libxml2s SAX1 parser. We weren't actually
   using it and some environments have dropped support for it.
 
