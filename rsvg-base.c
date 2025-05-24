@@ -1773,6 +1773,33 @@ rsvg_handle_set_size_callback (RsvgHandle * handle,
     handle->priv->user_data_destroy = user_data_destroy;
 }
 
+/**
+ * rsvg_handle_set_stylesheet:
+ * @handle: A [class@Rsvg.Handle].
+ * @css: (array length=css_len): String with CSS data; must be valid UTF-8.
+ * @css_len: Length of the @css data in bytes.
+ * @error: return location for a `GError`
+ *
+ * Sets a CSS stylesheet to use for an SVG document
+ *
+ * Note that on this version of rsvg, this function always succeeds.
+ *
+ * Returns: always `TRUE`
+ *
+ * Since: 2.40.23
+ */
+gboolean
+rsvg_handle_set_stylesheet (RsvgHandle * handle,
+                            const guint8 *css,
+                            gsize css_len,
+                            GError **error)
+{
+    g_return_val_if_fail (handle != NULL, FALSE);
+    rsvg_parse_cssbuffer (handle, (const char *)css, css_len);
+    rsvg_tree_apply_style (handle);
+    return TRUE;
+}
+
 #define GZ_MAGIC_0 ((guchar) 0x1f)
 #define GZ_MAGIC_1 ((guchar) 0x8b)
 
