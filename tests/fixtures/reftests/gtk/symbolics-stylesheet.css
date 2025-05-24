@@ -1,0 +1,17 @@
+/* This is not actually how GTK renders symbolics */
+
+rect,circle,path {
+	fill: #ffbebebe !important;
+}
+
+.warning {
+	fill: #fff4783d !important;
+}
+
+.error {
+	fill: #ffcb0000 !important;
+}
+
+.success {
+	fill: #ff4d9905 !important;
+}

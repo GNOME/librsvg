@@ -40,6 +40,28 @@
 
 #include "test-utils.h"
 
+static GBytes *
+read_input_file (const char *test_name,
+                 const char *extension)
+{
+  gchar *reference_uri;
+  GFile *file;
+  GBytes *data;
+  GError *error = NULL;
+
+  reference_uri = g_strconcat (test_name, extension, NULL);
+  file = g_file_new_for_uri (reference_uri);
+  g_free (reference_uri);
+
+  data = g_file_load_bytes (file, NULL, NULL, &error);
+  g_object_unref (file);
+  if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+    g_clear_error (&error);
+  g_assert_no_error (error);
+
+  return data;
+}
+
 typedef struct _buffer_diff_result {
     unsigned int pixels_changed;
     unsigned int max_diff;
@@ -244,6 +266,7 @@ rsvg_cairo_check (gconstpointer data)
 {
     GFile *test_file = G_FILE (data);
     RsvgHandle *rsvg;
+    GBytes *stylesheet;
     RsvgDimensionData dimensions;
     cairo_t *cr;
     cairo_surface_t *surface_a, *surface_b, *surface_diff;
@@ -262,6 +285,14 @@ rsvg_cairo_check (gconstpointer data)
     g_assert (rsvg != NULL);
 
     rsvg_handle_internal_set_testing (rsvg, TRUE);
+
+    stylesheet = read_input_file (test_file_base, "-stylesheet.css");
+    if (stylesheet) {
+        gsize stylesheet_len;
+        const guint8 *stylesheet_buf = g_bytes_get_data (stylesheet, &stylesheet_len);
+        rsvg_handle_set_stylesheet (rsvg, stylesheet_buf, stylesheet_len, &error);
+        g_bytes_unref (stylesheet);
+    }
 
     rsvg_handle_get_dimensions (rsvg, &dimensions);
     g_assert (dimensions.width > 0);
