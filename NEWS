@@ -6,6 +6,9 @@ Version 2.40.23
   beginning.
   *Note that this is an ABI change*
 
+  Also added --stylesheet / -s as option to rsvg-convert to use a
+  custom stylesheet from a file.
+
 - Apply styles at the end of parsing. This way, styles defined
   further down the document will apply to nodes earlier on, like
   other SVG parsing engines do to.
