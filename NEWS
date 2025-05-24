@@ -1,4 +1,9 @@
 Version 2.40.23
+- Apply styles at the end of parsing. This way, styles defined
+  further down the document will apply to nodes earlier on, like
+  other SVG parsing engines do to.
+  The downside to this is increased memory consumption due to having
+  to keep the xml attributes of each node in memory.
 
 Version 2.40.22
 - Fixed parsing of arc flags in paths. The arc command has two flags

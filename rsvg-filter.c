@@ -3237,7 +3237,7 @@ rsvg_filter_primitive_flood_render (RsvgFilterPrimitive * self, RsvgFilterContex
 static void
 rsvg_filter_primitive_flood_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *value, *id = NULL;
+    const char *value;
     RsvgFilterPrimitive *filter = (RsvgFilterPrimitive *) self;
 
     if (rsvg_property_bag_size (atts)) {
@@ -3252,8 +3252,7 @@ rsvg_filter_primitive_flood_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPro
         if ((value = rsvg_property_bag_lookup (atts, "height")))
             filter->height = _rsvg_css_parse_length (value);
         if ((value = rsvg_property_bag_lookup (atts, "id")))
-            rsvg_defs_register_name (ctx->priv->defs, id = value, &filter->super);
-        rsvg_parse_style_attrs (ctx, self->state, "feFlood", NULL, id, atts);
+            rsvg_defs_register_name (ctx->priv->defs, value, &filter->super);
     }
 }
 
@@ -3267,6 +3266,7 @@ rsvg_new_filter_primitive_flood (void)
     filter->result = g_string_new ("none");
     filter->x.factor = filter->y.factor = filter->width.factor = filter->height.factor = 'n';
     filter->render = rsvg_filter_primitive_flood_render;
+    filter->super.typename = "feFlood";
     filter->super.free = rsvg_filter_primitive_free;
     filter->super.set_atts = rsvg_filter_primitive_flood_set_atts;
     return (RsvgNode *) filter;

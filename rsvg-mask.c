@@ -32,7 +32,7 @@
 static void
 rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *id = NULL, *klazz = NULL, *value;
+    const char *value;
     RsvgMask *mask;
     mask = (RsvgMask *) self;
 
@@ -57,15 +57,9 @@ rsvg_mask_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
             mask->width = _rsvg_css_parse_length (value);
         if ((value = rsvg_property_bag_lookup (atts, "height")))
             mask->height = _rsvg_css_parse_length (value);
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
-            id = value;
-            rsvg_defs_register_name (ctx->priv->defs, id, &mask->super);
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
+            rsvg_defs_register_name (ctx->priv->defs, value, &mask->super);
     }
-
-    rsvg_parse_style_attrs (ctx, mask->super.state, "mask", klazz, id, atts);
 }
 
 RsvgNode *
@@ -81,6 +75,7 @@ rsvg_new_mask (void)
     mask->y = _rsvg_css_parse_length ("0");
     mask->width = _rsvg_css_parse_length ("1");
     mask->height = _rsvg_css_parse_length ("1");
+    mask->super.typename = "mask";
     mask->super.set_atts = rsvg_mask_set_atts;
     return &mask->super;
 }
@@ -105,7 +100,7 @@ rsvg_get_url_string (const char *str)
 static void
 rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *id = NULL, *klazz = NULL, *value = NULL;
+    const char *value = NULL;
     RsvgClipPath *clip_path;
 
     clip_path = (RsvgClipPath *) self;
@@ -117,15 +112,9 @@ rsvg_clip_path_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * at
             else
                 clip_path->units = userSpaceOnUse;
         }
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
-            id = value;
-            rsvg_defs_register_name (ctx->priv->defs, id, &clip_path->super);
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
+            rsvg_defs_register_name (ctx->priv->defs, value, &clip_path->super);
     }
-
-    rsvg_parse_style_attrs (ctx, clip_path->super.state, "clipPath", klazz, id, atts);
 }
 
 RsvgNode *
@@ -136,6 +125,7 @@ rsvg_new_clip_path (void)
     clip_path = g_new (RsvgClipPath, 1);
     _rsvg_node_init (&clip_path->super, RSVG_NODE_TYPE_CLIP_PATH);
     clip_path->units = userSpaceOnUse;
+    clip_path->super.typename = "clipPath";
     clip_path->super.set_atts = rsvg_clip_path_set_atts;
     clip_path->super.free = _rsvg_node_free;
     return &clip_path->super;

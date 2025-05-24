@@ -215,8 +215,7 @@ void rsvg_parse_style	    (RsvgHandle * ctx, RsvgState * state, const char *str)
 G_GNUC_INTERNAL
 void rsvg_parse_cssbuffer   (RsvgHandle * ctx, const char *buff, size_t buflen);
 G_GNUC_INTERNAL
-void rsvg_parse_style_attrs (RsvgHandle * ctx, RsvgState * state, const char *tag,
-                             const char *klazz, const char *id, RsvgPropertyBag * atts);
+void rsvg_tree_apply_style  (RsvgHandle * ctx);
 
 G_GNUC_INTERNAL
 gdouble rsvg_viewport_percentage (gdouble width, gdouble height);

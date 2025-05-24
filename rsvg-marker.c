@@ -43,17 +43,13 @@
 static void
 rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
-    const char *klazz = NULL, *id = NULL, *value;
+    const char *value;
     RsvgMarker *marker;
     marker = (RsvgMarker *) self;
 
     if (rsvg_property_bag_size (atts)) {
-        if ((value = rsvg_property_bag_lookup (atts, "id"))) {
-            id = value;
-            rsvg_defs_register_name (ctx->priv->defs, id, &marker->super);
-        }
-        if ((value = rsvg_property_bag_lookup (atts, "class")))
-            klazz = value;
+        if ((value = rsvg_property_bag_lookup (atts, "id")))
+            rsvg_defs_register_name (ctx->priv->defs, value, &marker->super);
         if ((value = rsvg_property_bag_lookup (atts, "viewBox")))
             marker->vbox = rsvg_css_parse_vbox (value);
         if ((value = rsvg_property_bag_lookup (atts, "refX")))
@@ -78,7 +74,6 @@ rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * 
         }
         if ((value = rsvg_property_bag_lookup (atts, "preserveAspectRatio")))
             marker->preserve_aspect_ratio = rsvg_css_parse_aspect_ratio (value);
-        rsvg_parse_style_attrs (ctx, self->state, "marker", klazz, id, atts);
     }
 }
 
@@ -95,6 +90,7 @@ rsvg_new_marker (void)
     marker->width = marker->height = _rsvg_css_parse_length ("3");
     marker->bbox = TRUE;
     marker->vbox.active = FALSE;
+    marker->super.typename = "marker";
     marker->super.set_atts = rsvg_node_marker_set_atts;
     return &marker->super;
 }

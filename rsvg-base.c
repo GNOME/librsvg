@@ -328,6 +328,7 @@ rsvg_standard_element_start (RsvgHandle * ctx, const char *name, RsvgPropertyBag
         g_assert (RSVG_NODE_TYPE (newnode) != RSVG_NODE_TYPE_INVALID);
         newnode->name = (char *) name; /* libxml will keep this while parsing */
         newnode->parent = ctx->priv->currentnode;
+        newnode->atts = rsvg_property_bag_dup (atts);
         rsvg_node_set_atts (newnode, ctx, atts);
         rsvg_defs_register_memory (ctx->priv->defs, newnode);
         if (ctx->priv->currentnode) {
@@ -785,12 +786,12 @@ rsvg_end_element (void *data, const xmlChar * name)
         }
 
         if (ctx->priv->currentnode &&
-            !strcmp ((const char *) name, ctx->priv->currentnode->name))
-                rsvg_pop_def_group (ctx);
-
-        /* FIXMEchpe: shouldn't this check that currentnode == treebase or sth like that? */
-        if (ctx->priv->treebase && !strcmp ((const char *)name, "svg"))
-            _rsvg_node_svg_apply_atts ((RsvgNodeSvg *)ctx->priv->treebase, ctx);
+            !strcmp ((const char *) name, ctx->priv->currentnode->name)) {
+            if (ctx->priv->treebase == ctx->priv->currentnode &&
+                RSVG_NODE_TYPE (ctx->priv->currentnode) == RSVG_NODE_TYPE_SVG)
+                rsvg_tree_apply_style (ctx);
+            rsvg_pop_def_group (ctx);
+        }
     }
 }
 
