@@ -1,5 +1,5 @@
 project('librsvg', 'c',
-        version: '2.40.22',
+        version: '2.40.23',
         meson_version: '>= 1.1',
         default_options: [
           'c_std=gnu11', 'warning_level=1', 'werror=false'
