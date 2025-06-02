@@ -62,6 +62,7 @@ gdk_pixbuf_required    = '>= 2.20'
 gidocgen_required      = '>= 2021.1'
 introspection_required = '>= 1.39.0'
 vapigen_required       = '>= 0.17.1.26'
+gtk_required           = '>= 4.0'
 # FIXME: add subprojects for the deps above
 
 cairo_dep      = dependency('cairo',
@@ -131,6 +132,9 @@ gi_dep         = dependency('gobject-introspection-1.0',
 vapigen_dep    = dependency('vapigen',
                             version: vapigen_required,
                             required: get_option('vala'))
+gtk_dep        = dependency('gtk4',
+                            version: gtk_required,
+                            required: get_option('gtk'))
 
 # Extra env to pass to cargo
 extra_env = environment()
@@ -519,6 +523,9 @@ if build_pixbuf_loader.allowed()
 endif
 if build_docs.allowed()
   subdir('doc')
+endif
+if gtk_dep.found()
+  subdir('librsvg-gtk')
 endif
 
 # The Vala generator must reside in the main folder since Meson isn't yet
