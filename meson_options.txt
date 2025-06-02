@@ -52,3 +52,9 @@ option('rustc-version',
        type: 'string',
        value: '',
        description: 'Installed RustC version to use (if needed; currently only supported for Windows builds)')
+
+option('gtk',
+       type: 'feature',
+       value: 'auto',
+       yield: false,
+       description: 'Build GTK helpers')
