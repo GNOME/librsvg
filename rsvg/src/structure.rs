@@ -86,9 +86,6 @@ impl ElementTrait for Group {
             }
         }
 
-        let mut extents = viewport.empty_bbox();
-        // FIXME: add the children's bounding boxes
-
         self.layout_with_children(
             draw_ctx.session(),
             node,
@@ -97,6 +94,19 @@ impl ElementTrait for Group {
             child_layers,
         )
     }
+}
+
+fn extents_of_transformed_children(layers: &[Layer]) -> Option<Rect> {
+    let mut result_bbox = BoundingBox::new();
+
+    for layer in layers {
+        if let Some(extents) = layer.kind.local_extents() {
+            let bbox = BoundingBox::new().with_transform(layer.stacking_ctx.transform).with_rect(extents);
+            result_bbox.insert(&bbox);
+        }
+    }
+
+    result_bbox.rect
 }
 
 impl Group {
@@ -110,10 +120,12 @@ impl Group {
     ) -> Result<Option<Layer>, InternalRenderingError> {
         let values = cascaded.get();
 
+        let extents = extents_of_transformed_children(&child_layers);
+
         let group = Box::new(layout::Group {
             children: child_layers,
             establish_viewport: None,
-            extents: todo!("add the extents; what about the transforms?"),
+            extents,
         });
 
         let elt = node.borrow_element();
