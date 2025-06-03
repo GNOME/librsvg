@@ -731,3 +731,79 @@ impl ElementTrait for Link {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::accept_language::{UserLanguage, LanguageTags};
+    use crate::document::Document;
+    use crate::dpi::Dpi;
+    use crate::drawing_ctx::{RenderingConfiguration, SvgNesting};
+
+    #[test]
+    fn computes_group_extents() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <g id="a">
+    <rect x="0" y="0" width="10" height="20" transform="translate(10, 10)"/>
+  </g>
+</svg>
+"#,
+        );
+
+        let a = document.lookup_internal_node("a").unwrap();
+
+        let elt = a.borrow_element();
+
+        let mut acquired_nodes = AcquiredNodes::new(&document, None);
+        let cascaded = CascadedValues::new_from_node(&a);
+
+        let dpi = Dpi::new(96.0, 96.0);
+
+        let viewport = Viewport::new(dpi.clone(), 100.0, 100.0);
+
+        let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None).unwrap();
+        let cr = cairo::Context::new(&surface).unwrap();
+
+        let config = RenderingConfiguration {
+            dpi,
+            cancellable: None,
+            user_language: UserLanguage::LanguageTags(LanguageTags::empty()),
+            svg_nesting: SvgNesting::Standalone,
+            measuring: false,
+            testing: true,
+        };
+
+        let mut draw_ctx = DrawingCtx::new(
+            Session::default(),
+            &cr,
+            &viewport,
+            config,
+            Vec::new(),
+        );
+
+        let layout = elt.layout(
+            &a,
+            &mut acquired_nodes,
+            &cascaded,
+            &viewport,
+            &mut draw_ctx,
+            false,
+        );
+
+        match layout {
+            Ok(Some(Layer { kind: LayerKind::Group(ref group), .. })) => {
+                assert_eq!(
+                    group.extents,
+                    Some(Rect::new(10.0, 10.0, 20.0, 30.0))
+                );
+            }
+
+            Err(_) => panic!("layout should not produce an InternalRenderingError"),
+
+            _ => panic!("layout object is not a LayerKind::Group"),
+        }
+    }
+}

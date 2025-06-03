@@ -335,7 +335,7 @@ impl Drop for DrawingCtx {
 const CAIRO_TAG_LINK: &str = "Link";
 
 impl DrawingCtx {
-    fn new(
+    pub fn new(
         session: Session,
         cr: &cairo::Context,
         initial_viewport: &Viewport,
