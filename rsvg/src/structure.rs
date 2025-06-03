@@ -747,7 +747,10 @@ mod tests {
             br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
   <g id="a">
-    <rect x="0" y="0" width="10" height="20" transform="translate(10, 10)"/>
+    <g transform="translate(10, 10) scale(2, 3)">
+      <rect x="0" y="0" width="5" height="10"/>
+    </g>
+    <rect x="0" y="0" width="5" height="10" transform="scale(2) translate(-10, -20)"/>
   </g>
 </svg>
 "#,
@@ -797,7 +800,7 @@ mod tests {
             Ok(Some(Layer { kind: LayerKind::Group(ref group), .. })) => {
                 assert_eq!(
                     group.extents,
-                    Some(Rect::new(10.0, 10.0, 20.0, 30.0))
+                    Some(Rect::new(-20.0, -40.0, 20.0, 40.0))
                 );
             }
 
