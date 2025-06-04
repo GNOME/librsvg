@@ -43,7 +43,8 @@ pangoft2_dep   = dependency('pangoft2',
 gdk_pixbuf_dep = dependency('gdk-pixbuf-2.0',
                             version: gdk_pixbuf_required)
 croco_dep      = dependency('libcroco-0.6',
-                            version: croco_required)
+                            version: croco_required,
+                            default_options: ['default_library=static'])
 
 libm           = cc.find_library('m', required: false)
 
