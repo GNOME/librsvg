@@ -54,7 +54,6 @@ libm           = cc.find_library('m', required: false)
 
 config = configuration_data()
 config.set('HAVE_PANGOFT2', pangoft2_dep.found())
-config.set('HAVE_LC_MESSAGES', cc.has_header_symbol('locale.h', 'LC_MESSAGES'))
 config.set('HAVE_STRINGS_H', cc.has_header('strings.h'))
 config.set('HAVE_STRTOK_R', cc.has_function('strtok_r', prefix: '#include <string.h>'))
 config.set('HAVE_FLOAT_H', cc.has_header('float.h'))

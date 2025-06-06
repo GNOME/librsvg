@@ -246,23 +246,6 @@ VAPIGEN_CHECK([0.17.1.26],,,[no])
 
 dnl ===========================================================================
 
-m4_copy([AC_DEFUN],[glib_DEFUN])
-glib_DEFUN([GLIB_LC_MESSAGES],
-  [AC_CHECK_HEADERS([locale.h])
-    if test $ac_cv_header_locale_h = yes; then
-    AC_CACHE_CHECK([for LC_MESSAGES], am_cv_val_LC_MESSAGES,
-      [AC_TRY_LINK([#include <locale.h>], [return LC_MESSAGES],
-       am_cv_val_LC_MESSAGES=yes, am_cv_val_LC_MESSAGES=no)])
-    if test $am_cv_val_LC_MESSAGES = yes; then
-      AC_DEFINE(HAVE_LC_MESSAGES, 1,
-        [Define if your <locale.h> file defines LC_MESSAGES.])
-    fi
-  fi])
-
-GLIB_LC_MESSAGES
-
-dnl ===========================================================================
-
 # Check for pangoft2 and fontconfig, which is optional on Windows
 
 PKG_CHECK_MODULES([PANGOFT2],[pangoft2 >= $PANGO_REQUIRED],[have_pangoft2=yes],[have_pangoft2=no])

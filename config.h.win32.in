@@ -11,12 +11,6 @@
 #define HAVE_INTTYPES_H 1
 #endif
 
-/* Define if your <locale.h> file defines LC_MESSAGES. */
-/* #undef HAVE_LC_MESSAGES */
-
-/* Define to 1 if you have the <locale.h> header file. */
-#define HAVE_LOCALE_H 1
-
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
