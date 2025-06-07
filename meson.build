@@ -6,6 +6,10 @@ project('librsvg', 'c',
         ]
 )
 
+if not ['shared', 'static'].contains(get_option('default_library'))
+  error('Unsupported default_library value: @0@'.format(get_option('default_library')))
+endif
+
 gnome = import('gnome')
 cc = meson.get_compiler('c')
 
@@ -127,11 +131,17 @@ rsvg_lib = library(rsvg_ver, librsvg_src, enums,
   soversion: ver_split[0]
 )
 
+librsvg_ld_args = []
+if get_option('default_library') == 'static' and cc.has_link_argument('-Wl,--exclude-libs=ALL')
+  librsvg_ld_args += '-Wl,--exclude-libs=@0@'.format(rsvg_lib.full_path())
+endif
+
 librsvg_dep = declare_dependency(
   # guard against race conditions where dependents will start compiling
   # before mkenums finished
   sources: [enums[1]],
   link_with: rsvg_lib,
+  link_args: librsvg_ld_args,
   include_directories: include_directories('.'),
   dependencies: [
     glib_dep,
