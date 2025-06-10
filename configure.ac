@@ -8,7 +8,7 @@ m4_define([rsvg_lt_version_info],m4_eval(rsvg_major_version + rsvg_minor_version
 AC_INIT([RSVG],[rsvg_version],[https://bugzilla.gnome.org/enter_bug.cgi?product=librsvg],[librsvg])
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_SRCDIR([rsvg.h])
+AC_CONFIG_SRCDIR([librsvg/rsvg.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz])

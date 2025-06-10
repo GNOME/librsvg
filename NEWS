@@ -1,4 +1,7 @@
 Version 2.40.22
+- Moved rsvg.h into librsvg/rsvg.h to match real-world include
+  behaviour.
+
 - Added meson buildsystem support for librsvg and libcroco
 
 Version 2.40.21

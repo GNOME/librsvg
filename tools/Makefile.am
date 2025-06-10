@@ -10,6 +10,7 @@ endif
 INCLUDES =				\
 	-I$(top_srcdir) 		\
 	-I$(top_builddir) 		\
+	-I$(top_srcdir)/librsvg		\
 	$(LIBRSVG_CFLAGS) 		\
 	$(GTK_CFLAGS)			\
 	$(GDK_X11_CFLAGS)		\

@@ -64,8 +64,10 @@ configure_file(input: 'librsvg-features.h.in',
                output: 'librsvg-features.h',
                configuration: features)
 
+librsvg_inc_priv = include_directories('librsvg')
+
 librsvg_headers = [
-  'rsvg.h',
+  'librsvg/rsvg.h',
   'rsvg-cairo.h'
 ]
 
@@ -106,6 +108,7 @@ rsvg_lib = library(rsvg_ver, librsvg_src, enums,
     '-DSRCDIR="@0@"'.format(meson.project_source_root()),
     '-DRSVG_DISABLE_DEPRECATION_WARNINGS',
   ],
+  include_directories: librsvg_inc_priv,
   dependencies: [
     gdk_pixbuf_dep,
     glib_dep,

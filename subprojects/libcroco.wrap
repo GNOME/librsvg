@@ -2,7 +2,7 @@
 directory = libcroco
 url = https://gitlab.gnome.org/sp1rit/libcroco.git
 push-url = git@ssh.gitlab.gnome.org:sp1rit/libcroco.git
-revision = 7599ab15f573c00b5cdaa0275e6e143fcb71479c
+revision = 856c7a07fb58d994623f5fa6f031510f565ec178
 depth = 1
 
 [provide]
