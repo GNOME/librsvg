@@ -94,6 +94,8 @@ rsvg_defs_extern_lookup (const RsvgDefs * defs, const char *possibly_relative_ur
         handle = rsvg_defs_load_extern (defs, uri);
     }
 
+    g_free (uri);
+
     if (handle != NULL)
         return g_hash_table_lookup (handle->priv->defs->hash, name);
     else
