@@ -319,11 +319,11 @@ _set_source_rsvg_pattern (RsvgDrawingCtx * ctx,
 
     cairo_set_source (cr_render, pattern);
 
+out:
     cairo_pattern_destroy (pattern);
     cairo_destroy (cr_pattern);
     cairo_surface_destroy (surface);
 
-  out:
     if (rsvg_pattern->obj_cbbox || rsvg_pattern->vbox.active)
         _rsvg_pop_view_box (ctx);
 }
