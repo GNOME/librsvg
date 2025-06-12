@@ -41,25 +41,28 @@
 #include "rsvg-styles.h"
 #include "rsvg-structure.h"
 
+void
+rsvg_cairo_render_free_instance (RsvgCairoRender *self)
+{
+#ifdef HAVE_PANGOFT2
+    if (self->font_config_for_testing) {
+        FcConfigDestroy (self->font_config_for_testing);
+        self->font_config_for_testing = NULL;
+    }
+
+    if (self->font_map_for_testing) {
+        g_object_unref (self->font_map_for_testing);
+        self->font_map_for_testing = NULL;
+    }
+#endif
+}
+
 static void
 rsvg_cairo_render_free (RsvgRender * self)
 {
     RsvgCairoRender *me = RSVG_CAIRO_RENDER (self);
 
-    /* TODO */
-
-#ifdef HAVE_PANGOFT2
-    if (me->font_config_for_testing) {
-        FcConfigDestroy (me->font_config_for_testing);
-        me->font_config_for_testing = NULL;
-    }
-
-    if (me->font_map_for_testing) {
-        g_object_unref (me->font_map_for_testing);
-        me->font_map_for_testing = NULL;
-    }
-#endif
-
+    rsvg_cairo_render_free_instance (me);
     g_free (me);
 }
 

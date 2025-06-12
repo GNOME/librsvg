@@ -121,6 +121,7 @@ rsvg_cairo_clip_render_free (RsvgRender * self)
 {
     RsvgCairoClipRender *clip_render = RSVG_CAIRO_CLIP_RENDER (self);
 
+    rsvg_cairo_render_free_instance (&clip_render->super);
     g_free (clip_render);
 }
 
@@ -211,7 +212,7 @@ rsvg_cairo_clip (RsvgDrawingCtx * ctx, RsvgClipPath * clip, RsvgBbox * bbox)
     g_assert (clip_render->super.bb_stack == NULL);
     g_assert (clip_render->super.surfaces_stack == NULL);
 
-    g_free (ctx->render);
+    rsvg_render_free (ctx->render);
     cairo_clip (cr);
     ctx->render = &save->super;
 }
