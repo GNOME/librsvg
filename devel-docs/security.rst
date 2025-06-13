@@ -180,8 +180,8 @@ malicious SVGs.
    2.46.x or earlier. The first release of librsvg that does not use
    libcroco is 2.48.0.
 
-Librsvg’s dependencies
-----------------------
+Librsvg’s C dependencies
+------------------------
 
 Librsvg depends on the following libraries implemented in memory-unsafe
 languages:
@@ -195,6 +195,29 @@ languages:
 
 And of course, their recursive dependencies as well, such as
 **glib/gio**.
+
+The required versions for those libraries are not pinned (fixed to a
+specific version).  Instead, the minimum required version is checked
+via the ``meson`` build system, for shared library builds, or by Rust's
+``system-deps`` which uses ``pkg-config`` underneath.
+
+
+Librsvg's Rust dependencies
+---------------------------
+
+Librsvg's Rust dependencies are pinned to specific versions with
+``Cargo.lock``.  We track the security and recency of these versions in
+various ways:
+
+* There is a ``deny`` job in the CI which runs `cargo-deny
+  <https://github.com/EmbarkStudios/cargo-deny>`_.  This presents
+  information about dependencies with vulnerabilities, duplicate
+  versions of dependencies, and other interesting data.
+
+* There is a project badge in the `main librsvg project page
+  <https://gitlab.gnome.org/GNOME/librsvg>`_ which points to
+  ``deps.rs``.  This checks whether dependencies are out of date, and
+  flags vulnerable versions as well.
 
 
 Security considerations for the image-rs crate
