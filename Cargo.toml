@@ -63,7 +63,7 @@ libc = "0.2"
 librsvg = { path = "rsvg" }
 librsvg-c = { path = "librsvg-c" }
 locale_config = "0.3.0"                                   # not "*" as per the documentation, since crates.io doesn't accept wildcards
-lopdf = "0.33"
+lopdf = "0.36"
 markup5ever = "0.12.0"
 matches = "0.1"
 nalgebra = "0.33.0"
