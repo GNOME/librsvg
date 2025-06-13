@@ -715,6 +715,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "float-cmp"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b09cf3155332e944990140d967ff5eceb70df778b34f77d8075db46e4704e6d8"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1287,7 +1296,7 @@ dependencies = [
  "cssparser",
  "data-url",
  "encoding_rs",
- "float-cmp",
+ "float-cmp 0.10.0",
  "gio",
  "glib",
  "image",
@@ -1328,7 +1337,7 @@ version = "2.60.0"
 dependencies = [
  "cairo-rs",
  "cast",
- "float-cmp",
+ "float-cmp 0.10.0",
  "gdk-pixbuf",
  "gio",
  "glib",
@@ -1953,7 +1962,7 @@ checksum = "7e9086cc7640c29a356d1a29fd134380bee9d8f79a17410aa76e7ad295f42c97"
 dependencies = [
  "anstyle",
  "difflib",
- "float-cmp",
+ "float-cmp 0.9.0",
  "normalize-line-endings",
  "predicates-core",
  "regex",
@@ -2174,7 +2183,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "cssparser",
- "float-cmp",
+ "float-cmp 0.10.0",
  "gio",
  "glib",
  "libc",
