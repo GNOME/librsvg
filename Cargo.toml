@@ -44,7 +44,7 @@ cast = "0.3.0"
 chrono = { version = "0.4.23", default-features = false }
 clap = "4.0.17"
 clap_complete = "4.0.5"
-criterion = "0.5"
+criterion = "0.6"
 cssparser = "~0.31"
 data-url = "0.3.0"
 encoding_rs = "0.8.32"
