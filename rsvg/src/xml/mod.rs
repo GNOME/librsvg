@@ -6,18 +6,19 @@ use gio::{
     InputStream, ZlibCompressorFormat, ZlibDecompressor,
 };
 use glib::object::Cast;
-use markup5ever::{
-    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName,
-};
+use markup5ever::{expanded_name, local_name, ns, ExpandedName, LocalName, Namespace, QualName};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::str;
 use std::string::ToString;
 use std::sync::Arc;
-use xml5ever::buffer_queue::BufferQueue;
-use xml5ever::tendril::format_tendril;
-use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
+use xml5ever::{
+    buffer_queue::BufferQueue,
+    tendril::format_tendril,
+    tokenizer::{ProcessResult, TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts},
+    TokenizerResult,
+};
 
 use crate::borrow_element_as;
 use crate::css::{Origin, Stylesheet};
@@ -669,7 +670,10 @@ impl XmlState {
     }
 }
 
-/// Temporary holding space for data in an XML processing instruction
+/// Temporary holding space for data in an XML processing instruction.
+///
+/// We use a little hack via xml5ever to parse the contents of an XML processing instruction.
+/// See the comment in parse_xml_stylesheet_processing_instruction() below.
 #[derive(Default)]
 struct ProcessingInstructionData {
     attributes: Vec<(String, String)>,
@@ -679,7 +683,12 @@ struct ProcessingInstructionData {
 struct ProcessingInstructionSink(Rc<RefCell<ProcessingInstructionData>>);
 
 impl TokenSink for ProcessingInstructionSink {
-    fn process_token(&mut self, token: Token) {
+    // xml5ever's tokenizer only uses this if we are actually using it to parse full XML;
+    // here, the Handle associated type refers to a DOM script, which we know can't appear
+    // in the way we use xml5ever, so we use the unit type instead.
+    type Handle = ();
+
+    fn process_token(&self, token: Token) -> ProcessResult<()> {
         let mut data = self.0.borrow_mut();
 
         match token {
@@ -696,6 +705,8 @@ impl TokenSink for ProcessingInstructionSink {
 
             _ => (),
         }
+
+        ProcessResult::Continue
     }
 }
 
@@ -720,8 +731,12 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
 
     let sink = ProcessingInstructionSink(pi_data.clone());
 
-    let mut tokenizer = XmlTokenizer::new(sink, XmlTokenizerOpts::default());
-    tokenizer.run(&mut queue);
+    let tokenizer = XmlTokenizer::new(sink, XmlTokenizerOpts::default());
+
+    match tokenizer.run(&mut queue) {
+        TokenizerResult::Done => (),
+        _ => unreachable!("got an unexpected TokenizerResult; did xml5ever change its API?"),
+    }
 
     let pi_data = pi_data.borrow();
 

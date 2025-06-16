@@ -272,7 +272,7 @@ impl Parse for CustomIdent {
 mod tests {
     use super::*;
 
-    use markup5ever::{local_name, namespace_url, ns, QualName};
+    use markup5ever::{local_name, ns, QualName};
 
     #[test]
     fn parses_number_optional_number() {

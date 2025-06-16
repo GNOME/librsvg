@@ -1,6 +1,6 @@
 //! The `style` element.
 
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;

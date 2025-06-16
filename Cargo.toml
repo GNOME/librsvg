@@ -64,7 +64,7 @@ librsvg = { path = "rsvg" }
 librsvg-c = { path = "librsvg-c" }
 locale_config = "0.3.0"                                   # not "*" as per the documentation, since crates.io doesn't accept wildcards
 lopdf = "0.36"
-markup5ever = "0.12.0"
+markup5ever = "0.16.1"
 matches = "0.1"
 nalgebra = "0.33.0"
 num-traits = "0.2"
@@ -88,5 +88,5 @@ tempfile = "3"
 thiserror = "1.0"
 tinyvec = "1.2.0"
 url = "2"
-xml5ever = "0.18.0"
+xml5ever = "0.22.1"
 yeslogic-fontconfig-sys = "6.0.0"

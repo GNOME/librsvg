@@ -1,7 +1,7 @@
 //! Entry point for the CSS filters infrastructure.
 
 use cssparser::{BasicParseError, Parser};
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 use std::rc::Rc;
 use std::time::Instant;
 

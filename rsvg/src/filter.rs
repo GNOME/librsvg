@@ -1,7 +1,7 @@
 //! The `filter` element.
 
 use cssparser::{Color, Parser};
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 use std::slice::Iter;
 
 use crate::coord_units::CoordUnits;

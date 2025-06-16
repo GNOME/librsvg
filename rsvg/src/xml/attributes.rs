@@ -168,7 +168,7 @@ impl<'a> Iterator for AttributesIter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use markup5ever::{expanded_name, local_name, namespace_url, ns};
+    use markup5ever::{expanded_name, local_name, ns};
     use std::ffi::CString;
     use std::ptr;
 

@@ -17,9 +17,7 @@
 use cssparser::{
     self, BasicParseErrorKind, ParseErrorKind, Parser, ParserInput, RuleBodyParser, ToCss,
 };
-use markup5ever::{
-    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, QualName,
-};
+use markup5ever::{expanded_name, local_name, ns, ExpandedName, LocalName, QualName};
 use std::collections::HashSet;
 
 #[cfg(doc)]

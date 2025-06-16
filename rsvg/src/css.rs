@@ -80,7 +80,7 @@ use cssparser::{
 };
 use data_url::mime::Mime;
 use language_tags::LanguageTag;
-use markup5ever::{self, namespace_url, ns, Namespace, QualName};
+use markup5ever::{self, ns, Namespace, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{
     ElementSelectorFlags, IgnoreNthChildForInvalidation, MatchingContext, MatchingMode,

@@ -1,6 +1,6 @@
 //! SVG Elements.
 
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use markup5ever::{expanded_name, local_name, ns, QualName};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::sync::OnceLock;

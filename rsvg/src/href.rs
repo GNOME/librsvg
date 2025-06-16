@@ -7,7 +7,7 @@
 //! If an element has both `xlink:href` and `href` attributes, the `href` overrides the
 //! other.  We implement that logic in this module.
 
-use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
+use markup5ever::{expanded_name, local_name, ns, ExpandedName};
 
 /// Returns whether the attribute is either of `xlink:href` or `href`.
 ///
@@ -16,7 +16,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
 /// Use with an `if` pattern inside a `match`:
 ///
 /// ```
-/// # use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName, Prefix, Namespace, LocalName, ExpandedName};
+/// # use markup5ever::{expanded_name, local_name, ns, QualName, Prefix, Namespace, LocalName, ExpandedName};
 /// # use rsvg::doctest_only::{is_href,set_href};
 ///
 /// let qual_name = QualName::new(

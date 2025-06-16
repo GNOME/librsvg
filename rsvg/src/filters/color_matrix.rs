@@ -1,5 +1,5 @@
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use markup5ever::{expanded_name, local_name, ns, QualName};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::document::AcquiredNodes;

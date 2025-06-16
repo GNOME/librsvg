@@ -1,6 +1,6 @@
 //! Structural elements in SVG: the `g`, `switch`, `svg`, `use`, `symbol`, `clip_path`, `mask`, `link` elements.
 
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;

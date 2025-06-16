@@ -1,4 +1,4 @@
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 
 use crate::document::AcquiredNodes;
 use crate::element::{set_attribute, ElementTrait};
