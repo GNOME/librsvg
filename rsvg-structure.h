@@ -76,7 +76,6 @@ struct _RsvgNodeSvg {
     gint preserve_aspect_ratio;
     RsvgLength x, y, w, h;
     RsvgViewBox vbox;
-    RsvgPropertyBag *atts;
 };
 
 G_GNUC_INTERNAL

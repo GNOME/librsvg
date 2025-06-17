@@ -330,6 +330,8 @@ struct _RsvgNode {
     GPtrArray *children;
     RsvgNodeType type;
     const char *name; /* owned by the xmlContext, invalid after parsing! */
+    const char *typename;
+    RsvgPropertyBag *atts;
     void (*free) (RsvgNode * self);
     void (*draw) (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate);
     void (*set_atts) (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag *);

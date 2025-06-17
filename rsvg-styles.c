@@ -1432,7 +1432,7 @@ rsvg_lookup_apply_css_style (RsvgHandle * ctx, const char *target, RsvgState * s
  * Parses style and transform attributes and modifies state at top of
  * stack.
  **/
-void
+static void
 rsvg_parse_style_attrs (RsvgHandle * ctx,
                         RsvgState * state,
                         const char *tag, const char *klazz, const char *id, RsvgPropertyBag * atts)
@@ -1528,6 +1528,32 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
             rsvg_parse_transform_attr (ctx, state, value);
     }
 }
+
+/**
+ * rsvg_tree_apply_style
+ * @ctx: Rsvg context.
+ *
+ * Apply current style to all nodes in the tree
+ **/
+void
+rsvg_tree_apply_style (RsvgHandle * ctx)
+{
+    if (!ctx->priv->treebase)
+        return;
+    GPtrArray *stack = g_ptr_array_new_from_array ((gpointer*)&ctx->priv->treebase, 1, NULL, NULL, NULL);
+    while (stack->len > 0) {
+        RsvgNode *node = g_ptr_array_steal_index (stack, stack->len - 1);
+        g_ptr_array_extend (stack, node->children, NULL, NULL);
+        //node->set_atts (node, ctx, node->atts);
+        if (node->typename)
+            rsvg_parse_style_attrs (ctx, node->state, node->typename,
+                                    rsvg_property_bag_lookup (node->atts, "class"),
+                                    rsvg_property_bag_lookup (node->atts, "id"),
+                                    node->atts);
+    }
+    g_ptr_array_unref (stack);
+}
+
 
 RsvgState *
 rsvg_current_state (RsvgDrawingCtx * ctx)

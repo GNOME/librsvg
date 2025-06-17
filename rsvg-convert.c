@@ -115,6 +115,7 @@ main (int argc, char **argv)
     double zoom = 1.0;
     double dpi_x = -1.0;
     double dpi_y = -1.0;
+    char *stylesheet_path = NULL;
     int width = -1;
     int height = -1;
     int bVersion = 0;
@@ -134,6 +135,7 @@ main (int argc, char **argv)
     char **args = NULL;
     gint n_args = 0;
     RsvgHandle *rsvg = NULL;
+    GBytes *stylesheet = NULL;
     cairo_surface_t *surface = NULL;
     cairo_t *cr = NULL;
     RsvgHandleFlags flags = RSVG_HANDLE_FLAGS_NONE;
@@ -158,6 +160,7 @@ main (int argc, char **argv)
          N_("y zoom factor [optional; defaults to 1.0]"), N_("<float>")},
         {"zoom", 'z', 0, G_OPTION_ARG_DOUBLE, &zoom, N_("zoom factor [optional; defaults to 1.0]"),
          N_("<float>")},
+        {"stylesheet", 's', 0, G_OPTION_ARG_STRING, &stylesheet_path, N_("Filename of CSS stylesheet to apply]"), N_("<filename.css>")},
         {"width", 'w', 0, G_OPTION_ARG_INT, &width,
          N_("width [optional; defaults to the SVG's width]"), N_("<int>")},
         {"height", 'h', 0, G_OPTION_ARG_INT, &height,
@@ -224,6 +227,20 @@ main (int argc, char **argv)
         exit (1);
     }
 
+    if (stylesheet_path) {
+        GFile *stylesheet_file = g_file_new_for_commandline_arg (stylesheet_path);
+        stylesheet = g_file_load_bytes (stylesheet_file, NULL, NULL, &error);
+        g_object_unref (stylesheet_file);
+        if (!stylesheet) {
+            g_printerr (_("Error reading stylesheet: %s\n"), stylesheet_path);
+            g_free (stylesheet_path);
+            display_error (error);
+            g_printerr ("\n");
+            exit (1);
+        }
+        g_free (stylesheet_path);
+    }
+
     if (format != NULL &&
         (g_str_equal (format, "ps") || g_str_equal (format, "eps") || g_str_equal (format, "pdf")) &&
         !no_keep_image_data)
@@ -268,6 +285,15 @@ main (int argc, char **argv)
         }
 
         rsvg = rsvg_handle_new_from_stream_sync (stream, file, flags, NULL, &error);
+        if (rsvg == NULL)
+            goto done;
+
+        if (stylesheet) {
+            gsize stylesheet_len;
+            const guint8 *stylesheet_buf = g_bytes_get_data (stylesheet, &stylesheet_len);
+            if (!rsvg_handle_set_stylesheet (rsvg, stylesheet_buf, stylesheet_len, &error))
+                goto done;
+        }
 
     done:
         g_clear_object (&stream);
@@ -424,6 +450,9 @@ main (int argc, char **argv)
     cairo_destroy (cr);
 
     cairo_surface_destroy (surface);
+
+    if (stylesheet)
+        g_bytes_unref (stylesheet);
 
     fclose (output_file);
 

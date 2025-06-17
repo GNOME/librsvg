@@ -1,3 +1,20 @@
+Version 2.40.23
+- Introduced rsvg_handle_set_stylesheet. This function allows a user
+  to add a custom stylesheet to influence the vector image.
+  The main usecase for this is going to let GTK adjust the style of
+  its symbolic icons without having to inject a <style> tag at the
+  beginning.
+  *Note that this is an ABI change*
+
+  Also added --stylesheet / -s as option to rsvg-convert to use a
+  custom stylesheet from a file.
+
+- Apply styles at the end of parsing. This way, styles defined
+  further down the document will apply to nodes earlier on, like
+  other SVG parsing engines do to.
+  The downside to this is increased memory consumption due to having
+  to keep the xml attributes of each node in memory.
+
 Version 2.40.22
 - Fixed parsing of arc flags in paths. The arc command has two flags
   next to eachother and they don't have to be seperated by spaces,

@@ -248,7 +248,6 @@ rsvg_linear_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
                 grad->obj_bbox = TRUE;
             grad->hasbbox = TRUE;
         }
-        rsvg_parse_style_attrs (ctx, self->state, "linearGradient", NULL, NULL, atts);
     }
 }
 
@@ -273,6 +272,7 @@ rsvg_new_linear_gradient (void)
     grad->fallback = NULL;
     grad->obj_bbox = TRUE;
     grad->spread = CAIRO_EXTEND_PAD;
+    grad->super.typename = "linearGradient";
     grad->super.free = rsvg_linear_gradient_free;
     grad->super.set_atts = rsvg_linear_gradient_set_atts;
     grad->hasx1 = grad->hasy1 = grad->hasx2 = grad->hasy2 = grad->hasbbox = grad->hasspread =
@@ -338,7 +338,6 @@ rsvg_radial_gradient_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBa
                 grad->obj_bbox = TRUE;
             grad->hasbbox = TRUE;
         }
-        rsvg_parse_style_attrs (ctx, self->state, "radialGradient", NULL, NULL, atts);
     }
 }
 
@@ -362,6 +361,7 @@ rsvg_new_radial_gradient (void)
     grad->spread = CAIRO_EXTEND_PAD;
     grad->fallback = NULL;
     grad->cx = grad->cy = grad->r = grad->fx = grad->fy = _rsvg_css_parse_length ("0.5");
+    grad->super.typename = "radialGradient";
     grad->super.free = rsvg_radial_gradient_free;
     grad->super.set_atts = rsvg_radial_gradient_set_atts;
     grad->hascx = grad->hascy = grad->hasfx = grad->hasfy = grad->hasr = grad->hasbbox =
