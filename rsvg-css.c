@@ -40,6 +40,7 @@
 #include <math.h>
 
 #include <libxml/parser.h>
+#include <libxml/SAX2.h>
 
 #include <libcroco/libcroco.h>
 
@@ -322,7 +323,10 @@ rsvg_css_clip_rgb_percent (const char *s, double max)
 }
 
 /* pack 3 [0,255] ints into one 32 bit one */
-#define PACK_RGBA(r,g,b,a) (((a) << 24) | ((r) << 16) | ((g) << 8) | (b))
+#define PACK_RGBA(r,g,b,a) (((((guint32)a) & 0xFF) << 24) | \
+                            ((((guint32)r) & 0xFF) << 16) | \
+                            ((((guint32)g) & 0xFF) <<  8) | \
+                            ((((guint32)b) & 0xFF)))
 #define PACK_RGB(r,g,b) PACK_RGBA(r, g, b, 255)
 
 /**
@@ -337,7 +341,7 @@ rsvg_css_clip_rgb_percent (const char *s, double max)
 guint32
 rsvg_css_parse_color (const char *str, gboolean * inherit)
 {
-    gint val = 0;
+    guint32 val = 0;
 
     SETINHERIT ();
 
@@ -863,7 +867,7 @@ rsvg_css_parse_xml_attribute_string (const char *attribute_string)
 
     memset (&handler, 0, sizeof (handler));
     xmlSAX2InitDefaultSAXHandler (&handler, 0);
-    handler.serror = rsvg_xml_noerror;
+    handler.serror = (xmlStructuredErrorFunc)rsvg_xml_noerror;
     parser = xmlCreatePushParserCtxt (&handler, NULL, tag, strlen (tag) + 1, NULL);
     parser->options |= XML_PARSE_NONET;
 

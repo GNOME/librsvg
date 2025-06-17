@@ -1,0 +1,3 @@
+option('tests', type: 'feature', value: 'auto')
+option('rsvg-convert', type: 'feature', value: 'auto')
+option('rsvg-view-3', type: 'feature', value: 'disabled')

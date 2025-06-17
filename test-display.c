@@ -19,7 +19,6 @@
 
 #include "config.h"
 #include "rsvg-private.h"
-#include "rsvg-size-callback.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -637,6 +636,9 @@ main (int argc, char **argv)
 
 	/* Set the locale so that UTF-8 filenames work */
     setlocale(LC_ALL, "");
+
+    /* Set GDK_PIXBUF_MODULE_FILE to "", as gdk-pixbuf otherwise might load a svg pixbuf loader for a newer version of rsvg */
+    g_setenv("GDK_PIXBUF_MODULE_FILE", "", TRUE);
 
     RSVG_G_TYPE_INIT;
 

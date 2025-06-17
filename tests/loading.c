@@ -54,6 +54,7 @@ load_n_bytes_at_a_time (gconstpointer data)
     g_object_unref (handle);
 
     g_free (buf);
+    g_free (filename);
 }
 
 static TestData tests[] = {

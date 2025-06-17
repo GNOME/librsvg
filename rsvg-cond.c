@@ -34,6 +34,10 @@
 #include <stdlib.h>
 #include <locale.h>
 
+#ifdef G_OS_WIN32
+#include <libintl.h>  /* for LC_MESSAGES */
+#endif
+
 /* Keep these sorted alphabetically!  These are used with bsearch() */
 static const char *implemented_features[] = {
     "http://www.w3.org/TR/SVG11/feature#BasicFilter",
@@ -137,10 +141,8 @@ rsvg_cond_parse_system_language (const char *value)
         if (!locale)
             locale = g_strdup (g_getenv ("LANG"));
 
-#if defined(HAVE_LC_MESSAGES)
         if (!locale)
             locale = g_strdup (setlocale (LC_MESSAGES, NULL));
-#endif
 
         if (!locale)
             locale = g_strdup (setlocale (LC_ALL, NULL));

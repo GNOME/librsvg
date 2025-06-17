@@ -11,7 +11,7 @@ bin_PROGRAMS += rsvg-view-3
 endif
 
 headers = \
-	rsvg.h	\
+	librsvg/rsvg.h	\
 	rsvg-cairo.h
 
 enum_sources = \
@@ -66,7 +66,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 	rsvg-size-callback.h	\
 	rsvg-xml.c		\
 	rsvg-xml.h		\
-	rsvg.h			\
+	librsvg/rsvg.h			\
 	rsvg-cairo.h		\
 	librsvg-features.h 	\
 	librsvg-enum-types.h	\
@@ -75,6 +75,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES = \
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
 	-I$(top_srcdir) 			\
 	-I$(top_builddir) 			\
+	-I$(top_srcdir)/librsvg			\
 	-DG_LOG_DOMAIN=\"librsvg\" 		\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
 	-DSRCDIR=\""${abs_top_srcdir}"\"	\
@@ -115,6 +116,7 @@ rsvg_convert_SOURCES = \
 rsvg_convert_CPPFLAGS = \
 	-I$(top_srcdir) 			\
 	-I$(top_builddir) 			\
+	-I$(top_srcdir)/librsvg			\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
 	$(AM_CPPFLAGS)
 
@@ -136,6 +138,7 @@ rsvg_view_3_SOURCES = \
 rsvg_view_3_CPPFLAGS = \
 	-I$(top_srcdir) 			\
 	-I$(top_builddir) 			\
+	-I$(top_srcdir)/librsvg			\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
 	$(AM_CPPFLAGS)
 

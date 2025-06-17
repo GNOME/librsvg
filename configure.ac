@@ -1,6 +1,6 @@
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[40])
-m4_define([rsvg_micro_version],[21])
+m4_define([rsvg_micro_version],[22])
 m4_define([rsvg_extra_version],[])
 m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_version()rsvg_extra_version])
 m4_define([rsvg_lt_version_info],m4_eval(rsvg_major_version + rsvg_minor_version):rsvg_micro_version:rsvg_minor_version)
@@ -8,7 +8,7 @@ m4_define([rsvg_lt_version_info],m4_eval(rsvg_major_version + rsvg_minor_version
 AC_INIT([RSVG],[rsvg_version],[https://bugzilla.gnome.org/enter_bug.cgi?product=librsvg],[librsvg])
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_SRCDIR([rsvg.h])
+AC_CONFIG_SRCDIR([librsvg/rsvg.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz])
@@ -31,8 +31,8 @@ AC_SUBST([RSVG_API_VERSION_U],[AS_TR_SH([$RSVG_API_VERSION])])
 
 dnl ===========================================================================
 
-GLIB_REQUIRED=2.12.0
-GIO_REQUIRED=2.24.0
+GLIB_REQUIRED=2.38.0
+GIO_REQUIRED=2.38.0
 LIBXML_REQUIRED=2.9.0
 CAIRO_REQUIRED=1.2.0
 PANGO_REQUIRED=1.38.0
@@ -243,23 +243,6 @@ GOBJECT_INTROSPECTION_CHECK([0.10.8])
 
 # Vala bindings
 VAPIGEN_CHECK([0.17.1.26],,,[no])
-
-dnl ===========================================================================
-
-m4_copy([AC_DEFUN],[glib_DEFUN])
-glib_DEFUN([GLIB_LC_MESSAGES],
-  [AC_CHECK_HEADERS([locale.h])
-    if test $ac_cv_header_locale_h = yes; then
-    AC_CACHE_CHECK([for LC_MESSAGES], am_cv_val_LC_MESSAGES,
-      [AC_TRY_LINK([#include <locale.h>], [return LC_MESSAGES],
-       am_cv_val_LC_MESSAGES=yes, am_cv_val_LC_MESSAGES=no)])
-    if test $am_cv_val_LC_MESSAGES = yes; then
-      AC_DEFINE(HAVE_LC_MESSAGES, 1,
-        [Define if your <locale.h> file defines LC_MESSAGES.])
-    fi
-  fi])
-
-GLIB_LC_MESSAGES
 
 dnl ===========================================================================
 

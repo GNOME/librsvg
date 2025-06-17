@@ -1,0 +1,6 @@
+include:
+  - project: "GNOME/citemplates"
+    file: "templates/default-rules.yml"
+  - component: "gitlab.gnome.org/GNOME/citemplates/gnomeos-basic-ci@master"
+    inputs:
+      lsan-options: "suppressions=${CI_PROJECT_DIR}/.gitlab-ci/lsan.supp"

@@ -58,13 +58,13 @@ struct _RsvgLinearGradient {
     RsvgLength x1, y1, x2, y2;
     guint32 current_color;
     gboolean has_current_color;
-    int hasx1:1;
-    int hasy1:1;
-    int hasx2:1;
-    int hasy2:1;
-    int hasbbox:1;
-    int hasspread:1;
-    int hastransform:1;
+    unsigned int hasx1:1;
+    unsigned int hasy1:1;
+    unsigned int hasx2:1;
+    unsigned int hasy2:1;
+    unsigned int hasbbox:1;
+    unsigned int hasspread:1;
+    unsigned int hastransform:1;
     char *fallback;
 };
 
@@ -76,14 +76,14 @@ struct _RsvgRadialGradient {
     RsvgLength cx, cy, r, fx, fy;
     guint32 current_color;
     gboolean has_current_color;
-    int hascx:1;
-    int hascy:1;
-    int hasfx:1;
-    int hasfy:1;
-    int hasr:1;
-    int hasspread:1;
-    int hasbbox:1;
-    int hastransform:1;
+    unsigned int hascx:1;
+    unsigned int hascy:1;
+    unsigned int hasfx:1;
+    unsigned int hasfy:1;
+    unsigned int hasr:1;
+    unsigned int hasspread:1;
+    unsigned int hasbbox:1;
+    unsigned int hastransform:1;
     char *fallback;
 };
 
@@ -95,15 +95,15 @@ struct _RsvgPattern {
     RsvgLength x, y, width, height;
     RsvgViewBox vbox;
     unsigned int preserve_aspect_ratio;
-    int hasx:1;
-    int hasy:1;
-    int hasvbox:1;
-    int haswidth:1;
-    int hasheight:1;
-    int hasaspect:1;
-    int hascbox:1;
-    int hasbbox:1;
-    int hastransform:1;
+    unsigned int hasx:1;
+    unsigned int hasy:1;
+    unsigned int hasvbox:1;
+    unsigned int haswidth:1;
+    unsigned int hasheight:1;
+    unsigned int hasaspect:1;
+    unsigned int hascbox:1;
+    unsigned int hasbbox:1;
+    unsigned int hastransform:1;
     char *fallback;
 };
 

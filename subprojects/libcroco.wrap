@@ -1,0 +1,9 @@
+[wrap-git]
+directory = libcroco
+url = https://gitlab.gnome.org/sp1rit/libcroco.git
+push-url = git@ssh.gitlab.gnome.org:sp1rit/libcroco.git
+revision = 2dfb3dacb942eb3a02cebcd786a22d2827a8a078
+depth = 1
+
+[provide]
+libcroco-0.6 = libcroco_dep
