@@ -668,7 +668,7 @@ impl Parse for FilterFunction {
             }
         }
 
-        return Err(loc.new_custom_error(ValueErrorKind::parse_error("expected filter function")));
+        Err(loc.new_custom_error(ValueErrorKind::parse_error("expected filter function")))
     }
 }
 
