@@ -86,9 +86,9 @@ impl UrlResolver {
         // Url.parse() will give us "file:///foo/".  We don't want that, so check
         // if the last path segment is empty - it will not be empty for a normal file.
 
-        if let Some(segments) = url.path_segments() {
+        if let Some(mut segments) = url.path_segments() {
             if segments
-                .last()
+                .next_back()
                 .expect("URL path segments always contain at last 1 element")
                 .is_empty()
             {
