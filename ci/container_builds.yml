@@ -61,7 +61,7 @@ variables:
       openssl-devel
       pcre2-devel
       python3-pip
-      python313-devel
+      python3-devel
       shadow
       shared-mime-info
       system-group-wheel
