@@ -8,3 +8,4 @@ markupsafe
 packaging
 pygments
 typogrify
+tomli
