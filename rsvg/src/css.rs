@@ -698,7 +698,7 @@ where {
                 .xml_lang()
                 .0
                 .as_ref()
-                .map_or(false, |e_lang| {
+                .is_some_and(|e_lang| {
                     css_lang
                         .iter()
                         .any(|l| l.is_language_range() && l.matches(e_lang))
