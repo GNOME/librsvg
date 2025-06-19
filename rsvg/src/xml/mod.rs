@@ -726,14 +726,14 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
         error: false,
     }));
 
-    let mut queue = BufferQueue::default();
+    let queue = BufferQueue::default();
     queue.push_back(format_tendril!("<rsvg-hack {} />", data));
 
     let sink = ProcessingInstructionSink(pi_data.clone());
 
     let tokenizer = XmlTokenizer::new(sink, XmlTokenizerOpts::default());
 
-    match tokenizer.run(&mut queue) {
+    match tokenizer.run(&queue) {
         TokenizerResult::Done => (),
         _ => unreachable!("got an unexpected TokenizerResult; did xml5ever change its API?"),
     }
