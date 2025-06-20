@@ -22,15 +22,12 @@ call_grcov() {
     #       --output-type $output_type
     #       --output-path $output_path
 
-    grcov coverage-profiles _build               \
-          --binary-path ./_build/target/debug/   \
+    grcov coverage-profiles                      \
+          --binary-path ./target/debug/          \
           --source-dir .                         \
           --branch                               \
-          --ignore '**/build/markup5ever*'       \
-          --ignore '**/build/cssparser*'         \
           --ignore 'cargo_cache/*'               \
-          --ignore '_build/*'                    \
-          --ignore 'rsvg-bench/*'                \
+          --ignore 'target/*'                    \
           --excl-line 'unreachable!'             \
           --output-type $output_type             \
           --output-path $output_path
