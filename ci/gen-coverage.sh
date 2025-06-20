@@ -35,7 +35,18 @@ call_grcov() {
 
 call_grcov html public/coverage
 
+# Generate the cobertura XML format for GitLab's line-by-line coverage report in MR diffs.
+#
+# However, guard it for not being over 10 MB in size; we had a case before where it was over
+# 500 MB and that OOM'd gitlab's redis.
+
 call_grcov cobertura coverage.xml
+size=`wc -c < coverage.xml`
+if [ $size -ge 10485760 ]
+then
+    rm coverage.xml
+    echo "coverage.xml is over 10 MB, removing it so it will not be used"
+fi
 
 # Print "Coverage: 42.42" so .gitlab-ci.yml will pick it up with a regex
 #
