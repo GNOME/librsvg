@@ -35,13 +35,7 @@ call_grcov() {
 
 call_grcov html public/coverage
 
-# Disable the cobertura report for now; it is only used for showing coverage
-# in the diff view of merge requests.
-#
-# After switching to gcov-based instrumentation (-Zprofile in .gitlab-ci.yml), this
-# coverage.xml is almost 500 MB and causes gitlab's redis to OOM.
-#
-# call_grcov cobertura coverage.xml
+call_grcov cobertura coverage.xml
 
 # Print "Coverage: 42.42" so .gitlab-ci.yml will pick it up with a regex
 #
