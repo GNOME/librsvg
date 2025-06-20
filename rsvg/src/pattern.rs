@@ -1,6 +1,6 @@
 //! The `pattern` element.
 
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 
 use crate::coord_units;
 use crate::coord_units::CoordUnits;
@@ -511,7 +511,7 @@ impl Pattern {
 mod tests {
     use super::*;
 
-    use markup5ever::{namespace_url, ns, QualName};
+    use markup5ever::{ns, QualName};
 
     use crate::borrow_element_as;
     use crate::node::NodeData;

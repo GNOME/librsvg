@@ -80,7 +80,7 @@ use cssparser::{
 };
 use data_url::mime::Mime;
 use language_tags::LanguageTag;
-use markup5ever::{self, namespace_url, ns, Namespace, QualName};
+use markup5ever::{self, ns, Namespace, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{
     ElementSelectorFlags, IgnoreNthChildForInvalidation, MatchingContext, MatchingMode,
@@ -698,7 +698,7 @@ where {
                 .xml_lang()
                 .0
                 .as_ref()
-                .map_or(false, |e_lang| {
+                .is_some_and(|e_lang| {
                     css_lang
                         .iter()
                         .any(|l| l.is_language_range() && l.matches(e_lang))

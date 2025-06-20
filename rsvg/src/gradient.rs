@@ -1,9 +1,7 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
 use cssparser::{Color, Parser};
-use markup5ever::{
-    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
-};
+use markup5ever::{expanded_name, local_name, ns, ExpandedName, LocalName, Namespace};
 
 use crate::coord_units;
 use crate::coord_units::CoordUnits;
@@ -704,7 +702,7 @@ impl ResolvedGradient {
 mod tests {
     use super::*;
 
-    use markup5ever::{namespace_url, ns, QualName};
+    use markup5ever::{ns, QualName};
 
     use crate::borrow_element_as;
     use crate::node::{Node, NodeData};

@@ -13,7 +13,7 @@ use std::str;
 use std::sync::Once;
 
 use glib::translate::*;
-use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
+use markup5ever::{ns, LocalName, Namespace, Prefix, QualName};
 
 use crate::error::LoadingError;
 use crate::util::{cstr, opt_utf8_cstr, utf8_cstr, utf8_cstr_len};

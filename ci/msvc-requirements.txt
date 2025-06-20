@@ -1,0 +1,11 @@
+# This file is used from ci/test-msvc.bat.  It lists the Python packages required for
+# building librsvg and its dependencies on the CI.
+
+meson==1.7.2
+jinja2
+markdown
+markupsafe
+packaging
+pygments
+typogrify
+tomli

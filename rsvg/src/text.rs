@@ -1,6 +1,6 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use markup5ever::{expanded_name, local_name, ns, QualName};
 use pango::prelude::FontExt;
 use pango::IsAttribute;
 use std::cell::RefCell;

@@ -4,7 +4,7 @@ use std::f64::consts::*;
 use std::ops::Deref;
 
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 
 use crate::angle::Angle;
 use crate::aspect_ratio::*;

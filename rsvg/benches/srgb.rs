@@ -1,4 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 
 use rsvg::bench_only::{
     linearize, map_unpremultiplied_components_loop, ExclusiveImageSurface, IRect,

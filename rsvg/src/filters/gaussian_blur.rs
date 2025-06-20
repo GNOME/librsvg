@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::f64;
 
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 use nalgebra::{DMatrix, Dyn, VecStorage};
 
 use crate::document::AcquiredNodes;

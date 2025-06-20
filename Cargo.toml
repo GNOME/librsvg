@@ -12,7 +12,7 @@ repository = "https://gitlab.gnome.org/GNOME/librsvg/"
 categories = ["graphics", "multimedia::images", "rendering::data-formats"]
 keywords = ["svg", "cairo"]
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.85.1"
 
 [profile.overflow]
 inherits = "release"
@@ -44,11 +44,11 @@ cast = "0.3.0"
 chrono = { version = "0.4.23", default-features = false }
 clap = "4.0.17"
 clap_complete = "4.0.5"
-criterion = "0.5"
+criterion = "0.6"
 cssparser = "~0.31"
 data-url = "0.3.0"
 encoding_rs = "0.8.32"
-float-cmp = "0.9.0"
+float-cmp = "0.10.0"
 gdk-pixbuf = "0.20"
 gdk-pixbuf-sys = "0.20"
 gio = "0.20"
@@ -57,14 +57,14 @@ glib = "0.20"
 glib-sys = "0.20"
 gobject-sys = "0.20"
 image = { version = "0.25.0", default-features = false }
-itertools = "0.13.0"
+itertools = "0.14.0"
 language-tags = "0.3.1"
 libc = "0.2"
 librsvg = { path = "rsvg" }
 librsvg-c = { path = "librsvg-c" }
 locale_config = "0.3.0"                                   # not "*" as per the documentation, since crates.io doesn't accept wildcards
-lopdf = "0.33"
-markup5ever = "0.12.0"
+lopdf = "0.36"
+markup5ever = "0.16.1"
 matches = "0.1"
 nalgebra = "0.33.0"
 num-traits = "0.2"
@@ -88,5 +88,5 @@ tempfile = "3"
 thiserror = "1.0"
 tinyvec = "1.2.0"
 url = "2"
-xml5ever = "0.18.0"
+xml5ever = "0.22.1"
 yeslogic-fontconfig-sys = "6.0.0"

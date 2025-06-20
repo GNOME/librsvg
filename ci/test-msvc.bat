@@ -21,7 +21,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliar
 @set PKG_CONFIG_VER=0.29.2
 
 @set CURRDIR=%CD%
-pip3 install --upgrade --user meson==1.7.2 || goto :error
+pip3 install --upgrade --user -r ci/msvc-requirements.txt || goto :error
 git clone --depth 1 --no-tags https://gitlab.gnome.org/GNOME/gdk-pixbuf.git
 git clone --depth 1 --no-tags https://gitlab.gnome.org/GNOME/pango.git
 

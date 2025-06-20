@@ -1,4 +1,4 @@
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 
 use crate::aspect_ratio::AspectRatio;
 use crate::document::{AcquiredNodes, Document, NodeId, Resource};

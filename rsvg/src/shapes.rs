@@ -2,7 +2,7 @@
 //! `rect`, `circle`, `ellipse` elements.
 
 use cssparser::{Parser, Token};
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 use std::ops::Deref;
 use std::rc::Rc;
 

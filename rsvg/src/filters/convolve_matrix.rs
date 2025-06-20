@@ -1,5 +1,5 @@
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, ns};
 use nalgebra::{DMatrix, Dyn, VecStorage};
 use xml5ever::QualName;
 

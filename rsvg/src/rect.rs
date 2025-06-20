@@ -219,7 +219,7 @@ pub fn rect_to_transform(rect: &Option<Rect>, units: CoordUnits) -> Result<Trans
     match units {
         CoordUnits::UserSpaceOnUse => Ok(Transform::identity()),
         CoordUnits::ObjectBoundingBox => {
-            if rect.as_ref().map_or(true, |r| r.is_empty()) {
+            if rect.as_ref().is_none_or(|r| r.is_empty()) {
                 Err(())
             } else {
                 let r = rect.as_ref().unwrap();
