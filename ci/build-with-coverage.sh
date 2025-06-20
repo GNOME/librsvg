@@ -18,7 +18,8 @@ fi
 export CC="clang"
 export RUSTDOCFLAGS="-C instrument-coverage"
 export LLVM_PROFILE_FILE="$(pwd)/coverage-profiles/coverage-%p-%m.profraw"
-export RUSTFLAGS="-C instrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off"
+export RUSTC_BOOTSTRAP="1"   # hack to make unstable options work on the non-nightly compiler
+export RUSTFLAGS="-C instrument-coverage -Z coverage-options=condition -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off"
 
 # meson setup _build -Db_coverage=true -Dauto_features=disabled -Dpixbuf{,-loader}=enabled --buildtype=debugoptimized
 # meson compile -C _build
