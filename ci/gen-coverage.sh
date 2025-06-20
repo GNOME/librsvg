@@ -22,15 +22,12 @@ call_grcov() {
     #       --output-type $output_type
     #       --output-path $output_path
 
-    grcov coverage-profiles _build               \
-          --binary-path ./_build/target/debug/   \
+    grcov coverage-profiles                      \
+          --binary-path ./target/debug/          \
           --source-dir .                         \
           --branch                               \
-          --ignore '**/build/markup5ever*'       \
-          --ignore '**/build/cssparser*'         \
           --ignore 'cargo_cache/*'               \
-          --ignore '_build/*'                    \
-          --ignore 'rsvg-bench/*'                \
+          --ignore 'target/*'                    \
           --excl-line 'unreachable!'             \
           --output-type $output_type             \
           --output-path $output_path
@@ -38,13 +35,18 @@ call_grcov() {
 
 call_grcov html public/coverage
 
-# Disable the cobertura report for now; it is only used for showing coverage
-# in the diff view of merge requests.
+# Generate the cobertura XML format for GitLab's line-by-line coverage report in MR diffs.
 #
-# After switching to gcov-based instrumentation (-Zprofile in .gitlab-ci.yml), this
-# coverage.xml is almost 500 MB and causes gitlab's redis to OOM.
-#
-# call_grcov cobertura coverage.xml
+# However, guard it for not being over 10 MB in size; we had a case before where it was over
+# 500 MB and that OOM'd gitlab's redis.
+
+call_grcov cobertura coverage.xml
+size=`wc -c < coverage.xml`
+if [ $size -ge 10485760 ]
+then
+    rm coverage.xml
+    echo "coverage.xml is over 10 MB, removing it so it will not be used"
+fi
 
 # Print "Coverage: 42.42" so .gitlab-ci.yml will pick it up with a regex
 #
