@@ -316,13 +316,12 @@ impl Document {
         let config = options.to_rendering_configuration(false);
 
         with_saved_cr(cr, || {
-            draw_tree(
-                session.clone(),
+            self.draw_tree(
+                session,
                 DrawingMode::LimitToStack { node, root },
                 cr,
                 viewport,
                 config,
-                &mut AcquiredNodes::new(self, options.cancellable.clone()),
             )
             .map(|_bbox| ())
         })
@@ -342,13 +341,12 @@ impl Document {
 
         let config = options.to_rendering_configuration(true);
 
-        let bbox = draw_tree(
-            session.clone(),
+        let bbox = self.draw_tree(
+            session,
             DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
             config,
-            &mut AcquiredNodes::new(self, options.cancellable.clone()),
         )?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
@@ -387,13 +385,12 @@ impl Document {
 
         let config = options.to_rendering_configuration(true);
 
-        draw_tree(
-            session.clone(),
+        self.draw_tree(
+            session,
             DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
             config,
-            &mut AcquiredNodes::new(self, options.cancellable.clone()),
         )
     }
 
@@ -453,16 +450,37 @@ impl Document {
 
             let config = options.to_rendering_configuration(false);
 
-            draw_tree(
-                session.clone(),
+            self.draw_tree(
+                session,
                 DrawingMode::OnlyNode(node),
                 cr,
                 unit_rectangle(),
                 config,
-                &mut AcquiredNodes::new(self, options.cancellable.clone()),
             )
             .map(|_bbox| ())
         })
+    }
+
+    /// Wrapper for [`drawing_ctx::draw_tree`].  This just ensures that the document
+    /// is cascaded before rendering.
+    fn draw_tree(
+        &self,
+        session: &Session,
+        drawing_mode: DrawingMode,
+        cr: &cairo::Context,
+        viewport_rect: Rect,
+        config: RenderingConfiguration,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        let cancellable = config.cancellable.clone();
+
+        draw_tree(
+            session.clone(),
+            drawing_mode,
+            cr,
+            viewport_rect,
+            config,
+            &mut AcquiredNodes::new(self, cancellable),
+        )
     }
 }
 
