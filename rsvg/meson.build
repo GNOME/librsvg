@@ -170,6 +170,8 @@ version_script = meson.current_build_dir() / '@0@.def'.format(librsvg_pc)
 
 if host_system in ['darwin', 'ios']
   vflag = '-Wl,-exported_symbols_list,@0@'.format(version_script)
+elif host_system in ['windows', 'cygwin']
+  vflag = []
 else
   vflag = '-Wl,--version-script,@0@'.format(version_script)
 endif
@@ -192,7 +194,9 @@ strip_link_args = cc.get_supported_link_arguments(
   '-Wl,-Bsymbolic-functions',
 )
 
-link_args = cc.get_supported_link_arguments([vflag]) + strip_link_args
+# The symbol list argument cannot be tested, as the dummy
+# executable Meson uses will lack the necessary functions.
+link_args = strip_link_args + vflag
 
 # Some systems, reportedly OpenBSD and macOS, refuse
 # to create libraries without any object files. Compiling
