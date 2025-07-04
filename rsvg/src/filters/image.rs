@@ -272,12 +272,7 @@ impl Image {
 
             let options = draw_ctx.rendering_options(SvgNesting::ReferencedFromImageElement);
 
-            document.render_document(
-                ctx.session(),
-                &cr,
-                &cairo::Rectangle::from(surface_dest_rect),
-                &options,
-            )?;
+            document.render_document(&cr, &cairo::Rectangle::from(surface_dest_rect), &options)?;
         }
 
         // Now paste that image as a normal raster image

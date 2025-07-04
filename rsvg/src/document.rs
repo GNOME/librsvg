@@ -3,6 +3,7 @@
 use data_url::mime::Mime;
 use glib::prelude::*;
 use markup5ever::QualName;
+use std::cell::Cell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt;
@@ -155,7 +156,10 @@ impl RenderingOptions {
 /// A loaded SVG file and its derived data.
 pub struct Document {
     /// Tree of nodes; the root is guaranteed to be an `<svg>` element.
-    tree: Node,
+    ///
+    /// This is inside a [`RefCell`] because when cascading lazily, we
+    /// need a mutable tree.
+    tree: RefCell<Node>,
 
     /// Metadata about the SVG handle.
     session: Session,
@@ -175,10 +179,21 @@ pub struct Document {
 
     /// Stylesheets defined in the document.
     stylesheets: Vec<Stylesheet>,
+
+    /// Whether there's a pending cascade operation.
+    ///
+    /// The document starts un-cascaded and with this flag turned on,
+    /// to avoid a double cascade if
+    /// [`crate::SvgHandle::set_stylesheet`] is called after loading
+    /// the document.
+    needs_cascade: Cell<bool>,
 }
 
 impl Document {
     /// Constructs a `Document` by loading it from a stream.
+    ///
+    /// Note that the document is **not** cascaded just after loading.  Cascading is done lazily;
+    /// call [`Document::ensure_is_cascaded`] if you need a cascaded tree of elements.
     pub fn load_from_stream(
         session: Session,
         load_options: Arc<LoadOptions>,
@@ -200,18 +215,24 @@ impl Document {
         let bytes = glib::Bytes::from_static(input);
         let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
-        Document::load_from_stream(
-            Session::new_for_test_suite(),
+        let session = Session::new_for_test_suite();
+
+        let document = Document::load_from_stream(
+            session.clone(),
             Arc::new(LoadOptions::new(UrlResolver::new(None))),
             &stream.upcast(),
             None::<&gio::Cancellable>,
         )
-        .unwrap()
+        .unwrap();
+
+        document.ensure_is_cascaded();
+
+        document
     }
 
     /// Gets the root node.  This is guaranteed to be an `<svg>` element.
     pub fn root(&self) -> Node {
-        self.tree.clone()
+        self.tree.borrow().clone()
     }
 
     /// Looks up a node in this document or one of its resources by its `id` attribute.
@@ -259,7 +280,9 @@ impl Document {
     ///
     /// This uses the default UserAgent stylesheet, the document's internal stylesheets,
     /// plus an extra set of stylesheets supplied by the caller.
-    pub fn cascade(&mut self, extra: &[Stylesheet], session: &Session) {
+    pub fn cascade(&self, extra: &[Stylesheet]) {
+        self.needs_cascade.set(false);
+
         let stylesheets = {
             static UA_STYLESHEETS: OnceLock<Vec<Stylesheet>> = OnceLock::new();
             UA_STYLESHEETS.get_or_init(|| {
@@ -273,15 +296,17 @@ impl Document {
             })
         };
         css::cascade(
-            &mut self.tree,
+            &mut self.tree.borrow_mut(),
             stylesheets,
             &self.stylesheets,
             extra,
-            session,
+            &self.session,
         );
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        self.ensure_is_cascaded();
+
         let root = self.root();
         let cascaded = CascadedValues::new_from_node(&root);
         let values = cascaded.get();
@@ -290,18 +315,16 @@ impl Document {
 
     pub fn render_document(
         &self,
-        session: &Session,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
         options: &RenderingOptions,
     ) -> Result<(), InternalRenderingError> {
         let root = self.root();
-        self.render_layer(session, cr, root, viewport, options)
+        self.render_layer(cr, root, viewport, options)
     }
 
     pub fn render_layer(
         &self,
-        session: &Session,
         cr: &cairo::Context,
         node: Node,
         viewport: &cairo::Rectangle,
@@ -316,13 +339,11 @@ impl Document {
         let config = options.to_rendering_configuration(false);
 
         with_saved_cr(cr, || {
-            draw_tree(
-                session.clone(),
+            self.draw_tree(
                 DrawingMode::LimitToStack { node, root },
                 cr,
                 viewport,
                 config,
-                &mut AcquiredNodes::new(self, options.cancellable.clone()),
             )
             .map(|_bbox| ())
         })
@@ -330,7 +351,6 @@ impl Document {
 
     fn geometry_for_layer(
         &self,
-        session: &Session,
         node: Node,
         viewport: Rect,
         options: &RenderingOptions,
@@ -342,13 +362,11 @@ impl Document {
 
         let config = options.to_rendering_configuration(true);
 
-        let bbox = draw_tree(
-            session.clone(),
+        let bbox = self.draw_tree(
             DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
             config,
-            &mut AcquiredNodes::new(self, options.cancellable.clone()),
         )?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
@@ -359,14 +377,13 @@ impl Document {
 
     pub fn get_geometry_for_layer(
         &self,
-        session: &Session,
         node: Node,
         viewport: &cairo::Rectangle,
         options: &RenderingOptions,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
         let viewport = Rect::from(*viewport);
 
-        let (ink_rect, logical_rect) = self.geometry_for_layer(session, node, viewport, options)?;
+        let (ink_rect, logical_rect) = self.geometry_for_layer(node, viewport, options)?;
 
         Ok((
             cairo::Rectangle::from(ink_rect),
@@ -376,7 +393,6 @@ impl Document {
 
     fn get_bbox_for_element(
         &self,
-        session: &Session,
         node: &Node,
         options: &RenderingOptions,
     ) -> Result<BoundingBox, InternalRenderingError> {
@@ -387,24 +403,16 @@ impl Document {
 
         let config = options.to_rendering_configuration(true);
 
-        draw_tree(
-            session.clone(),
-            DrawingMode::OnlyNode(node),
-            &cr,
-            unit_rectangle(),
-            config,
-            &mut AcquiredNodes::new(self, options.cancellable.clone()),
-        )
+        self.draw_tree(DrawingMode::OnlyNode(node), &cr, unit_rectangle(), config)
     }
 
     /// Returns (ink_rect, logical_rect)
     pub fn get_geometry_for_element(
         &self,
-        session: &Session,
         node: Node,
         options: &RenderingOptions,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
-        let bbox = self.get_bbox_for_element(session, &node, options)?;
+        let bbox = self.get_bbox_for_element(&node, options)?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
         let logical_rect = bbox.rect.unwrap_or_default();
@@ -420,7 +428,6 @@ impl Document {
 
     pub fn render_element(
         &self,
-        session: &Session,
         cr: &cairo::Context,
         node: Node,
         element_viewport: &cairo::Rectangle,
@@ -428,7 +435,7 @@ impl Document {
     ) -> Result<(), InternalRenderingError> {
         cr.status()?;
 
-        let bbox = self.get_bbox_for_element(session, &node, options)?;
+        let bbox = self.get_bbox_for_element(&node, options)?;
 
         if bbox.ink_rect.is_none() || bbox.rect.is_none() {
             // Nothing to draw
@@ -453,16 +460,38 @@ impl Document {
 
             let config = options.to_rendering_configuration(false);
 
-            draw_tree(
-                session.clone(),
-                DrawingMode::OnlyNode(node),
-                cr,
-                unit_rectangle(),
-                config,
-                &mut AcquiredNodes::new(self, options.cancellable.clone()),
-            )
-            .map(|_bbox| ())
+            self.draw_tree(DrawingMode::OnlyNode(node), cr, unit_rectangle(), config)
+                .map(|_bbox| ())
         })
+    }
+
+    /// Wrapper for [`drawing_ctx::draw_tree`].  This just ensures that the document
+    /// is cascaded before rendering.
+    fn draw_tree(
+        &self,
+        drawing_mode: DrawingMode,
+        cr: &cairo::Context,
+        viewport_rect: Rect,
+        config: RenderingConfiguration,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        self.ensure_is_cascaded();
+
+        let cancellable = config.cancellable.clone();
+
+        draw_tree(
+            self.session.clone(),
+            drawing_mode,
+            cr,
+            viewport_rect,
+            config,
+            &mut AcquiredNodes::new(self, cancellable),
+        )
+    }
+
+    fn ensure_is_cascaded(&self) {
+        if self.needs_cascade.get() {
+            self.cascade(&[]);
+        }
     }
 }
 
@@ -582,6 +611,8 @@ fn load_svg_resource_from_bytes(
         &stream.upcast(),
         cancellable,
     )?;
+
+    document.ensure_is_cascaded();
 
     Ok(Resource::Document(Rc::new(document)))
 }
@@ -968,16 +999,15 @@ impl DocumentBuilder {
         match tree {
             Some(root) if root.is_element() => {
                 if is_element_of_type!(root, Svg) {
-                    let mut document = Document {
-                        tree: root,
+                    let document = Document {
+                        tree: RefCell::new(root),
                         session: session.clone(),
                         ids,
                         resources: RefCell::new(Resources::new()),
                         load_options,
                         stylesheets,
+                        needs_cascade: Cell::new(true),
                     };
-
-                    document.cascade(&[], &session);
 
                     Ok(document)
                 } else {

@@ -65,7 +65,7 @@ make_property!(
     ///
     /// SVG2: <https://www.w3.org/TR/SVG2/text.html#BaselineShiftProperty>
     BaselineShift,
-    default: Length::<Both>::parse_str("0.0").unwrap(),
+    default: Length::<Both>::default(),
     newtype: Length<Both>,
     property_impl: {
         impl Property for BaselineShift {
@@ -190,7 +190,7 @@ make_property!(
     ///
     /// Note that in SVG1.1, this was an attribute, not a property.
     CX,
-    default: Length::<Horizontal>::parse_str("0").unwrap(),
+    default: Length::<Horizontal>::default(),
     inherits_automatically: false,
     newtype_parse: Length<Horizontal>,
 );
@@ -202,7 +202,7 @@ make_property!(
     ///
     /// Note that in SVG1.1, this was an attribute, not a property.
     CY,
-    default: Length::<Vertical>::parse_str("0").unwrap(),
+    default: Length::<Vertical>::default(),
     inherits_automatically: false,
     newtype_parse: Length<Vertical>,
 );
@@ -354,7 +354,9 @@ make_property!(
     ///
     /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#FillProperty>
     Fill,
-    default: PaintServer::parse_str("#000").unwrap(),
+    default: PaintServer::SolidColor(cssparser::Color::Rgba(
+        cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))
+    )),
     inherits_automatically: true,
     newtype_parse: PaintServer,
 );
@@ -462,7 +464,7 @@ make_property!(
 make_property!(
     // docs are in font_props.rs
     FontSize,
-    default: FontSize::Value(Length::<Both>::parse_str("12.0").unwrap()),
+    default: FontSize::Value(Length::<Both>::new(12.0, LengthUnit::Px)),
     property_impl: {
         impl Property for FontSize {
             fn inherits_automatically() -> bool {
@@ -872,7 +874,7 @@ make_property!(
     ///
     /// Note that in SVG1.1, this was an attribute, not a property.
     R,
-    default: ULength::<Both>::parse_str("0").unwrap(),
+    default: ULength::<Both>::default(),
     inherits_automatically: false,
     newtype_parse: ULength<Both>,
 );
@@ -1019,7 +1021,7 @@ make_property!(
     ///
     /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#StrokeWidth>
     StrokeWidth,
-    default: Length::<Both>::parse_str("1.0").unwrap(),
+    default: Length::<Both>::new(1.0, LengthUnit::Px),
     inherits_automatically: true,
     newtype_parse: Length::<Both>,
 );
@@ -1307,7 +1309,7 @@ make_property!(
     ///
     /// Note that in SVG1.1, this was an attribute, not a property.
     X,
-    default: Length::<Horizontal>::parse_str("0").unwrap(),
+    default: Length::<Horizontal>::default(),
     inherits_automatically: false,
     newtype_parse: Length<Horizontal>,
 );
@@ -1377,7 +1379,7 @@ make_property!(
     ///
     /// Note that in SVG1.1, this was an attribute, not a property.
     Y,
-    default: Length::<Vertical>::parse_str("0").unwrap(),
+    default: Length::<Vertical>::default(),
     inherits_automatically: false,
     newtype_parse: Length<Vertical>,
 );
