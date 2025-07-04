@@ -362,7 +362,7 @@ impl SvgHandle {
             Origin::User,
             self.session.clone(),
         )?;
-        self.document.cascade(&[stylesheet], &self.session);
+        self.document.cascade(&[stylesheet]);
         Ok(())
     }
 }

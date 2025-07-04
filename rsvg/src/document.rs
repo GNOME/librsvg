@@ -3,6 +3,7 @@
 use data_url::mime::Mime;
 use glib::prelude::*;
 use markup5ever::QualName;
+use std::cell::Cell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt;
@@ -178,10 +179,21 @@ pub struct Document {
 
     /// Stylesheets defined in the document.
     stylesheets: Vec<Stylesheet>,
+
+    /// Whether there's a pending cascade operation.
+    ///
+    /// The document starts un-cascaded and with this flag turned on,
+    /// to avoid a double cascade if
+    /// [`crate::SvgHandle::set_stylesheet`] is called after loading
+    /// the document.
+    needs_cascade: Cell<bool>,
 }
 
 impl Document {
     /// Constructs a `Document` by loading it from a stream.
+    ///
+    /// Note that the document is **not** cascaded just after loading.  Cascading is done lazily;
+    /// call [`Document::ensure_is_cascaded`] if you need a cascaded tree of elements.
     pub fn load_from_stream(
         session: Session,
         load_options: Arc<LoadOptions>,
@@ -203,13 +215,19 @@ impl Document {
         let bytes = glib::Bytes::from_static(input);
         let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
-        Document::load_from_stream(
-            Session::new_for_test_suite(),
+        let session = Session::new_for_test_suite();
+
+        let document = Document::load_from_stream(
+            session.clone(),
             Arc::new(LoadOptions::new(UrlResolver::new(None))),
             &stream.upcast(),
             None::<&gio::Cancellable>,
         )
-        .unwrap()
+            .unwrap();
+
+        document.ensure_is_cascaded();
+
+        document
     }
 
     /// Gets the root node.  This is guaranteed to be an `<svg>` element.
@@ -262,7 +280,9 @@ impl Document {
     ///
     /// This uses the default UserAgent stylesheet, the document's internal stylesheets,
     /// plus an extra set of stylesheets supplied by the caller.
-    pub fn cascade(&self, extra: &[Stylesheet], session: &Session) {
+    pub fn cascade(&self, extra: &[Stylesheet]) {
+        self.needs_cascade.set(false);
+
         let stylesheets = {
             static UA_STYLESHEETS: OnceLock<Vec<Stylesheet>> = OnceLock::new();
             UA_STYLESHEETS.get_or_init(|| {
@@ -280,11 +300,13 @@ impl Document {
             stylesheets,
             &self.stylesheets,
             extra,
-            session,
+            &self.session,
         );
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        self.ensure_is_cascaded();
+
         let root = self.root();
         let cascaded = CascadedValues::new_from_node(&root);
         let values = cascaded.get();
@@ -320,7 +342,6 @@ impl Document {
 
         with_saved_cr(cr, || {
             self.draw_tree(
-                session,
                 DrawingMode::LimitToStack { node, root },
                 cr,
                 viewport,
@@ -345,7 +366,6 @@ impl Document {
         let config = options.to_rendering_configuration(true);
 
         let bbox = self.draw_tree(
-            session,
             DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
@@ -389,7 +409,6 @@ impl Document {
         let config = options.to_rendering_configuration(true);
 
         self.draw_tree(
-            session,
             DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
@@ -454,7 +473,6 @@ impl Document {
             let config = options.to_rendering_configuration(false);
 
             self.draw_tree(
-                session,
                 DrawingMode::OnlyNode(node),
                 cr,
                 unit_rectangle(),
@@ -468,22 +486,29 @@ impl Document {
     /// is cascaded before rendering.
     fn draw_tree(
         &self,
-        session: &Session,
         drawing_mode: DrawingMode,
         cr: &cairo::Context,
         viewport_rect: Rect,
         config: RenderingConfiguration,
     ) -> Result<BoundingBox, InternalRenderingError> {
+        self.ensure_is_cascaded();
+
         let cancellable = config.cancellable.clone();
 
         draw_tree(
-            session.clone(),
+            self.session.clone(),
             drawing_mode,
             cr,
             viewport_rect,
             config,
             &mut AcquiredNodes::new(self, cancellable),
         )
+    }
+
+    fn ensure_is_cascaded(&self) {
+        if self.needs_cascade.get() {
+            self.cascade(&[]);
+        }
     }
 }
 
@@ -603,6 +628,8 @@ fn load_svg_resource_from_bytes(
         &stream.upcast(),
         cancellable,
     )?;
+
+    document.ensure_is_cascaded();
 
     Ok(Resource::Document(Rc::new(document)))
 }
@@ -996,9 +1023,8 @@ impl DocumentBuilder {
                         resources: RefCell::new(Resources::new()),
                         load_options,
                         stylesheets,
+                        needs_cascade: Cell::new(true),
                     };
-
-                    document.cascade(&[], &session);
 
                     Ok(document)
                 } else {
