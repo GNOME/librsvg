@@ -262,7 +262,7 @@ impl Document {
     ///
     /// This uses the default UserAgent stylesheet, the document's internal stylesheets,
     /// plus an extra set of stylesheets supplied by the caller.
-    pub fn cascade(&mut self, extra: &[Stylesheet], session: &Session) {
+    pub fn cascade(&self, extra: &[Stylesheet], session: &Session) {
         let stylesheets = {
             static UA_STYLESHEETS: OnceLock<Vec<Stylesheet>> = OnceLock::new();
             UA_STYLESHEETS.get_or_init(|| {
@@ -989,7 +989,7 @@ impl DocumentBuilder {
         match tree {
             Some(root) if root.is_element() => {
                 if is_element_of_type!(root, Svg) {
-                    let mut document = Document {
+                    let document = Document {
                         tree: RefCell::new(root),
                         session: session.clone(),
                         ids,
