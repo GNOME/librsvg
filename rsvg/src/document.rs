@@ -223,7 +223,7 @@ impl Document {
             &stream.upcast(),
             None::<&gio::Cancellable>,
         )
-            .unwrap();
+        .unwrap();
 
         document.ensure_is_cascaded();
 
@@ -315,18 +315,16 @@ impl Document {
 
     pub fn render_document(
         &self,
-        session: &Session,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
         options: &RenderingOptions,
     ) -> Result<(), InternalRenderingError> {
         let root = self.root();
-        self.render_layer(session, cr, root, viewport, options)
+        self.render_layer(cr, root, viewport, options)
     }
 
     pub fn render_layer(
         &self,
-        session: &Session,
         cr: &cairo::Context,
         node: Node,
         viewport: &cairo::Rectangle,
@@ -353,7 +351,6 @@ impl Document {
 
     fn geometry_for_layer(
         &self,
-        session: &Session,
         node: Node,
         viewport: Rect,
         options: &RenderingOptions,
@@ -380,14 +377,13 @@ impl Document {
 
     pub fn get_geometry_for_layer(
         &self,
-        session: &Session,
         node: Node,
         viewport: &cairo::Rectangle,
         options: &RenderingOptions,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
         let viewport = Rect::from(*viewport);
 
-        let (ink_rect, logical_rect) = self.geometry_for_layer(session, node, viewport, options)?;
+        let (ink_rect, logical_rect) = self.geometry_for_layer(node, viewport, options)?;
 
         Ok((
             cairo::Rectangle::from(ink_rect),
@@ -397,7 +393,6 @@ impl Document {
 
     fn get_bbox_for_element(
         &self,
-        session: &Session,
         node: &Node,
         options: &RenderingOptions,
     ) -> Result<BoundingBox, InternalRenderingError> {
@@ -408,22 +403,16 @@ impl Document {
 
         let config = options.to_rendering_configuration(true);
 
-        self.draw_tree(
-            DrawingMode::OnlyNode(node),
-            &cr,
-            unit_rectangle(),
-            config,
-        )
+        self.draw_tree(DrawingMode::OnlyNode(node), &cr, unit_rectangle(), config)
     }
 
     /// Returns (ink_rect, logical_rect)
     pub fn get_geometry_for_element(
         &self,
-        session: &Session,
         node: Node,
         options: &RenderingOptions,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
-        let bbox = self.get_bbox_for_element(session, &node, options)?;
+        let bbox = self.get_bbox_for_element(&node, options)?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
         let logical_rect = bbox.rect.unwrap_or_default();
@@ -439,7 +428,6 @@ impl Document {
 
     pub fn render_element(
         &self,
-        session: &Session,
         cr: &cairo::Context,
         node: Node,
         element_viewport: &cairo::Rectangle,
@@ -447,7 +435,7 @@ impl Document {
     ) -> Result<(), InternalRenderingError> {
         cr.status()?;
 
-        let bbox = self.get_bbox_for_element(session, &node, options)?;
+        let bbox = self.get_bbox_for_element(&node, options)?;
 
         if bbox.ink_rect.is_none() || bbox.rect.is_none() {
             // Nothing to draw
@@ -472,13 +460,8 @@ impl Document {
 
             let config = options.to_rendering_configuration(false);
 
-            self.draw_tree(
-                DrawingMode::OnlyNode(node),
-                cr,
-                unit_rectangle(),
-                config,
-            )
-            .map(|_bbox| ())
+            self.draw_tree(DrawingMode::OnlyNode(node), cr, unit_rectangle(), config)
+                .map(|_bbox| ())
         })
     }
 
