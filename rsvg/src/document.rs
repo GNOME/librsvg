@@ -155,7 +155,10 @@ impl RenderingOptions {
 /// A loaded SVG file and its derived data.
 pub struct Document {
     /// Tree of nodes; the root is guaranteed to be an `<svg>` element.
-    tree: Node,
+    ///
+    /// This is inside a [`RefCell`] because when cascading lazily, we
+    /// need a mutable tree.
+    tree: RefCell<Node>,
 
     /// Metadata about the SVG handle.
     session: Session,
@@ -211,7 +214,7 @@ impl Document {
 
     /// Gets the root node.  This is guaranteed to be an `<svg>` element.
     pub fn root(&self) -> Node {
-        self.tree.clone()
+        self.tree.borrow().clone()
     }
 
     /// Looks up a node in this document or one of its resources by its `id` attribute.
@@ -273,7 +276,7 @@ impl Document {
             })
         };
         css::cascade(
-            &mut self.tree,
+            &mut self.tree.borrow_mut(),
             stylesheets,
             &self.stylesheets,
             extra,
@@ -987,7 +990,7 @@ impl DocumentBuilder {
             Some(root) if root.is_element() => {
                 if is_element_of_type!(root, Svg) {
                     let mut document = Document {
-                        tree: root,
+                        tree: RefCell::new(root),
                         session: session.clone(),
                         ids,
                         resources: RefCell::new(Resources::new()),
