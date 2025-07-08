@@ -25,16 +25,12 @@ use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
-use crate::transform::{Transform, ValidTransform};
 use crate::xml::Attributes;
 
 /// The state of a text layout operation.
 struct LayoutContext {
     /// `writing-mode` property from the `<text>` element.
     writing_mode: WritingMode,
-
-    /// Current transform in the DrawingCtx.
-    transform: ValidTransform,
 
     /// Font options from the DrawingCtx.
     font_options: FontOptions,
@@ -116,7 +112,7 @@ struct PositionedSpan {
 struct LayoutSpan {
     layout: pango::Layout,
     gravity: pango::Gravity,
-    bbox: Option<BoundingBox>,
+    extents: Option<Rect>,
     is_visible: bool,
     x: f64,
     y: f64,
@@ -476,9 +472,8 @@ fn compute_text_box(
     layout: &pango::Layout,
     x: f64,
     y: f64,
-    transform: Transform,
     gravity: pango::Gravity,
-) -> Option<BoundingBox> {
+) -> Option<Rect> {
     #![allow(clippy::many_single_char_names)]
 
     let (ink, _) = layout.extents();
@@ -508,13 +503,7 @@ fn compute_text_box(
         )
     };
 
-    let r = Rect::new(x, y, x + w, y + h);
-    let bbox = BoundingBox::new()
-        .with_transform(transform)
-        .with_rect(r)
-        .with_ink_rect(r);
-
-    Some(bbox)
+    Some(Rect::new(x, y, x + w, y + h))
 }
 
 impl PositionedSpan {
@@ -533,7 +522,7 @@ impl PositionedSpan {
 
         let gravity = layout.context().gravity();
 
-        let bbox = compute_text_box(&layout, x, y, *layout_context.transform, gravity);
+        let extents = compute_text_box(&layout, x, y, gravity);
 
         let stroke_paint = self.values.stroke().0.resolve(
             acquired_nodes,
@@ -559,7 +548,7 @@ impl PositionedSpan {
         LayoutSpan {
             layout,
             gravity,
-            bbox,
+            extents,
             is_visible,
             x,
             y,
@@ -886,11 +875,8 @@ impl ElementTrait for Text {
         );
 
         let layout_text = {
-            let transform = ValidTransform::try_from(Transform::identity()).unwrap();
-
             let layout_context = LayoutContext {
                 writing_mode: values.writing_mode(),
-                transform,
                 font_options: draw_ctx.get_font_options(),
                 viewport: *viewport,
                 session: session.clone(),
@@ -927,27 +913,28 @@ impl ElementTrait for Text {
                 }
             }
 
-            let empty_bbox = BoundingBox::new().with_transform(*transform);
-
-            let text_bbox = layout_spans.iter().fold(empty_bbox, |mut bbox, span| {
-                if let Some(ref span_bbox) = span.bbox {
-                    bbox.insert(span_bbox);
-                }
-
-                bbox
-            });
+            let text_extents: Option<Rect> = layout_spans
+                .iter()
+                .map(|span| span.extents)
+                .reduce(|a, b| match (a, b) {
+                    (None, None) => None,
+                    (None, Some(b)) => Some(b),
+                    (Some(a), None) => Some(a),
+                    (Some(a), Some(b)) => Some(a.union(&b)),
+                })
+                .flatten();
 
             let mut text_spans = Vec::new();
             for span in layout_spans {
                 let normalize_values = NormalizeValues::new(&span.values);
 
                 let stroke_paint = span.stroke_paint.to_user_space(
-                    &text_bbox.rect,
+                    &text_extents,
                     &layout_context.viewport,
                     &normalize_values,
                 );
                 let fill_paint = span.fill_paint.to_user_space(
-                    &text_bbox.rect,
+                    &text_extents,
                     &layout_context.viewport,
                     &normalize_values,
                 );
@@ -955,7 +942,7 @@ impl ElementTrait for Text {
                 let text_span = TextSpan {
                     layout: span.layout,
                     gravity: span.gravity,
-                    bbox: span.bbox,
+                    extents: span.extents,
                     is_visible: span.is_visible,
                     x: span.x,
                     y: span.y,
@@ -970,7 +957,10 @@ impl ElementTrait for Text {
                 text_spans.push(text_span);
             }
 
-            layout::Text { spans: text_spans }
+            layout::Text {
+                spans: text_spans,
+                extents: text_extents,
+            }
         };
 
         Ok(Some(Layer {
@@ -1328,8 +1318,7 @@ fn create_pango_layout(
     props: &FontProperties,
     text: &str,
 ) -> Option<pango::Layout> {
-    let pango_context =
-        create_pango_context(&layout_context.font_options, &layout_context.transform);
+    let pango_context = create_pango_context(&layout_context.font_options);
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(Some(&pango::Language::from_string(lang.as_str())));

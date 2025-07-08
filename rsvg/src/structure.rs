@@ -11,7 +11,7 @@ use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
-use crate::layout::{LayoutViewport, StackingContext};
+use crate::layout::{self, Layer, LayerKind, LayoutViewport, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -56,6 +56,94 @@ impl ElementTrait for Group {
                 node.draw_children(an, cascaded, new_viewport, dc, clipping)
             },
         )
+    }
+
+    fn layout(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<Option<Layer>, InternalRenderingError> {
+        let mut child_layers = Vec::new();
+
+        for child in node.children().filter(|c| c.is_element()) {
+            let elt = child.borrow_element();
+
+            let layer = elt.layout(
+                &child,
+                acquired_nodes,
+                &CascadedValues::clone_with_node(cascaded, &child),
+                viewport,
+                draw_ctx,
+                clipping,
+            )?;
+
+            if let Some(layer) = layer {
+                child_layers.push(layer);
+            }
+        }
+
+        self.layout_with_children(
+            draw_ctx.session(),
+            node,
+            acquired_nodes,
+            cascaded,
+            child_layers,
+        )
+    }
+}
+
+fn extents_of_transformed_children(layers: &[Layer]) -> Option<Rect> {
+    let mut result_bbox = BoundingBox::new();
+
+    for layer in layers {
+        if let Some(extents) = layer.kind.local_extents() {
+            let bbox = BoundingBox::new()
+                .with_transform(layer.stacking_ctx.transform)
+                .with_rect(extents);
+            result_bbox.insert(&bbox);
+        }
+    }
+
+    result_bbox.rect
+}
+
+impl Group {
+    fn layout_with_children(
+        &self,
+        session: &Session,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        child_layers: Vec<Layer>,
+    ) -> Result<Option<Layer>, InternalRenderingError> {
+        let values = cascaded.get();
+
+        let extents = extents_of_transformed_children(&child_layers);
+
+        let group = Box::new(layout::Group {
+            children: child_layers,
+            establish_viewport: None,
+            extents,
+        });
+
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(
+            session,
+            acquired_nodes,
+            &elt,
+            values.transform(),
+            None,
+            values,
+        );
+
+        Ok(Some(Layer {
+            kind: LayerKind::Group(group),
+            stacking_ctx,
+        }))
     }
 }
 
@@ -643,5 +731,78 @@ impl ElementTrait for Link {
                 node.draw_children(an, &cascaded, new_viewport, dc, clipping)
             },
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::accept_language::{LanguageTags, UserLanguage};
+    use crate::document::Document;
+    use crate::dpi::Dpi;
+    use crate::drawing_ctx::{RenderingConfiguration, SvgNesting};
+
+    #[test]
+    fn computes_group_extents() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <g id="a">
+    <g transform="translate(10, 10) scale(2, 3)">
+      <rect x="0" y="0" width="5" height="10"/>
+    </g>
+    <rect x="0" y="0" width="5" height="10" transform="scale(2) translate(-10, -20)"/>
+  </g>
+</svg>
+"#,
+        );
+
+        let a = document.lookup_internal_node("a").unwrap();
+
+        let elt = a.borrow_element();
+
+        let mut acquired_nodes = AcquiredNodes::new(&document, None);
+        let cascaded = CascadedValues::new_from_node(&a);
+
+        let dpi = Dpi::new(96.0, 96.0);
+
+        let viewport = Viewport::new(dpi.clone(), 100.0, 100.0);
+
+        let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None).unwrap();
+        let cr = cairo::Context::new(&surface).unwrap();
+
+        let config = RenderingConfiguration {
+            dpi,
+            cancellable: None,
+            user_language: UserLanguage::LanguageTags(LanguageTags::empty()),
+            svg_nesting: SvgNesting::Standalone,
+            measuring: false,
+            testing: true,
+        };
+
+        let mut draw_ctx = DrawingCtx::new(Session::default(), &cr, &viewport, config, Vec::new());
+
+        let layout = elt.layout(
+            &a,
+            &mut acquired_nodes,
+            &cascaded,
+            &viewport,
+            &mut draw_ctx,
+            false,
+        );
+
+        match layout {
+            Ok(Some(Layer {
+                kind: LayerKind::Group(ref group),
+                ..
+            })) => {
+                assert_eq!(group.extents, Some(Rect::new(-20.0, -40.0, 20.0, 40.0)));
+            }
+
+            Err(_) => panic!("layout should not produce an InternalRenderingError"),
+
+            _ => panic!("layout object is not a LayerKind::Group"),
+        }
     }
 }

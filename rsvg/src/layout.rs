@@ -8,7 +8,6 @@ use cssparser::Color;
 use float_cmp::approx_eq;
 
 use crate::aspect_ratio::AspectRatio;
-use crate::bbox::BoundingBox;
 use crate::cairo_path::CairoPath;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
@@ -69,6 +68,7 @@ pub struct Layer {
     pub kind: LayerKind,
     pub stacking_ctx: StackingContext,
 }
+
 pub enum LayerKind {
     Shape(Box<Shape>),
     Text(Box<Text>),
@@ -79,6 +79,7 @@ pub enum LayerKind {
 pub struct Group {
     pub children: Vec<Layer>,
     pub establish_viewport: Option<LayoutViewport>,
+    pub extents: Option<Rect>,
 }
 
 /// Used for elements that need to establish a new viewport, like `<svg>`.
@@ -151,7 +152,7 @@ pub struct Image {
 pub struct TextSpan {
     pub layout: pango::Layout,
     pub gravity: pango::Gravity,
-    pub bbox: Option<BoundingBox>,
+    pub extents: Option<Rect>,
     pub is_visible: bool,
     pub x: f64,
     pub y: f64,
@@ -166,6 +167,7 @@ pub struct TextSpan {
 /// Fully laid-out text in user-space coordinates.
 pub struct Text {
     pub spans: Vec<TextSpan>,
+    pub extents: Option<Rect>,
 }
 
 /// Font-related properties extracted from `ComputedValues`.
@@ -371,6 +373,23 @@ impl StackingContext {
                     && self.clip_in_object_space.is_none())
             }
             Isolation::Isolate => true,
+        }
+    }
+}
+
+impl LayerKind {
+    /// Gets the extents of a layer in its local coordinate system.
+    ///
+    /// Each object or layer is able to compute its own extents, in its local coordinate
+    /// system.  When the parent group layer wants to take the union of the extents of its
+    /// children, that parent group will need to convert the children's extents using each
+    /// child layer's transform.
+    pub fn local_extents(&self) -> Option<Rect> {
+        match *self {
+            LayerKind::Shape(ref shape) => shape.path.extents,
+            LayerKind::Text(ref text) => text.extents,
+            LayerKind::Image(ref image) => Some(image.rect),
+            LayerKind::Group(ref group) => group.extents,
         }
     }
 }
