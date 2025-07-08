@@ -913,15 +913,14 @@ impl ElementTrait for Text {
                 }
             }
 
-            let text_extents: Option<Rect> = layout_spans.iter()
+            let text_extents: Option<Rect> = layout_spans
+                .iter()
                 .map(|span| span.extents)
-                .reduce(|a, b| {
-                    match (a, b) {
-                        (None, None) => None,
-                        (None, Some(b)) => Some(b),
-                        (Some(a), None) => Some(a),
-                        (Some(a), Some(b)) => Some(a.union(&b)),
-                    }
+                .reduce(|a, b| match (a, b) {
+                    (None, None) => None,
+                    (None, Some(b)) => Some(b),
+                    (Some(a), None) => Some(a),
+                    (Some(a), Some(b)) => Some(a.union(&b)),
                 })
                 .flatten();
 

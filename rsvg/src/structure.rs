@@ -101,7 +101,9 @@ fn extents_of_transformed_children(layers: &[Layer]) -> Option<Rect> {
 
     for layer in layers {
         if let Some(extents) = layer.kind.local_extents() {
-            let bbox = BoundingBox::new().with_transform(layer.stacking_ctx.transform).with_rect(extents);
+            let bbox = BoundingBox::new()
+                .with_transform(layer.stacking_ctx.transform)
+                .with_rect(extents);
             result_bbox.insert(&bbox);
         }
     }
@@ -736,7 +738,7 @@ impl ElementTrait for Link {
 mod tests {
     use super::*;
 
-    use crate::accept_language::{UserLanguage, LanguageTags};
+    use crate::accept_language::{LanguageTags, UserLanguage};
     use crate::document::Document;
     use crate::dpi::Dpi;
     use crate::drawing_ctx::{RenderingConfiguration, SvgNesting};
@@ -779,13 +781,7 @@ mod tests {
             testing: true,
         };
 
-        let mut draw_ctx = DrawingCtx::new(
-            Session::default(),
-            &cr,
-            &viewport,
-            config,
-            Vec::new(),
-        );
+        let mut draw_ctx = DrawingCtx::new(Session::default(), &cr, &viewport, config, Vec::new());
 
         let layout = elt.layout(
             &a,
@@ -797,11 +793,11 @@ mod tests {
         );
 
         match layout {
-            Ok(Some(Layer { kind: LayerKind::Group(ref group), .. })) => {
-                assert_eq!(
-                    group.extents,
-                    Some(Rect::new(-20.0, -40.0, 20.0, 40.0))
-                );
+            Ok(Some(Layer {
+                kind: LayerKind::Group(ref group),
+                ..
+            })) => {
+                assert_eq!(group.extents, Some(Rect::new(-20.0, -40.0, 20.0, 40.0)));
             }
 
             Err(_) => panic!("layout should not produce an InternalRenderingError"),
