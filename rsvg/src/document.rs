@@ -506,6 +506,10 @@ pub enum Resource {
     Image(SharedImageSurface),
 }
 
+/// Set of external resources (other SVG documents, or raster images) referenced by an SVG.
+///
+/// For example, a PNG image in `<image href="foo.png"/>` gets decoded
+/// and stored here, referenced by its URL.
 struct Resources {
     resources: HashMap<AllowedUrl, Result<Resource, LoadingError>>,
 }
@@ -517,6 +521,12 @@ impl Resources {
         }
     }
 
+    /// Looks up a specific node by its id in another SVG document.
+    ///
+    /// For example, in `<use href="foo.svg#some_node"/>`, or in `filter="url(filters.svg#foo)"`.
+    ///
+    /// The URL is not validated yet; this function will take care of that and return a
+    /// suitable error.
     fn lookup_node(
         &mut self,
         session: &Session,
@@ -532,6 +542,10 @@ impl Resources {
             })
     }
 
+    /// Validates the URL and loads an SVG document as a [`Resource`].
+    ///
+    /// The document can then be used whole (`<image href="foo.svg"/>`, or individual
+    /// elements from it can be looked up (`<use href="foo.svg#some_node"/>`).
     fn get_extern_document(
         &mut self,
         session: &Session,
@@ -554,6 +568,7 @@ impl Resources {
         }
     }
 
+    /// Loads a resource (an SVG document or a raster image), or returns an already-loaded one.
     fn lookup_resource(
         &mut self,
         session: &Session,
@@ -573,6 +588,14 @@ impl Resources {
     }
 }
 
+/// Loads the entire contents of a URL, sniffs them, and decodes them as a [`Resource`]
+/// for an SVG or raster image.
+///
+/// Assumes that `gio`'s content-sniffing machinery is working correctly.  Anything that
+/// doesn't sniff like an SVG document will be decoded as a raster image.
+///
+/// This handles `data:` URLs correctly, by decoding them into binary data, and then
+/// sniffing it or using the declared MIME type in the `data:` URL itself.
 fn load_resource(
     session: &Session,
     load_options: &LoadOptions,
@@ -590,6 +613,7 @@ fn load_resource(
     }
 }
 
+/// Parses [`BinaryData`] that is known to be an SVG document, using librsvg itself.
 fn load_svg_resource_from_bytes(
     session: &Session,
     load_options: &LoadOptions,
@@ -617,6 +641,13 @@ fn load_svg_resource_from_bytes(
     Ok(Resource::Document(Rc::new(document)))
 }
 
+/// Decodes [`BinaryData`] that is presumed to be a raster image.
+///
+/// To know which decoder to use (or to even decide if this is a supported image format),
+/// this function uses the `mime_type` field in the [`BinaryData`].
+///
+/// The [`AllowdUrl`] is not used for decoding; it is just to construct an error message
+/// for the return value.
 fn load_image_resource_from_bytes(
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
@@ -636,6 +667,12 @@ fn load_image_resource_from_bytes(
     load_image_with_image_rs(aurl, bytes, content_type, load_options)
 }
 
+/// Decides whether the specified MIME type is supported as a raster image format.
+///
+/// Librsvg explicitly only supports PNG/JPEG/GIF/WEBP, and AVIF optionally.  See the
+/// documentation on [supported raster image formats][formats] for details.
+///
+/// [formats]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/features.html#supported-raster-image-formats
 fn image_format(content_type: &str) -> Result<image::ImageFormat, LoadingError> {
     match content_type {
         "image/png" => Ok(image::ImageFormat::Png),
@@ -700,6 +737,8 @@ fn content_type_for_image(mime_type: &Mime) -> Option<String> {
     }
 }
 
+/// Formats a URL for human consumption, as in error messages.  This is to
+/// reduce very long `data:` URLs to an abbreviated version.
 fn human_readable_url(aurl: &AllowedUrl) -> &str {
     if aurl.scheme() == "data" {
         // avoid printing a huge data: URL for image data
@@ -709,6 +748,8 @@ fn human_readable_url(aurl: &AllowedUrl) -> &str {
     }
 }
 
+/// Converts a `cairo::Error` that happened while wrapping a decoded raster image
+/// into a `LoadingError` augmented with the image's URL.
 fn image_loading_error_from_cairo(status: cairo::Error, aurl: &AllowedUrl) -> LoadingError {
     let url = human_readable_url(aurl);
 
