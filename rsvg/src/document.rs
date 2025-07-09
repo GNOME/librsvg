@@ -737,6 +737,8 @@ fn content_type_for_image(mime_type: &Mime) -> Option<String> {
     }
 }
 
+/// Formats a URL for human consumption, as in error messages.  This is to
+/// reduce very long `data:` URLs to an abbreviated version.
 fn human_readable_url(aurl: &AllowedUrl) -> &str {
     if aurl.scheme() == "data" {
         // avoid printing a huge data: URL for image data
@@ -746,6 +748,8 @@ fn human_readable_url(aurl: &AllowedUrl) -> &str {
     }
 }
 
+/// Converts a `cairo::Error` that happened while wrapping a decoded raster image
+/// into a `LoadingError` augmented with the image's URL.
 fn image_loading_error_from_cairo(status: cairo::Error, aurl: &AllowedUrl) -> LoadingError {
     let url = human_readable_url(aurl);
 
