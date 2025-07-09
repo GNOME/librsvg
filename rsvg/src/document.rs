@@ -521,6 +521,12 @@ impl Resources {
         }
     }
 
+    /// Looks up a specific node by its id in another SVG document.
+    ///
+    /// For example, in `<use href="foo.svg#some_node"/>`, or in `filter="url(filters.svg#foo)"`.
+    ///
+    /// The URL is not validated yet; this function will take care of that and return a
+    /// suitable error.
     fn lookup_node(
         &mut self,
         session: &Session,
@@ -536,6 +542,10 @@ impl Resources {
             })
     }
 
+    /// Validates the URL and loads an SVG document as a [`Resource`].
+    ///
+    /// The document can then be used whole (`<image href="foo.svg"/>`, or individual
+    /// elements from it can be looked up (`<use href="foo.svg#some_node"/>`).
     fn get_extern_document(
         &mut self,
         session: &Session,
@@ -558,6 +568,7 @@ impl Resources {
         }
     }
 
+    /// Loads a resource (an SVG document or a raster image), or returns an already-loaded one.
     fn lookup_resource(
         &mut self,
         session: &Session,
@@ -577,6 +588,14 @@ impl Resources {
     }
 }
 
+/// Loads the entire contents of a URL, sniffs them, and decodes them as a [`Resource`]
+/// for an SVG or raster image.
+///
+/// Assumes that `gio`'s content-sniffing machinery is working correctly.  Anything that
+/// doesn't sniff like an SVG document will be decoded as a raster image.
+///
+/// This handles `data:` URLs correctly, by decoding them into binary data, and then
+/// sniffing it or using the declared MIME type in the `data:` URL itself.
 fn load_resource(
     session: &Session,
     load_options: &LoadOptions,
