@@ -506,6 +506,10 @@ pub enum Resource {
     Image(SharedImageSurface),
 }
 
+/// Set of external resources (other SVG documents, or raster images) referenced by an SVG.
+///
+/// For example, a PNG image in `<image href="foo.png"/>` gets decoded
+/// and stored here, referenced by its URL.
 struct Resources {
     resources: HashMap<AllowedUrl, Result<Resource, LoadingError>>,
 }
