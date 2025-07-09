@@ -613,6 +613,7 @@ fn load_resource(
     }
 }
 
+/// Parses [`BinaryData`] that is known to be an SVG document, using librsvg itself.
 fn load_svg_resource_from_bytes(
     session: &Session,
     load_options: &LoadOptions,
@@ -640,6 +641,13 @@ fn load_svg_resource_from_bytes(
     Ok(Resource::Document(Rc::new(document)))
 }
 
+/// Decodes [`BinaryData`] that is presumed to be a raster image.
+///
+/// To know which decoder to use (or to even decide if this is a supported image format),
+/// this function uses the `mime_type` field in the [`BinaryData`].
+///
+/// The [`AllowdUrl`] is not used for decoding; it is just to construct an error message
+/// for the return value.
 fn load_image_resource_from_bytes(
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
@@ -659,6 +667,12 @@ fn load_image_resource_from_bytes(
     load_image_with_image_rs(aurl, bytes, content_type, load_options)
 }
 
+/// Decides whether the specified MIME type is supported as a raster image format.
+///
+/// Librsvg explicitly only supports PNG/JPEG/GIF/WEBP, and AVIF optionally.  See the
+/// documentation on [supported raster image formats][formats] for details.
+///
+/// [formats]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/features.html#supported-raster-image-formats
 fn image_format(content_type: &str) -> Result<image::ImageFormat, LoadingError> {
     match content_type {
         "image/png" => Ok(image::ImageFormat::Png),
