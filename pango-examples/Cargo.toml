@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-cairo-rs = { version = "0.20", features = ["v1_16", "png"] }
-pango = { version = "0.20", features = ["v1_54"] }
-pangocairo = "0.20"
+cairo-rs = { version = "0.21", features = ["v1_16", "png"] }
+pango = { version = "0.21", features = ["v1_54"] }
+pangocairo = "0.21"
 
 [build-dependencies]
 system-deps = "7.0.0"

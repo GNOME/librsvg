@@ -107,7 +107,7 @@ pub fn acquire_data(
         let file = GFile::for_uri(uri);
         let (contents, _etag) = file.load_contents(cancellable)?;
 
-        let (content_type, _uncertain) = gio::content_type_guess(Some(uri), &contents);
+        let (content_type, _uncertain) = gio::content_type_guess(Some(uri), &*contents);
 
         let mime_type = if let Some(mime_type_str) = gio::content_type_get_mime_type(&content_type)
         {
