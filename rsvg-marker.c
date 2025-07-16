@@ -40,6 +40,10 @@
 #include <math.h>
 #include <errno.h>
 
+#if defined (_MSC_VER) && (_MSC_VER < 1800)
+#define isnan(x) _isnan (x)
+#endif
+
 static void
 rsvg_node_marker_set_atts (RsvgNode * self, RsvgHandle * ctx, RsvgPropertyBag * atts)
 {
