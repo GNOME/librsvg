@@ -58,6 +58,8 @@ librsvg_includedir = join_paths(
   'librsvg'
 )
 
+pixbuf_loader_install_dir = join_paths(get_option('libdir'), 'gdk-pixbuf-2.0', '2.10.0', 'loaders')
+
 config = configuration_data()
 config.set('HAVE_PANGOFT2', pangoft2_dep.found())
 config.set('HAVE_STRINGS_H', cc.has_header('strings.h'))
@@ -189,6 +191,8 @@ librsvg_dep = declare_dependency(
     cairo_dep
   ]
 )
+
+subdir('gdk-pixbuf-loader')
 
 if get_option('tests').allowed()
   subdir('tests')
