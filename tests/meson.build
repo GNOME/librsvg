@@ -7,15 +7,6 @@ rsvg_tests = [
   { 'name': 'loading', 'sources': ['loading.c'] },
   { 'name': 'rsvg-test', 'sources': ['rsvg-test.c'] },
   { 'name': 'crash', 'sources': ['crash.c'] },
-  {
-    'name': 'styles',
-    'sources': ['styles.c'],
-    'dependencies': [
-      # needed due to rsvg-private.h include
-      libxml_dep.partial_dependency(compile_args: true, includes: true),
-      pangocairo_dep.partial_dependency(compile_args: true, includes: true)
-    ]
-  },
   { 'name': 'render-crash', 'sources': ['render-crash.c'] },
   { 'name': 'dimensions', 'sources': ['dimensions.c'] },
   {
@@ -25,6 +16,18 @@ rsvg_tests = [
     'timeout': 90
   },
 ]
+
+if get_option('c_std') not in ['c89']
+  rsvg_tests += {
+    'name': 'styles',
+    'sources': ['styles.c'],
+    'dependencies': [
+      # needed due to rsvg-private.h include
+      libxml_dep.partial_dependency(compile_args: true, includes: true),
+      pangocairo_dep.partial_dependency(compile_args: true, includes: true)
+    ]
+  }
+endif
 
 foreach decl : rsvg_tests
   test(
