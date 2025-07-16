@@ -11,6 +11,7 @@ if not ['shared', 'static'].contains(get_option('default_library'))
 endif
 
 gnome = import('gnome')
+pkg = import('pkgconfig')
 cc = meson.get_compiler('c')
 
 ver_split = meson.project_version().split('.')
@@ -229,3 +230,13 @@ if gtk3_dep.found()
     install: true
   )
 endif
+
+pkg.generate(rsvg_lib,
+  subdirs : ['librsvg-@0@'.format(librsvg_api_version)],
+  version : meson.project_version(),
+  install_dir : join_paths(get_option('libdir'), 'pkgconfig'),
+  filebase : 'librsvg-@0@'.format(librsvg_api_version),
+  variables: ['svgz_supported=true', 'css_supported=true'],
+  name : 'librsvg',
+  description : 'library that renders svg files',
+)
