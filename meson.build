@@ -106,6 +106,29 @@ librsvg_src = [
 
 enums = gnome.mkenums_simple('librsvg-enum-types', sources: librsvg_headers)
 
+librsvg_def_file = disabler() 
+if cc.get_argument_syntax() == 'msvc' and get_option('default_library') == 'shared'
+  # can't use the cc.preprocessor() for VS 2008 or earlier
+  if cc.version().split('.')[0].to_int() >= 16
+    librsvg_symbols = cc.preprocess('rsvg.symbols', output: 'rsvg.def.pre')
+  else
+    librsvg_symbols = custom_target(
+      'rsvg.def.pre',
+      capture: true,
+      input: 'rsvg.symbols',
+      output: 'rsvg.def.pre',
+      command: cc.cmd_array() + ['-EP', '@INPUT@']
+    )
+  endif
+  librsvg_def_file = custom_target(
+    'rsvg.def',
+    depends: librsvg_symbols,
+    input: librsvg_symbols,
+    output: 'rsvg.def',
+    command: ['format-symbols.py', '@INPUT@', '@OUTPUT@']
+  )
+endif
+
 rsvg_lib = library(rsvg_ver, librsvg_src, enums,
   c_args: [
     '-DRSVG_COMPILATION',
@@ -127,7 +150,8 @@ rsvg_lib = library(rsvg_ver, librsvg_src, enums,
     libm
   ],
   install: true,
-  soversion: ver_split[0]
+  soversion: ver_split[0],
+  vs_module_defs: librsvg_def_file,
 )
 
 librsvg_ld_args = []
