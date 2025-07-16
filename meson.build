@@ -52,6 +52,12 @@ croco_dep      = dependency('libcroco-0.6',
 
 libm           = cc.find_library('m', required: false)
 
+librsvg_includedir = join_paths(
+  get_option('includedir'),
+  'librsvg-@0@'.format(librsvg_api_version),
+  'librsvg'
+)
+
 config = configuration_data()
 config.set('HAVE_PANGOFT2', pangoft2_dep.found())
 config.set('HAVE_STRINGS_H', cc.has_header('strings.h'))
@@ -67,7 +73,9 @@ features.set('LIBRSVG_MICRO_VERSION', ver_split[2])
 features.set('PACKAGE_VERSION', meson.project_version())
 configure_file(input: 'librsvg-features.h.in',
                output: 'librsvg-features.h',
-               configuration: features)
+               configuration: features,
+               install: true,
+               install_dir: librsvg_includedir)
 
 librsvg_inc_priv = include_directories('librsvg')
 
@@ -75,6 +83,9 @@ librsvg_headers = [
   'librsvg/rsvg.h',
   'rsvg-cairo.h'
 ]
+
+install_headers(librsvg_headers,
+  install_dir : librsvg_includedir)
 
 librsvg_src = [
   'librsvg-features.c',
@@ -104,7 +115,12 @@ librsvg_src = [
   'rsvg-xml.c',
 ]
 
-enums = gnome.mkenums_simple('librsvg-enum-types', sources: librsvg_headers)
+enums = gnome.mkenums_simple(
+  'librsvg-enum-types',
+  sources: librsvg_headers,
+  install_header: true,
+  install_dir: librsvg_includedir
+)
 
 librsvg_def_file = disabler() 
 if cc.get_argument_syntax() == 'msvc' and get_option('default_library') == 'shared'
