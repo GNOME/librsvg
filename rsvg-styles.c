@@ -1538,9 +1538,18 @@ rsvg_parse_style_attrs (RsvgHandle * ctx,
 void
 rsvg_tree_apply_style (RsvgHandle * ctx)
 {
+    GPtrArray *stack;
+
     if (!ctx->priv->treebase)
         return;
-    GPtrArray *stack = g_ptr_array_new_from_array ((gpointer*)&ctx->priv->treebase, 1, NULL, NULL, NULL);
+
+#if GLIB_CHECK_VERSION (2, 76, 0)
+    stack = g_ptr_array_new_from_array ((gpointer*)&ctx->priv->treebase, 1, NULL, NULL, NULL);
+#else
+    stack = g_ptr_array_new ();
+    g_ptr_array_add (stack, (gpointer*)ctx->priv->treebase);
+#endif
+
     while (stack->len > 0) {
         RsvgNode *node = g_ptr_array_steal_index (stack, stack->len - 1);
         g_ptr_array_extend (stack, node->children, NULL, NULL);
