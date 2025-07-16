@@ -10,6 +10,7 @@ rsvg_handle_get_pixbuf
 rsvg_handle_get_pixbuf_sub
 rsvg_handle_get_type
 rsvg_handle_has_sub
+rsvg_handle_internal_set_testing
 rsvg_handle_new
 rsvg_handle_new_from_data
 rsvg_handle_new_from_file
@@ -50,3 +51,6 @@ rsvg_handle_get_desc
 rsvg_handle_get_metadata
 rsvg_handle_get_title
 rsvg_term
+
+/* rsvg-defs.h--semi-public for the tests */
+rsvg_defs_lookup
