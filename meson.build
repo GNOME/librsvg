@@ -32,7 +32,7 @@ glib_dep       = dependency('glib-2.0',
                             version: glib_required)
 gio_dep        = dependency('gio-2.0',
                             version: glib_required)
-libxml_dep     = dependency('libxml-2.0',
+libxml_dep     = dependency(['libxml-2.0', 'LibXml2'],
                             version: libxml_required,
                             default_options: ['python=false'])
 cairo_dep      = dependency('cairo',
