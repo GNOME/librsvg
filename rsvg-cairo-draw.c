@@ -463,6 +463,7 @@ rsvg_cairo_pango_layout_as_path (PangoLayout *layout, double x, double y, double
     cairo_t *cr;
     PangoGravity gravity;
     double rotation;
+    cairo_path_t *ret;
 
     record = cairo_recording_surface_create (CAIRO_CONTENT_COLOR_ALPHA, NULL);
     cr = cairo_create (record);
@@ -481,7 +482,7 @@ rsvg_cairo_pango_layout_as_path (PangoLayout *layout, double x, double y, double
     pango_cairo_update_layout (cr, layout);
     pango_cairo_layout_path (cr, layout);
 
-    cairo_path_t *ret = cairo_copy_path (cr);
+    ret = cairo_copy_path (cr);
 
     cairo_destroy (cr);
     cairo_surface_destroy (record);
