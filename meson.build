@@ -196,7 +196,7 @@ gtk3_dep = dependency('gtk+-3.0', version: gtk3_required, required: get_option('
 if gtk3_dep.found()
   executable('rsvg-view-3', 'test-display.c',
     # These are GTK3 deprecations, so we can ignore them; they're going to stay
-    c_args: ['-Wno-deprecated-declarations'],
+    c_args: [cc.get_id() == 'msvc' ? '-wd4996' : '-Wno-deprecated-declarations'],
     include_directories: librsvg_inc_priv,
     dependencies: [
       librsvg_dep,
