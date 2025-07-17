@@ -74,11 +74,13 @@ features.set('LIBRSVG_MAJOR_VERSION', ver_split[0])
 features.set('LIBRSVG_MINOR_VERSION', ver_split[1])
 features.set('LIBRSVG_MICRO_VERSION', ver_split[2])
 features.set('PACKAGE_VERSION', meson.project_version())
-configure_file(input: 'librsvg-features.h.in',
-               output: 'librsvg-features.h',
-               configuration: features,
-               install: true,
-               install_dir: librsvg_includedir)
+rsvg_feature_h = configure_file(
+  input: 'librsvg-features.h.in',
+  output: 'librsvg-features.h',
+  configuration: features,
+  install: true,
+  install_dir: librsvg_includedir
+)
 
 librsvg_inc_priv = include_directories('librsvg')
 
@@ -197,6 +199,32 @@ subdir('gdk-pixbuf-loader')
 
 if get_option('tests').allowed()
   subdir('tests')
+endif
+
+build_gir = get_option('introspection').disable_auto_if(meson.is_cross_build())
+
+if build_gir.allowed()
+  rsvg_gir_src = librsvg_headers + [enums[1]] + [rsvg_feature_h] + librsvg_src
+  rsvg_gir_inc = [ 'GLib-2.0', 'GObject-2.0', 'Gio-2.0', 'cairo-1.0' ]
+
+  if gdk_pixbuf_dep.type_name() == 'internal'
+    rsvg_gir_inc += subproject('gdk-pixbuf').get_variable('gdkpixbuf_gir').get(0)
+  else
+    rsvg_gir_inc += 'GdkPixbuf-2.0'
+  endif
+  gdk_gir = gnome.generate_gir(rsvg_lib,
+                               sources: rsvg_gir_src,
+                               namespace: 'Rsvg',
+                               nsversion: librsvg_api_version,
+                               identifier_prefix: 'Rsvg',
+                               symbol_prefix: ['rsvg', 'librsvg'],
+                               export_packages: 'librsvg-@0@'.format(librsvg_api_version),
+                               includes: rsvg_gir_inc,
+                               header: 'librsvg/rsvg.h',
+                               install: true,
+                               extra_args: [
+                                 '-DRSVG_COMPILATION',
+                               ])
 endif
 
 if get_option('rsvg-convert').allowed()
