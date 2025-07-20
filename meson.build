@@ -472,16 +472,23 @@ cargo_wrapper_args = [
   '--libdir', get_option('libdir'),
 ]
 
-if get_option('debug')
-  optimization = get_option('optimization')
-  if optimization in ['0', '1', '2', '3', 's']
-    cargo_wrapper_args += ['--optimization', optimization]
-  elif optimization != 'plain' # g
-    cargo_wrapper_args += ['--optimization', '1']
-    # plain: https://github.com/mesonbuild/meson/issues/7194
-  endif
-else
+if not get_option('debug')
   cargo_wrapper_args += ['--release']
+endif
+optimization = get_option('optimization')
+if optimization in ['0', '1', '2', '3', 's']
+  cargo_wrapper_args += ['--optimization', optimization]
+elif optimization != 'plain' # g
+  cargo_wrapper_args += ['--optimization', '1']
+  # plain: https://github.com/mesonbuild/meson/issues/7194
+endif
+
+if get_option('b_lto')
+  if get_option('b_lto_mode') == 'default'
+    cargo_wrapper_args += ['--lto', 'fat']
+  else
+    cargo_wrapper_args += ['--lto', 'thin']
+  endif
 endif
 
 if target_arg != []

@@ -86,12 +86,14 @@ group.add_argument(
 group.add_argument("--bin", help="Name of binary to build")
 
 g = parser.add_argument_group("Optimizations")
-group = parser.add_mutually_exclusive_group(required=False)
-group.add_argument(
+g.add_argument(
     "--release", action="store_true", help="Build artifacts in release mode"
 )
-group.add_argument(
+g.add_argument(
     '--optimization', choices=['0', '1', '2', '3', 's'], help="Set optimization level"
+)
+g.add_argument(
+    '--lto', choices=['fat', 'thin'], help="Set optimization level"
 )
 
 args = parser.parse_args()
@@ -168,11 +170,12 @@ if args.release:
     cargo_cmd.extend(['--release'])
 else:
     buildtype = 'debug'
-    if args.optimization:
-        if 'CARGO_BUILD_RUSTFLAGS' in env:
-            env['CARGO_BUILD_RUSTFLAGS'] = env['CARGO_BUILD_RUSTFLAGS'] + f' -C opt-level={args.optimization}'
-        else:
-            env['CARGO_BUILD_RUSTFLAGS'] = f'-C opt-level={args.optimization}'
+
+if args.optimization:
+    env[f'CARGO_PROFILE_{buildtype.upper()}_OPT_LEVEL'] = args.optimization
+if args.lto:
+    env[f'CARGO_PROFILE_{buildtype.upper()}_CODEGEN_UNITS'] = '1'
+    env[f'CARGO_PROFILE_{buildtype.upper()}_LTO'] = args.lto
 
 if args.target:
     cargo_cmd.extend(['--target', args.target])
@@ -186,7 +189,8 @@ for p in args.packages:
 if args.command == "test":
     cargo_cmd.extend(["--", "--include-ignored"])
 
-print(f"command: {cargo_cmd}")
+k = {k: v for k, v in env.items() if k.startswith('CARGO_PROFILE')}
+print(f"command: {cargo_cmd}, env: {k}")
 subprocess.run(cargo_cmd, env=env, check=True)
 
 if args.command in ["cbuild", "build"]:
