@@ -391,7 +391,7 @@ msys2-mingw64:
     expire_in: 1 day
   allow_failure: true
 
-vs2019-x64:
+meson build - vs2019-x64-stable:
   # TODO: Uncomment this when ready to merge.
   # rules:
   #   - if: $CI_PROJECT_NAMESPACE == "GNOME"
