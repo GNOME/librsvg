@@ -28,7 +28,7 @@ git clone --depth 1 --no-tags https://gitlab.gnome.org/GNOME/pango.git
 :: build and install GDK-Pixbuf (includes glib, libpng, libjpeg-turbo and their deps)
 md _build_gdk_pixbuf
 cd _build_gdk_pixbuf
-meson setup ../gdk-pixbuf --buildtype=release --prefix=%INST_PSX% -Dman=false
+meson setup ../gdk-pixbuf --buildtype=release --prefix=%INST_PSX% -Dman=false -Ddocumentation=false
 ninja install || goto :error
 cd ..
 rmdir /s/q _build_gdk_pixbuf
