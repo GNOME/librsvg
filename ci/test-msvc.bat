@@ -96,7 +96,7 @@ if not exist %HOMEPATH%\.cargo\bin\cargo-cbuild.exe %HOMEPATH%\.cargo\bin\cargo 
 
 :: Enable workaround if latest stable Rust caused issues like #968.
 :: Update RUST_DOWNGRADE_VER below as well as required.
-@set DOWNGRADE_RUST_VERSION=1
+@set DOWNGRADE_RUST_VERSION=0
 
 :: now build librsvg
 set PATH=%PATH%;%HOMEPATH%\.cargo\bin
