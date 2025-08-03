@@ -426,7 +426,8 @@ static void
 handle_new_from_file (void)
 {
     char *filename = get_test_filename ("dpi.svg");
-    char *uri = g_strconcat ("file://", filename, NULL);
+    char *abs_path = g_canonicalize_filename(filename, NULL);
+    char *uri = g_strconcat ("file://", abs_path, NULL);
 
     RsvgHandle *handle;
     GError *error = NULL;
@@ -444,6 +445,7 @@ handle_new_from_file (void)
     g_object_unref (handle);
 
     g_free (filename);
+    g_free (abs_path);
     g_free (uri);
 }
 
