@@ -28,7 +28,7 @@ git clone --depth 1 --no-tags https://gitlab.gnome.org/GNOME/pango.git
 :: build and install GDK-Pixbuf (includes glib, libpng, libjpeg-turbo and their deps)
 md _build_gdk_pixbuf
 cd _build_gdk_pixbuf
-meson setup ../gdk-pixbuf --buildtype=release --prefix=%INST_PSX% -Dman=false
+meson setup ../gdk-pixbuf --buildtype=release --prefix=%INST_PSX% -Dman=false -Ddocumentation=false
 ninja install || goto :error
 cd ..
 rmdir /s/q _build_gdk_pixbuf
@@ -92,11 +92,11 @@ rmdir /s/q _build_pango
 :: Install Rust
 if exist %HOMEPATH%\.cargo\bin\rustup.exe %HOMEPATH%\.cargo\bin\rustup update
 if not exist %HOMEPATH%\.cargo\bin\rustup.exe rustup-init -y --default-toolchain=stable-%RUST_HOST% --default-host=%RUST_HOST%
-if not exist %HOMEPATH%\.cargo\bin\cargo-cbuild.exe %HOMEPATH%\.cargo\bin\cargo install cargo-c || goto :error
+%HOMEPATH%\.cargo\bin\cargo install cargo-c || goto :error
 
 :: Enable workaround if latest stable Rust caused issues like #968.
 :: Update RUST_DOWNGRADE_VER below as well as required.
-@set DOWNGRADE_RUST_VERSION=1
+@set DOWNGRADE_RUST_VERSION=0
 
 :: now build librsvg
 set PATH=%PATH%;%HOMEPATH%\.cargo\bin

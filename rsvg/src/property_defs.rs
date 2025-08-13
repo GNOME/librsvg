@@ -1183,10 +1183,20 @@ make_property!(
     "geometricPrecision" => GeometricPrecision,
 );
 
+// FIXME: this is marked as allow(unused) because this `Transform` newtype is never
+// constructed.  Instead, properties.rs uses `TransformProperty` directly to handle the
+// distinction between the "transform" attribute from SVG1.1, and the "transform" CSS
+// property in SVG2.
+//
+// I think we can play a bit with the naming or namespacing of things to make this
+// `Transform` newtype actually work for the machinery in properties.rs - mainly being
+// careful about properties::Transform (which is a re-export of property_defs::Transform)
+// versus transform::Transform (which is just an affine).
 make_property!(
     /// `transform` property.
     ///
     /// CSS Transforms 1: <https://www.w3.org/TR/css-transforms-1/#transform-property>
+    #[allow(unused)]
     Transform,
     default: TransformProperty::None,
     inherits_automatically: false,

@@ -391,7 +391,7 @@ msys2-mingw64:
     expire_in: 1 day
   allow_failure: true
 
-vs2019-x64:
+meson build - vs2019-x64-stable:
   # TODO: Uncomment this when ready to merge.
   # rules:
   #   - if: $CI_PROJECT_NAMESPACE == "GNOME"
@@ -406,7 +406,6 @@ vs2019-x64:
     paths:
       - "${CI_PROJECT_DIR}/msvc-build/meson-logs"
       - "${CI_PROJECT_DIR}/msvc-build/tests/output"
-  allow_failure: true
 
 distcheck:
   stage: acceptance test
