@@ -26,20 +26,34 @@ version = "2.50"
 [package.metadata.system-deps.librsvg_2_0.v2_58]
 version = "2.58"
 
+[package.metadata.system-deps.librsvg_2_0.v2_59]
+version = "2.59"
+
 [dependencies]
-libc.workspace = true
-gdk-pixbuf-sys.workspace = true
-cairo-sys-rs.workspace = true
-glib-sys.workspace = true
-gio-sys.workspace = true
-gobject-sys.workspace = true
+libc = "0.2"
+
+[dependencies.gdk-pixbuf-sys]
+workspace = true
+
+[dependencies.cairo-sys-rs]
+workspace = true
+
+[dependencies.glib-sys]
+workspace = true
+
+[dependencies.gio-sys]
+workspace = true
+
+[dependencies.gobject-sys]
+workspace = true
 
 [build-dependencies]
 system-deps = "7"
 
 [dev-dependencies]
-shell-words.workspace = true
-tempfile.workspace = true
+shell-words = "1.0.0"
+tempfile = "3"
 
 [features]
 v2_58 = []
+v2_59 = ["v2_58"]
