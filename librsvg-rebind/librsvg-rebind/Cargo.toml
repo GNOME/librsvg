@@ -36,3 +36,4 @@ all-features = true
 
 [features]
 v2_58 = ["ffi/v2_58"]
+v2_59 = ["v2_58", "ffi/v2_59"]

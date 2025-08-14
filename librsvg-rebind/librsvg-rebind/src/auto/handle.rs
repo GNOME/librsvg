@@ -125,12 +125,7 @@ impl Default for Handle {
     }
 }
 
-mod sealed {
-    pub trait Sealed {}
-    impl<T: super::IsA<super::Handle>> Sealed for T {}
-}
-
-pub trait HandleExt: IsA<Handle> + sealed::Sealed + 'static {
+pub trait HandleExt: IsA<Handle> + 'static {
     #[doc(alias = "rsvg_handle_get_base_uri")]
     #[doc(alias = "get_base_uri")]
     #[doc(alias = "base-uri")]
@@ -223,8 +218,8 @@ pub trait HandleExt: IsA<Handle> + sealed::Sealed + 'static {
     //    unsafe { TODO: call ffi:rsvg_handle_get_pixbuf() }
     //}
 
-    //#[cfg(feature = "v2_58")]
-    //#[cfg_attr(docsrs, doc(cfg(feature = "v2_58")))]
+    //#[cfg(feature = "v2_59")]
+    //#[cfg_attr(docsrs, doc(cfg(feature = "v2_59")))]
     //#[doc(alias = "rsvg_handle_get_pixbuf_and_error")]
     //#[doc(alias = "get_pixbuf_and_error")]
     //fn pixbuf_and_error(&self) -> Result</*Ignored*/Option<gdk_pixbuf::Pixbuf>, glib::Error> {
@@ -374,6 +369,8 @@ pub trait HandleExt: IsA<Handle> + sealed::Sealed + 'static {
         }
     }
 
+    #[cfg(feature = "v2_59")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "v2_59")))]
     #[doc(alias = "rsvg_handle_set_cancellable_for_rendering")]
     fn set_cancellable_for_rendering(&self, cancellable: Option<&impl IsA<gio::Cancellable>>) {
         unsafe {
@@ -456,7 +453,7 @@ pub trait HandleExt: IsA<Handle> + sealed::Sealed + 'static {
             let f: Box_<F> = Box_::new(f);
             connect_raw(
                 self.as_ptr() as *mut _,
-                b"notify::base-uri\0".as_ptr() as *const _,
+                c"notify::base-uri".as_ptr() as *const _,
                 Some(std::mem::transmute::<*const (), unsafe extern "C" fn()>(
                     notify_base_uri_trampoline::<Self, F> as *const (),
                 )),
@@ -479,7 +476,7 @@ pub trait HandleExt: IsA<Handle> + sealed::Sealed + 'static {
             let f: Box_<F> = Box_::new(f);
             connect_raw(
                 self.as_ptr() as *mut _,
-                b"notify::dpi-x\0".as_ptr() as *const _,
+                c"notify::dpi-x".as_ptr() as *const _,
                 Some(std::mem::transmute::<*const (), unsafe extern "C" fn()>(
                     notify_dpi_x_trampoline::<Self, F> as *const (),
                 )),
@@ -502,7 +499,7 @@ pub trait HandleExt: IsA<Handle> + sealed::Sealed + 'static {
             let f: Box_<F> = Box_::new(f);
             connect_raw(
                 self.as_ptr() as *mut _,
-                b"notify::dpi-y\0".as_ptr() as *const _,
+                c"notify::dpi-y".as_ptr() as *const _,
                 Some(std::mem::transmute::<*const (), unsafe extern "C" fn()>(
                     notify_dpi_y_trampoline::<Self, F> as *const (),
                 )),
