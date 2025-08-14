@@ -30,12 +30,21 @@ Only these versions are supported:
 Older versions are not supported.  Please try a newer version before
 reporting bugs or missing features.
 
-See the [policy for supported
-versions](https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/supported_versions.html)
-for more details.
+See the [policy for supported versions][versions] for more details.
 
 * [Release archive](https://gitlab.gnome.org/GNOME/librsvg/-/releases) in gitlab.gnome.org
 * [Source tarballs for download](https://download.gnome.org/sources/librsvg/) at download.gnome.org
+
+# Stable release series
+
+Since librsvg 2.55.x, all release streams are considered stable, not
+just ones with an even minor version number.  A micro version starting
+at 90 means a beta release.  For example:
+
+* 2.55.0, 2.55.1, etc. are stable releases in the 2.55 series.
+* 2.55.90, 2.55.91 are the first two beta releases before the stable 2.56.0
+
+See the [policy for supported versions][versions] for more details.
 
 # Using librsvg
 
@@ -213,4 +222,5 @@ ways:
 [devel-guide]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
 [security]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html
 [features]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/features.html
+[versions]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/supported_versions.html
 [blog]: https://viruta.org/tag/librsvg.html
