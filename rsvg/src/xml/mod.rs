@@ -692,7 +692,7 @@ impl TokenSink for ProcessingInstructionSink {
         let mut data = self.0.borrow_mut();
 
         match token {
-            Token::TagToken(tag) if tag.kind == TagKind::EmptyTag => {
+            Token::Tag(tag) if tag.kind == TagKind::EmptyTag => {
                 for a in &tag.attrs {
                     let name = a.name.local.as_ref().to_string();
                     let value = a.value.to_string();
