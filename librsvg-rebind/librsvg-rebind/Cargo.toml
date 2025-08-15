@@ -8,7 +8,7 @@ license = "MIT"
 repository = "https://gitlab.gnome.org/GNOME/librsvg"
 documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg_rebind/"
 categories = ["api-bindings"]
-version = "0.2.0"
+version = "0.2.1"
 keywords = ["svg"]
 edition = "2021"
 
@@ -26,7 +26,7 @@ cairo-rs = { workspace = true, features = ['png'] }
 
 [dependencies.ffi]
 package = "librsvg-rebind-sys"
-version = "0.2"
+version = "0.2.1"
 path = "./sys"
 
 [package.metadata.docs.rs]
