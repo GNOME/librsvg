@@ -41,8 +41,12 @@ off items while making a release.
 
 **Publish:**
 
-- ☐ Publish to crates.io, see :ref:`crate_release` for details.
+- ☐ Publish ``librsvg`` to crates.io, see :ref:`crate_release` for details.
    - ☐ ``cargo publish -p librsvg``
+
+- ☐ Publish ``librsvg-rebind`` to crates.io:
+   - The publish process does a test compilation and needs the `.so` installed to build, so do
+     ``meson setup _build --prefix /usr/local/librsvg && meson compile -C _build && meson install -C _build``
    - ☐ ``cargo publish -p librsvg-rebind-sys``
    - ☐ ``cargo publish -p librsvg-rebind``
 - ☐ If this is a development release, create a signed tag for the crate's version - ``git tag -s x.y.z-beta.w``.
