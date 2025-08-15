@@ -12,7 +12,7 @@ impl std::fmt::Display for Unit {
             Self::Mm => "mm",
             Self::Pt => "pt",
             Self::Pc => "pc",
-            #[cfg(feature = "v2_60")]
+            #[cfg(feature = "v2_59")]
             Self::Ch => "ch",
             Self::__Unknown(_) => "unknown",
         };
