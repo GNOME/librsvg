@@ -1,3 +1,31 @@
+Version 2.61.0
+==============
+
+librsvg crate version 2.61.0
+
+librsvg-rebind crate version 0.1.0
+
+- The minimum supported Rust version (MSRV) is 1.85.1.
+
+- #1178: Improved performance when using an application-supplied
+  stylesheet for an SVG handle - do cascading only once in that case
+  instead of twice.
+
+- #1164: Don't panic if there are no fonts installed - this happens
+  easily in Alpine containers (Lovell Fuller).
+
+- Update to gtk-rs-core 0.21 (Maximiliano Sandoval).
+
+- Vastly improved infrastructure to generate the development guide and
+  the rsvg-convert manual page (Toluwaleke Ogundipe).
+
+- Start implementing the SVG2 text stack (Adetoye Anointing, from his
+  Outreachy internship).
+
+- Fixed the Windows CI (Chun-wei Fan).
+
+- Lots of internal cleanups to make it easier to remove Cairo in the future.
+
 Version 2.60.0
 ==============
 
