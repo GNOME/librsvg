@@ -1098,4 +1098,12 @@ mod tests {
             Some(String::from("image/png"))
         );
     }
+
+    #[test]
+    fn ignores_stylesheet_with_invalid_utf8() {
+        let handle = crate::api::Loader::new()
+            .read_path("tests/fixtures/loading/non-utf8-stylesheet.svg")
+            .unwrap();
+        assert!(handle.document.stylesheets.is_empty());
+    }
 }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" id="a">
+  <?xml-stylesheet type="text/css" href="latin-11.txt" ?>
+  <circle id="c" cx="10" cy="10" r="10"/>
+</svg>
