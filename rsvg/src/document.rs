@@ -633,10 +633,10 @@ impl ResourceType {
         !matches!(*self, ResourceType::Unknown)
     }
 
-    fn to_image_format(&self) -> image::ImageFormat {
+    fn to_image_format(self) -> image::ImageFormat {
         use ResourceType::*;
 
-        match *self {
+        match self {
             Svg => unreachable!(),
 
             Png => image::ImageFormat::Png,
