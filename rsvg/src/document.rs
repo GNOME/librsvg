@@ -630,10 +630,7 @@ impl ResourceType {
     }
 
     fn is_known(&self) -> bool {
-        match *self {
-            ResourceType::Unknown => false,
-            _ => true,
-        }
+        !matches!(*self, ResourceType::Unknown)
     }
 
     fn to_image_format(&self) -> image::ImageFormat {
