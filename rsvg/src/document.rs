@@ -588,6 +588,71 @@ impl Resources {
     }
 }
 
+#[derive(Clone, Copy)]
+enum ResourceType {
+    Unknown,
+    Svg,
+    Png,
+    Jpeg,
+    Gif,
+    WebP,
+    Avif,
+}
+
+// Compares the fields of `Mime`, but ignores its `parameters`
+fn is_mime_type(mime: &Mime, type_: &str, subtype: &str) -> bool {
+    mime.type_ == type_ && mime.subtype == subtype
+}
+
+impl ResourceType {
+    fn from(mime_type: &Option<Mime>) -> ResourceType {
+        match mime_type {
+            None => ResourceType::Unknown,
+
+            // See issue #548 - data: URLs without a MIME-type automatically
+            // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
+            // Adobe Illustrator generate data: URLs without MIME-type for image
+            // data.  We'll catch this and fall back to sniffing by unsetting the
+            // content_type.
+            Some(x) if *x == Mime::from_str("text/plain;charset=US-ASCII").unwrap() => {
+                ResourceType::Unknown
+            }
+
+            Some(x) if is_mime_type(x, "image", "svg+xml") => ResourceType::Svg,
+            Some(x) if is_mime_type(x, "image", "png") => ResourceType::Png,
+            Some(x) if is_mime_type(x, "image", "jpeg") => ResourceType::Jpeg,
+            Some(x) if is_mime_type(x, "image", "gif") => ResourceType::Gif,
+            Some(x) if is_mime_type(x, "image", "webp") => ResourceType::WebP,
+            Some(x) if is_mime_type(x, "image", "avif") => ResourceType::Avif,
+
+            _ => ResourceType::Unknown,
+        }
+    }
+
+    fn is_known(&self) -> bool {
+        match *self {
+            ResourceType::Unknown => false,
+            _ => true,
+        }
+    }
+
+    fn to_image_format(&self) -> image::ImageFormat {
+        use ResourceType::*;
+
+        match *self {
+            Svg => unreachable!(),
+
+            Png => image::ImageFormat::Png,
+            Jpeg => image::ImageFormat::Jpeg,
+            Gif => image::ImageFormat::Gif,
+            WebP => image::ImageFormat::WebP,
+            Avif => image::ImageFormat::Avif,
+
+            _ => unreachable!(),
+        }
+    }
+}
+
 /// Loads the entire contents of a URL, sniffs them, and decodes them as a [`Resource`]
 /// for an SVG or raster image.
 ///
@@ -604,12 +669,33 @@ fn load_resource(
 ) -> Result<Resource, LoadingError> {
     let data = io::acquire_data(aurl, cancellable)?;
 
-    let svg_mime_type = Mime::from_str("image/svg+xml").unwrap();
+    let BinaryData {
+        data: bytes,
+        mime_type,
+    } = data;
 
-    if data.mime_type == svg_mime_type {
-        load_svg_resource_from_bytes(session, load_options, aurl, data, cancellable)
+    let resource_type = ResourceType::from(&mime_type);
+
+    if resource_type.is_known() {
+        use ResourceType::*;
+
+        return match resource_type {
+            Png | Jpeg | Gif | WebP | Avif => {
+                let format = resource_type.to_image_format();
+                load_image_resource_from_bytes(load_options, aurl, bytes, format)
+            }
+            Svg => load_svg_resource_from_bytes(session, load_options, aurl, bytes, cancellable),
+            _ => unreachable!(),
+        };
     } else {
-        load_image_resource_from_bytes(load_options, aurl, data)
+        // We don't know the MIME type of the data.  Sniff it, hand off raster images to the image crate,
+        // or else fall back to trying to load as an SVG.
+
+        if let Ok(format) = image::guess_format(&bytes) {
+            load_image_resource_from_bytes(load_options, aurl, bytes, format)
+        } else {
+            load_svg_resource_from_bytes(session, load_options, aurl, bytes, cancellable)
+        }
     }
 }
 
@@ -618,14 +704,9 @@ fn load_svg_resource_from_bytes(
     session: &Session,
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
-    data: BinaryData,
+    input_bytes: Vec<u8>,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Resource, LoadingError> {
-    let BinaryData {
-        data: input_bytes,
-        mime_type: _mime_type,
-    } = data;
-
     let bytes = glib::Bytes::from_owned(input_bytes);
     let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
@@ -651,20 +732,14 @@ fn load_svg_resource_from_bytes(
 fn load_image_resource_from_bytes(
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
-    data: BinaryData,
+    bytes: Vec<u8>,
+    format: image::ImageFormat,
 ) -> Result<Resource, LoadingError> {
-    let BinaryData {
-        data: bytes,
-        mime_type,
-    } = data;
-
     if bytes.is_empty() {
         return Err(LoadingError::Other(String::from("no image data")));
     }
 
-    let content_type = content_type_for_image(&mime_type);
-
-    load_image_with_image_rs(aurl, bytes, content_type, load_options)
+    load_image_with_image_rs(aurl, bytes, format, load_options)
 }
 
 /// Decides whether the specified MIME type is supported as a raster image format.
@@ -673,67 +748,67 @@ fn load_image_resource_from_bytes(
 /// documentation on [supported raster image formats][formats] for details.
 ///
 /// [formats]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/features.html#supported-raster-image-formats
-fn image_format(content_type: &str) -> Result<image::ImageFormat, LoadingError> {
-    match content_type {
-        "image/png" => Ok(image::ImageFormat::Png),
-        "image/jpeg" => Ok(image::ImageFormat::Jpeg),
-        "image/gif" => Ok(image::ImageFormat::Gif),
-        "image/webp" => Ok(image::ImageFormat::WebP),
+fn is_supported_image_format(format: image::ImageFormat) -> bool {
+    use image::ImageFormat::*;
+
+    match format {
+        Png => true,
+        Jpeg => true,
+        Gif => true,
+        WebP => true,
 
         #[cfg(feature = "avif")]
-        "image/avif" => Ok(image::ImageFormat::Avif),
+        Avif => true,
 
-        _ => Err(LoadingError::Other(format!(
-            "unsupported image format {content_type}"
-        ))),
+        _ => false,
     }
+}
+
+fn image_format_to_content_type(format: image::ImageFormat) -> String {
+    use image::ImageFormat::*;
+
+    let mime_type = match format {
+        Png => "image/png",
+        Jpeg => "image/jpeg",
+        Gif => "image/gif",
+        WebP => "image/webp",
+        Avif => "image/avif",
+        _ => unreachable!("we should have already filtered supported image types"),
+    };
+
+    mime_type.to_string()
 }
 
 fn load_image_with_image_rs(
     aurl: &AllowedUrl,
     bytes: Vec<u8>,
-    content_type: Option<String>,
+    format: image::ImageFormat,
     load_options: &LoadOptions,
 ) -> Result<Resource, LoadingError> {
-    let cursor = Cursor::new(&bytes);
+    if is_supported_image_format(format) {
+        let cursor = Cursor::new(&bytes);
 
-    let reader = if let Some(ref content_type) = content_type {
-        let format = image_format(content_type)?;
-        image::ImageReader::with_format(cursor, format)
+        let reader = image::ImageReader::with_format(cursor, format);
+        let image = reader
+            .decode()
+            .map_err(|e| LoadingError::Other(format!("error decoding image: {e}")))?;
+
+        let bytes = if load_options.keep_image_data {
+            Some(bytes)
+        } else {
+            None
+        };
+
+        let content_type = image_format_to_content_type(format);
+
+        let surface = SharedImageSurface::from_image(&image, Some(&content_type), bytes)
+            .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
+
+        Ok(Resource::Image(surface))
     } else {
-        image::ImageReader::new(cursor)
-            .with_guessed_format()
-            .map_err(|_| LoadingError::Other(String::from("unknown image format")))?
-    };
-
-    let image = reader
-        .decode()
-        .map_err(|e| LoadingError::Other(format!("error decoding image: {e}")))?;
-
-    let bytes = if load_options.keep_image_data {
-        Some(bytes)
-    } else {
-        None
-    };
-
-    let surface = SharedImageSurface::from_image(&image, content_type.as_deref(), bytes)
-        .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
-
-    Ok(Resource::Image(surface))
-}
-
-fn content_type_for_image(mime_type: &Mime) -> Option<String> {
-    // See issue #548 - data: URLs without a MIME-type automatically
-    // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
-    // Adobe Illustrator generate data: URLs without MIME-type for image
-    // data.  We'll catch this and fall back to sniffing by unsetting the
-    // content_type.
-    let unspecified_mime_type = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
-
-    if *mime_type == unspecified_mime_type {
-        None
-    } else {
-        Some(format!("{}/{}", mime_type.type_, mime_type.subtype))
+        Err(LoadingError::Other(String::from(
+            "unsupported image format {format:?}",
+        )))
     }
 }
 
@@ -1080,23 +1155,6 @@ mod tests {
             NodeId::parse("uri"),
             Err(NodeIdError::NodeIdRequired)
         ));
-    }
-
-    #[test]
-    fn unspecified_mime_type_yields_no_content_type() {
-        // Issue #548
-        let mime = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
-        assert!(content_type_for_image(&mime).is_none());
-    }
-
-    #[test]
-    fn strips_mime_type_parameters() {
-        // Issue #699
-        let mime = Mime::from_str("image/png;charset=utf-8").unwrap();
-        assert_eq!(
-            content_type_for_image(&mime),
-            Some(String::from("image/png"))
-        );
     }
 
     #[test]
