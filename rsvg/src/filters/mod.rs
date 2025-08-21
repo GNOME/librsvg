@@ -585,7 +585,7 @@ mod tests {
                 filter_value.to_filter_spec(
                     &mut acquired_nodes,
                     &params,
-                    cssparser::Color::parse_str("black").unwrap(),
+                    cssparser::Color::Rgba(cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))),
                     &viewport,
                     &session,
                     "rect",
