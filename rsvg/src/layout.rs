@@ -4,11 +4,11 @@
 
 use std::rc::Rc;
 
-use cssparser::Color;
 use float_cmp::approx_eq;
 
 use crate::aspect_ratio::AspectRatio;
 use crate::cairo_path::CairoPath;
+use crate::color::Color;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;

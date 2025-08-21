@@ -1,5 +1,4 @@
-use cssparser::Color;
-
+use crate::color::Color;
 use crate::document::AcquiredNodes;
 use crate::element::ElementTrait;
 use crate::node::{CascadedValues, Node};

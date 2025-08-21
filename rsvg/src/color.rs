@@ -1,9 +1,11 @@
 //! CSS color values.
 
-use cssparser::{hsl_to_rgb, hwb_to_rgb, Color, ParseErrorKind, Parser, RGBA};
+use cssparser::{hsl_to_rgb, hwb_to_rgb, ParseErrorKind, Parser};
 
 use crate::error::*;
 use crate::parsers::Parse;
+
+pub use cssparser::{Color, RGBA};
 
 /// Turn a short-lived [`cssparser::ParseError`] into a long-lived [`ParseError`].
 ///

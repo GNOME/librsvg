@@ -12,7 +12,7 @@ use std::{borrow::Cow, sync::OnceLock};
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
 use crate::cairo_path::CairoPath;
-use crate::color::color_to_rgba;
+use crate::color::{color_to_rgba, Color};
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
 use crate::dpi::Dpi;
@@ -2054,7 +2054,7 @@ pub fn create_pango_context(font_options: &FontOptions) -> pango::Context {
     context
 }
 
-pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &cssparser::Color) {
+pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &Color) {
     let rgba = color_to_rgba(color);
 
     cr.set_source_rgba(

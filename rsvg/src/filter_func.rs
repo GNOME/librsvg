@@ -11,9 +11,10 @@
 //! Those types get aggregated in the [`FilterFunction`] enum.  A [`FilterFunction`] can
 //! then convert itself into a [`FilterSpec`], which is ready to be rendered on a surface.
 
-use cssparser::{Color, Parser};
+use cssparser::Parser;
 
 use crate::angle::Angle;
+use crate::color::Color;
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
@@ -693,7 +694,7 @@ impl FilterFunction {
 
 #[cfg(test)]
 mod tests {
-    use cssparser::RGBA;
+    use crate::color::RGBA;
 
     use super::*;
 

@@ -1,8 +1,9 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
-use cssparser::{Color, Parser};
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, ns, ExpandedName, LocalName, Namespace};
 
+use crate::color::Color;
 use crate::coord_units;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};

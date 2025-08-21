@@ -247,6 +247,7 @@ pub mod doctest_only {
 #[doc(hidden)]
 pub mod rsvg_convert_only {
     pub use crate::aspect_ratio::AspectRatio;
+    pub use crate::color::Color;
     pub use crate::dpi::Dpi;
     pub use crate::drawing_ctx::set_source_color_on_cairo;
     pub use crate::error::ParseError;

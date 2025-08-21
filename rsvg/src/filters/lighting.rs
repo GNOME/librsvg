@@ -1,6 +1,5 @@
 //! Lighting filters and light nodes.
 
-use cssparser::{Color, RGBA};
 use float_cmp::approx_eq;
 use markup5ever::{expanded_name, local_name, ns};
 use nalgebra::{Vector2, Vector3};
@@ -8,7 +7,7 @@ use num_traits::identities::Zero;
 use rayon::prelude::*;
 use std::cmp::max;
 
-use crate::color::color_to_rgba;
+use crate::color::{color_to_rgba, Color, RGBA};
 use crate::document::AcquiredNodes;
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::filters::{
@@ -149,7 +148,7 @@ fn color_and_vector(
     x: f64,
     y: f64,
     z: f64,
-) -> (cssparser::RGBA, Vector3<f64>) {
+) -> (RGBA, Vector3<f64>) {
     let vector = match *source {
         LightSource::Distant { azimuth, elevation } => {
             let azimuth = azimuth.to_radians();
@@ -174,7 +173,7 @@ fn color_and_vector(
             limiting_cone_angle,
             ..
         } => {
-            let transparent_color = cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(0.0));
+            let transparent_color = RGBA::new(Some(0), Some(0), Some(0), Some(0.0));
             let minus_l_dot_s = -vector.dot(&direction);
             match limiting_cone_angle {
                 _ if minus_l_dot_s <= 0.0 => transparent_color,
@@ -183,7 +182,7 @@ fn color_and_vector(
                     let factor = minus_l_dot_s.powf(specular_exponent);
                     let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
 
-                    cssparser::RGBA {
+                    RGBA {
                         red: Some(compute(lighting_color.red.unwrap_or(0))),
                         green: Some(compute(lighting_color.green.unwrap_or(0))),
                         blue: Some(compute(lighting_color.blue.unwrap_or(0))),

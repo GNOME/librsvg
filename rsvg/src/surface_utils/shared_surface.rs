@@ -5,10 +5,9 @@ use std::ptr::NonNull;
 use std::slice;
 
 use cast::i32;
-use cssparser::Color;
 use nalgebra::{storage::Storage, Dim, Matrix};
 
-use crate::color::color_to_rgba;
+use crate::color::{color_to_rgba, Color};
 use crate::drawing_ctx::set_source_color_on_cairo;
 use crate::error::*;
 use crate::rect::{IRect, Rect};
