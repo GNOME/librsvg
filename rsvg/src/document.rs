@@ -676,14 +676,14 @@ fn load_resource(
     if resource_type.is_known() {
         use ResourceType::*;
 
-        return match resource_type {
+        match resource_type {
             Png | Jpeg | Gif | WebP | Avif => {
                 let format = resource_type.to_image_format();
                 load_image_resource_from_bytes(load_options, aurl, bytes, format)
             }
             Svg => load_svg_resource_from_bytes(session, load_options, aurl, bytes, cancellable),
             _ => unreachable!(),
-        };
+        }
     } else {
         // We don't know the MIME type of the data.  Sniff it, hand off raster images to the image crate,
         // or else fall back to trying to load as an SVG.
