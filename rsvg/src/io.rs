@@ -7,7 +7,6 @@ use gio::{
 };
 use glib::{self, object::Cast, Bytes as GBytes};
 use std::fmt;
-use std::str::FromStr;
 
 use crate::url_resolver::AllowedUrl;
 
@@ -33,7 +32,7 @@ impl fmt::Display for IoError {
 
 pub struct BinaryData {
     pub data: Vec<u8>,
-    pub mime_type: Mime,
+    pub mime_type: Option<Mime>,
 }
 
 fn decode_data_uri(uri: &str) -> Result<BinaryData, IoError> {
@@ -62,7 +61,7 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, IoError> {
 
     Ok(BinaryData {
         data: bytes,
-        mime_type,
+        mime_type: Some(mime_type),
     })
 }
 
@@ -107,19 +106,9 @@ pub fn acquire_data(
         let file = GFile::for_uri(uri);
         let (contents, _etag) = file.load_contents(cancellable)?;
 
-        let (content_type, _uncertain) = gio::content_type_guess(Some(uri), &*contents);
-
-        let mime_type = if let Some(mime_type_str) = gio::content_type_get_mime_type(&content_type)
-        {
-            Mime::from_str(&mime_type_str)
-                .expect("gio::content_type_get_mime_type returned an invalid MIME-type!?")
-        } else {
-            Mime::from_str("application/octet-stream").unwrap()
-        };
-
         Ok(BinaryData {
             data: contents.to_vec(),
-            mime_type,
+            mime_type: None,
         })
     }
 }

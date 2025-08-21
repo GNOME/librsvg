@@ -78,7 +78,6 @@ use cssparser::{
     DeclarationParser, Parser, ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser,
     RuleBodyParser, SourceLocation, StyleSheetParser, ToCss,
 };
-use data_url::mime::Mime;
 use language_tags::LanguageTag;
 use markup5ever::{self, ns, Namespace, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
@@ -95,7 +94,7 @@ use std::str::FromStr;
 
 use crate::element::Element;
 use crate::error::*;
-use crate::io::{self, BinaryData};
+use crate::io;
 use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_value, ComputedValues, ParseAs, ParsedProperty};
 use crate::rsvg_log;
@@ -941,20 +940,7 @@ impl Stylesheet {
         io::acquire_data(aurl, None)
             .map_err(LoadingError::from)
             .and_then(|data| {
-                let BinaryData {
-                    data: bytes,
-                    mime_type,
-                } = data;
-
-                if is_text_css(&mime_type) {
-                    Ok(bytes)
-                } else {
-                    rsvg_log!(session, "\"{}\" is not of type text/css; ignoring", aurl);
-                    Err(LoadingError::BadCss)
-                }
-            })
-            .and_then(|bytes| {
-                String::from_utf8(bytes).map_err(|_| {
+                String::from_utf8(data.data).map_err(|_| {
                     rsvg_log!(
                         session,
                         "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
@@ -999,10 +985,6 @@ impl Stylesheet {
             }
         }
     }
-}
-
-fn is_text_css(mime_type: &Mime) -> bool {
-    mime_type.type_ == "text" && mime_type.subtype == "css"
 }
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets
