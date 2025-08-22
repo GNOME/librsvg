@@ -51,6 +51,7 @@ name = "rsvg"
 cairo-rs = { workspace = true, features = ["v1_16", "png", "pdf", "ps", "svg"] }
 cast.workspace = true
 cssparser.workspace = true
+cssparser-color.workspace = true
 data-url.workspace = true
 encoding_rs.workspace = true
 float-cmp.workspace = true
@@ -66,6 +67,7 @@ nalgebra.workspace = true
 num-traits.workspace = true
 pango = { workspace = true, features = ["v1_46"] }
 pangocairo.workspace = true
+precomputed-hash.workspace = true
 rayon.workspace = true
 rctree.workspace = true
 regex.workspace = true

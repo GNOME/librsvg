@@ -1,6 +1,8 @@
 //! CSS color values.
 
-use cssparser::{hsl_to_rgb, hwb_to_rgb, ParseErrorKind, Parser};
+use cssparser::{ParseErrorKind, Parser};
+use cssparser_color as cssc;
+use cssparser_color::{hsl_to_rgb, hwb_to_rgb};
 
 use crate::error::*;
 use crate::parsers::Parse;
@@ -97,19 +99,19 @@ impl RGBA {
     }
 }
 
-impl From<cssparser::RGBA> for RGBA {
-    fn from(c: cssparser::RGBA) -> RGBA {
+impl From<cssc::RgbaLegacy> for RGBA {
+    fn from(c: cssc::RgbaLegacy) -> RGBA {
         RGBA {
-            red: c.red,
-            green: c.green,
-            blue: c.blue,
-            alpha: c.alpha,
+            red: Some(c.red),
+            green: Some(c.green),
+            blue: Some(c.blue),
+            alpha: Some(c.alpha),
         }
     }
 }
 
-impl From<cssparser::Hsl> for Hsl {
-    fn from(c: cssparser::Hsl) -> Hsl {
+impl From<cssc::Hsl> for Hsl {
+    fn from(c: cssc::Hsl) -> Hsl {
         Hsl {
             hue: c.hue,
             saturation: c.saturation,
@@ -119,8 +121,8 @@ impl From<cssparser::Hsl> for Hsl {
     }
 }
 
-impl From<cssparser::Hwb> for Hwb {
-    fn from(c: cssparser::Hwb) -> Hwb {
+impl From<cssc::Hwb> for Hwb {
+    fn from(c: cssc::Hwb) -> Hwb {
         Hwb {
             hue: c.hue,
             whiteness: c.whiteness,
@@ -187,17 +189,17 @@ fn map_color_parse_error(err: cssparser::ParseError<'_, ()>) -> ParseError<'_> {
 fn parse_plain_color<'i>(parser: &mut Parser<'i, '_>) -> Result<Color, ParseError<'i>> {
     let loc = parser.current_source_location();
 
-    let csscolor = cssparser::Color::parse(parser).map_err(map_color_parse_error)?;
+    let csscolor = cssc::Color::parse(parser).map_err(map_color_parse_error)?;
 
     // Return only supported color types, and mark the others as errors.
     match csscolor {
-        cssparser::Color::CurrentColor => Ok(Color::CurrentColor),
+        cssc::Color::CurrentColor => Ok(Color::CurrentColor),
 
-        cssparser::Color::Rgba(rgba) => Ok(Color::Rgba(rgba.into())),
+        cssc::Color::Rgba(rgba) => Ok(Color::Rgba(rgba.into())),
 
-        cssparser::Color::Hsl(hsl) => Ok(Color::Hsl(hsl.into())),
+        cssc::Color::Hsl(hsl) => Ok(Color::Hsl(hsl.into())),
 
-        cssparser::Color::Hwb(hwb) => Ok(Color::Hwb(hwb.into())),
+        cssc::Color::Hwb(hwb) => Ok(Color::Hwb(hwb.into())),
 
         _ => Err(ParseError {
             kind: ParseErrorKind::Custom(ValueErrorKind::parse_error("unsupported color syntax")),
