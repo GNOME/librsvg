@@ -1,14 +1,156 @@
 //! CSS color values.
 
 use cssparser::{hsl_to_rgb, hwb_to_rgb, ParseErrorKind, Parser};
-use cssparser::{Hsl, Hwb};
 
 use crate::error::*;
 use crate::parsers::Parse;
 use crate::unit_interval::UnitInterval;
 use crate::util;
 
-pub use cssparser::{Color, RGBA};
+/// Subset of <https://drafts.csswg.org/css-color-4/#color-type>
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Color {
+    /// The 'currentcolor' keyword.
+    CurrentColor,
+    /// Specify sRGB colors directly by their red/green/blue/alpha chanels.
+    Rgba(RGBA),
+    /// Specifies a color in sRGB using hue, saturation and lightness components.
+    Hsl(Hsl),
+    /// Specifies a color in sRGB using hue, whiteness and blackness components.
+    Hwb(Hwb),
+}
+
+/// A color with red, green, blue, and alpha components, in a byte each.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct RGBA {
+    /// The red component.
+    pub red: Option<u8>,
+    /// The green component.
+    pub green: Option<u8>,
+    /// The blue component.
+    pub blue: Option<u8>,
+    /// The alpha component.
+    pub alpha: Option<f32>,
+}
+
+/// Color specified by hue, saturation and lightness components.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct Hsl {
+    /// The hue component.
+    pub hue: Option<f32>,
+    /// The saturation component.
+    pub saturation: Option<f32>,
+    /// The lightness component.
+    pub lightness: Option<f32>,
+    /// The alpha component.
+    pub alpha: Option<f32>,
+}
+
+/// Color specified by hue, whiteness and blackness components.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct Hwb {
+    /// The hue component.
+    pub hue: Option<f32>,
+    /// The whiteness component.
+    pub whiteness: Option<f32>,
+    /// The blackness component.
+    pub blackness: Option<f32>,
+    /// The alpha component.
+    pub alpha: Option<f32>,
+}
+
+const OPAQUE: f32 = 1.0;
+
+impl RGBA {
+    /// Constructs a new RGBA value from float components. It expects the red,
+    /// green, blue and alpha channels in that order, and all values will be
+    /// clamped to the 0.0 ... 1.0 range.
+    #[inline]
+    pub fn from_floats(
+        red: Option<f32>,
+        green: Option<f32>,
+        blue: Option<f32>,
+        alpha: Option<f32>,
+    ) -> Self {
+        Self::new(
+            red.map(clamp_unit_f32),
+            green.map(clamp_unit_f32),
+            blue.map(clamp_unit_f32),
+            alpha.map(|a| a.clamp(0.0, OPAQUE)),
+        )
+    }
+
+    /// Same thing, but with `u8` values instead of floats in the 0 to 1 range.
+    #[inline]
+    pub const fn new(
+        red: Option<u8>,
+        green: Option<u8>,
+        blue: Option<u8>,
+        alpha: Option<f32>,
+    ) -> Self {
+        Self {
+            red,
+            green,
+            blue,
+            alpha,
+        }
+    }
+}
+
+impl From<cssparser::RGBA> for RGBA {
+    fn from(c: cssparser::RGBA) -> RGBA {
+        RGBA {
+            red: c.red,
+            green: c.green,
+            blue: c.blue,
+            alpha: c.alpha,
+        }
+    }
+}
+
+impl From<cssparser::Hsl> for Hsl {
+    fn from(c: cssparser::Hsl) -> Hsl {
+        Hsl {
+            hue: c.hue,
+            saturation: c.saturation,
+            lightness: c.lightness,
+            alpha: c.alpha,
+        }
+    }
+}
+
+impl From<cssparser::Hwb> for Hwb {
+    fn from(c: cssparser::Hwb) -> Hwb {
+        Hwb {
+            hue: c.hue,
+            whiteness: c.whiteness,
+            blackness: c.blackness,
+            alpha: c.alpha,
+        }
+    }
+}
+
+fn clamp_unit_f32(val: f32) -> u8 {
+    // Whilst scaling by 256 and flooring would provide
+    // an equal distribution of integers to percentage inputs,
+    // this is not what Gecko does so we instead multiply by 255
+    // and round (adding 0.5 and flooring is equivalent to rounding)
+    //
+    // Chrome does something similar for the alpha value, but not
+    // the rgb values.
+    //
+    // See <https://bugzilla.mozilla.org/show_bug.cgi?id=1340484>
+    //
+    // Clamping to 256 and rounding after would let 1.0 map to 256, and
+    // `256.0_f32 as u8` is undefined behavior:
+    //
+    // <https://github.com/rust-lang/rust/issues/10184>
+    clamp_floor_256_f32(val * 255.)
+}
+
+fn clamp_floor_256_f32(val: f32) -> u8 {
+    val.round().clamp(0., 255.) as u8
+}
 
 /// Turn a short-lived [`cssparser::ParseError`] into a long-lived [`ParseError`].
 ///
@@ -42,14 +184,20 @@ fn map_color_parse_error(err: cssparser::ParseError<'_, ()>) -> ParseError<'_> {
     }
 }
 
-fn parse_plain_color<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, ParseError<'i>> {
+fn parse_plain_color<'i>(parser: &mut Parser<'i, '_>) -> Result<Color, ParseError<'i>> {
     let loc = parser.current_source_location();
 
-    let color = cssparser::Color::parse(parser).map_err(map_color_parse_error)?;
+    let csscolor = cssparser::Color::parse(parser).map_err(map_color_parse_error)?;
 
     // Return only supported color types, and mark the others as errors.
-    match color {
-        Color::CurrentColor | Color::Rgba(_) | Color::Hsl(_) | Color::Hwb(_) => Ok(color),
+    match csscolor {
+        cssparser::Color::CurrentColor => Ok(Color::CurrentColor),
+
+        cssparser::Color::Rgba(rgba) => Ok(Color::Rgba(rgba.into())),
+
+        cssparser::Color::Hsl(hsl) => Ok(Color::Hsl(hsl.into())),
+
+        cssparser::Color::Hwb(hwb) => Ok(Color::Hwb(hwb.into())),
 
         _ => Err(ParseError {
             kind: ParseErrorKind::Custom(ValueErrorKind::parse_error("unsupported color syntax")),
@@ -69,9 +217,7 @@ fn parse_name(s: &str) -> Result<&str, ()> {
     }
 }
 
-fn parse_var_with_fallback<'i>(
-    parser: &mut Parser<'i, '_>,
-) -> Result<cssparser::Color, ParseError<'i>> {
+fn parse_var_with_fallback<'i>(parser: &mut Parser<'i, '_>) -> Result<Color, ParseError<'i>> {
     let name = parser.expect_ident_cloned()?;
 
     // ignore the name for now; we'll use it later when we actually
@@ -96,8 +242,8 @@ fn parse_var_with_fallback<'i>(
     parse_plain_color(parser)
 }
 
-impl Parse for cssparser::Color {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, ParseError<'i>> {
+impl Parse for Color {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Color, ParseError<'i>> {
         if let Ok(c) = parser.try_parse(|p| {
             p.expect_function_matching("var")?;
             p.parse_nested_block(parse_var_with_fallback)
@@ -204,10 +350,6 @@ pub fn resolve_color(color: &Color, opacity: UnitInterval, current_color: &Color
             alpha: resolve_alpha(opacity, hwb.alpha),
             ..hwb
         }),
-
-        _ => {
-            unreachable!("impl Parse for Color should have rejected types other than rgba/hsl/hwb")
-        }
     }
 }
 
