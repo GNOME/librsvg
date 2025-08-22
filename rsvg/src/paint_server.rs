@@ -2,8 +2,9 @@
 
 use std::rc::Rc;
 
-use cssparser::{Color, Hsl, Hwb, ParseErrorKind, Parser, RGBA};
+use cssparser::{ParseErrorKind, Parser};
 
+use crate::color::{Color, Hsl, Hwb, RGBA};
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;
 use crate::element::ElementData;
@@ -34,11 +35,11 @@ pub enum PaintServer {
     /// For example, `fill="url(#some_gradient) fallback_color"`.
     Iri {
         iri: Box<NodeId>,
-        alternate: Option<cssparser::Color>,
+        alternate: Option<Color>,
     },
 
     /// For example, `fill="blue"`.
-    SolidColor(cssparser::Color),
+    SolidColor(Color),
 
     /// For example, `fill="context-fill"`
     ContextFill,
@@ -95,16 +96,12 @@ impl Parse for PaintServer {
                 {
                     None
                 } else {
-                    Some(
-                        parser
-                            .try_parse(cssparser::Color::parse)
-                            .map_err(|e| ParseError {
-                                kind: ParseErrorKind::Custom(ValueErrorKind::parse_error(
-                                    "Could not parse color",
-                                )),
-                                location: e.location,
-                            })?,
-                    )
+                    Some(parser.try_parse(Color::parse).map_err(|e| ParseError {
+                        kind: ParseErrorKind::Custom(ValueErrorKind::parse_error(
+                            "Could not parse color",
+                        )),
+                        location: e.location,
+                    })?)
                 }
             } else {
                 None
@@ -372,7 +369,7 @@ mod tests {
     fn parses_solid_color() {
         assert_eq!(
             PaintServer::parse_str("rgb(255, 128, 64, 0.5)").unwrap(),
-            PaintServer::SolidColor(cssparser::Color::Rgba(cssparser::RGBA::new(
+            PaintServer::SolidColor(Color::Rgba(RGBA::new(
                 Some(255),
                 Some(128),
                 Some(64),
@@ -382,7 +379,7 @@ mod tests {
 
         assert_eq!(
             PaintServer::parse_str("currentColor").unwrap(),
-            PaintServer::SolidColor(cssparser::Color::CurrentColor)
+            PaintServer::SolidColor(Color::CurrentColor)
         );
     }
 
@@ -408,7 +405,7 @@ mod tests {
             PaintServer::parse_str("url(#link) #ff8040").unwrap(),
             PaintServer::Iri {
                 iri: Box::new(NodeId::Internal("link".to_string())),
-                alternate: Some(cssparser::Color::Rgba(cssparser::RGBA::new(
+                alternate: Some(Color::Rgba(RGBA::new(
                     Some(255),
                     Some(128),
                     Some(64),
@@ -421,7 +418,7 @@ mod tests {
             PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)").unwrap(),
             PaintServer::Iri {
                 iri: Box::new(NodeId::Internal("link".to_string())),
-                alternate: Some(cssparser::Color::Rgba(cssparser::RGBA::new(
+                alternate: Some(Color::Rgba(RGBA::new(
                     Some(255),
                     Some(128),
                     Some(64),
@@ -434,7 +431,7 @@ mod tests {
             PaintServer::parse_str("url(#link) currentColor").unwrap(),
             PaintServer::Iri {
                 iri: Box::new(NodeId::Internal("link".to_string())),
-                alternate: Some(cssparser::Color::CurrentColor),
+                alternate: Some(Color::CurrentColor),
             }
         );
 

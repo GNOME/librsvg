@@ -5,7 +5,7 @@ use cssparser::{hsl_to_rgb, hwb_to_rgb, ParseErrorKind, Parser};
 use crate::error::*;
 use crate::parsers::Parse;
 
-pub use cssparser::{Color, RGBA};
+pub use cssparser::{Color, Hsl, Hwb, RGBA};
 
 /// Turn a short-lived [`cssparser::ParseError`] into a long-lived [`ParseError`].
 ///
