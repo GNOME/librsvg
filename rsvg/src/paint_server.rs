@@ -2,9 +2,7 @@
 
 use std::rc::Rc;
 
-use cssparser::{
-    Color, ColorFunction, Hsl, Hwb, Lab, Lch, Oklab, Oklch, ParseErrorKind, Parser, RGBA,
-};
+use cssparser::{Color, Hsl, Hwb, ParseErrorKind, Parser, RGBA};
 
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;
@@ -337,30 +335,9 @@ pub fn resolve_color(color: &Color, opacity: UnitInterval, current_color: &Color
             ..hwb
         }),
 
-        Color::Lab(lab) => Color::Lab(Lab {
-            alpha: resolve_alpha(opacity, lab.alpha),
-            ..lab
-        }),
-
-        Color::Lch(lch) => Color::Lch(Lch {
-            alpha: resolve_alpha(opacity, lch.alpha),
-            ..lch
-        }),
-
-        Color::Oklab(oklab) => Color::Oklab(Oklab {
-            alpha: resolve_alpha(opacity, oklab.alpha),
-            ..oklab
-        }),
-
-        Color::Oklch(oklch) => Color::Oklch(Oklch {
-            alpha: resolve_alpha(opacity, oklch.alpha),
-            ..oklch
-        }),
-
-        Color::ColorFunction(cf) => Color::ColorFunction(ColorFunction {
-            alpha: resolve_alpha(opacity, cf.alpha),
-            ..cf
-        }),
+        _ => {
+            unreachable!("impl Parse for Color should have rejected types other than rgba/hsl/hwb")
+        }
     }
 }
 
