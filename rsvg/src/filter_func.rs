@@ -14,7 +14,7 @@
 use cssparser::Parser;
 
 use crate::angle::Angle;
-use crate::color::Color;
+use crate::color::{resolve_color, Color};
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
@@ -28,7 +28,6 @@ use crate::filters::{
     FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive, UserSpacePrimitive,
 };
 use crate::length::*;
-use crate::paint_server::resolve_color;
 use crate::parsers::{CustomIdent, NumberOptionalNumber, NumberOrPercentage, Parse};
 use crate::unit_interval::UnitInterval;
 

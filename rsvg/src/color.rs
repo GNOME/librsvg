@@ -1,11 +1,14 @@
 //! CSS color values.
 
 use cssparser::{hsl_to_rgb, hwb_to_rgb, ParseErrorKind, Parser};
+use cssparser::{Hsl, Hwb};
 
 use crate::error::*;
 use crate::parsers::Parse;
+use crate::unit_interval::UnitInterval;
+use crate::util;
 
-pub use cssparser::{Color, Hsl, Hwb, RGBA};
+pub use cssparser::{Color, RGBA};
 
 /// Turn a short-lived [`cssparser::ParseError`] into a long-lived [`ParseError`].
 ///
@@ -143,6 +146,68 @@ pub fn color_to_rgba(color: &Color) -> RGBA {
         }
 
         _ => unimplemented!(),
+    }
+}
+
+/// Takes the `opacity` property and an alpha value from a CSS `<color>` and returns a resulting
+/// alpha for a computed value.
+///
+/// `alpha` is `Option<f32>` because that is what cssparser uses everywhere.
+fn resolve_alpha(opacity: UnitInterval, alpha: Option<f32>) -> Option<f32> {
+    let UnitInterval(o) = opacity;
+
+    let alpha = f64::from(alpha.unwrap_or(0.0)) * o;
+    let alpha = util::clamp(alpha, 0.0, 1.0);
+    let alpha = cast::f32(alpha).unwrap();
+
+    Some(alpha)
+}
+
+fn black() -> Color {
+    Color::Rgba(RGBA::new(Some(0), Some(0), Some(0), Some(1.0)))
+}
+
+/// Resolves a CSS color from itself, an `opacity` property, and a `color` property (to resolve `currentColor`).
+///
+/// A CSS color can be `currentColor`, in which case the computed value comes from
+/// the `color` property.  You should pass the `color` property's value for `current_color`.
+///
+/// Note that `currrent_color` can itself have a value of `currentColor`.  In that case, we
+/// consider it to be opaque black.
+pub fn resolve_color(color: &Color, opacity: UnitInterval, current_color: &Color) -> Color {
+    let without_opacity_applied = match color {
+        Color::CurrentColor => {
+            if let Color::CurrentColor = current_color {
+                black()
+            } else {
+                *current_color
+            }
+        }
+
+        _ => *color,
+    };
+
+    match without_opacity_applied {
+        Color::CurrentColor => unreachable!(),
+
+        Color::Rgba(rgba) => Color::Rgba(RGBA {
+            alpha: resolve_alpha(opacity, rgba.alpha),
+            ..rgba
+        }),
+
+        Color::Hsl(hsl) => Color::Hsl(Hsl {
+            alpha: resolve_alpha(opacity, hsl.alpha),
+            ..hsl
+        }),
+
+        Color::Hwb(hwb) => Color::Hwb(Hwb {
+            alpha: resolve_alpha(opacity, hwb.alpha),
+            ..hwb
+        }),
+
+        _ => {
+            unreachable!("impl Parse for Color should have rejected types other than rgba/hsl/hwb")
+        }
     }
 }
 

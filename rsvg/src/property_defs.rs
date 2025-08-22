@@ -160,7 +160,7 @@ make_property!(
     /// override this by specifing a custom CSS stylesheet.
     ///
     /// Most of the time the `color` property is used to call
-    /// [`crate::paint_server::resolve_color`].
+    /// [`crate::color::resolve_color`].
     Color,
     default: crate::color::Color::Rgba(crate::color::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))),
     inherits_automatically: true,

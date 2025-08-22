@@ -7,7 +7,7 @@ use num_traits::identities::Zero;
 use rayon::prelude::*;
 use std::cmp::max;
 
-use crate::color::{color_to_rgba, Color, RGBA};
+use crate::color::{color_to_rgba, resolve_color, Color, RGBA};
 use crate::document::AcquiredNodes;
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::filters::{
@@ -17,7 +17,6 @@ use crate::filters::{
     PrimitiveParams, ResolvedPrimitive,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::paint_server::resolve_color;
 use crate::parsers::{NonNegative, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
