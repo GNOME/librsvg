@@ -23,6 +23,7 @@ pub enum Color {
 }
 
 /// A color with red, green, blue, and alpha components, in a byte each.
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct RGBA {
     /// The red component.
@@ -296,9 +297,7 @@ fn resolve_alpha(opacity: UnitInterval, alpha: Option<f32>) -> f32 {
 
     let alpha = f64::from(alpha.unwrap_or(0.0)) * o;
     let alpha = util::clamp(alpha, 0.0, 1.0);
-    let alpha = cast::f32(alpha).unwrap();
-
-    alpha
+    cast::f32(alpha).unwrap()
 }
 
 fn black() -> Color {
