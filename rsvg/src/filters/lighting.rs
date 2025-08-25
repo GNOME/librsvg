@@ -172,7 +172,7 @@ fn color_and_vector(
             limiting_cone_angle,
             ..
         } => {
-            let transparent_color = RGBA::new(Some(0), Some(0), Some(0), Some(0.0));
+            let transparent_color = RGBA::new(0, 0, 0, 0.0);
             let minus_l_dot_s = -vector.dot(&direction);
             match limiting_cone_angle {
                 _ if minus_l_dot_s <= 0.0 => transparent_color,
@@ -182,10 +182,10 @@ fn color_and_vector(
                     let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
 
                     RGBA {
-                        red: Some(compute(lighting_color.red.unwrap_or(0))),
-                        green: Some(compute(lighting_color.green.unwrap_or(0))),
-                        blue: Some(compute(lighting_color.blue.unwrap_or(0))),
-                        alpha: Some(1.0),
+                        red: compute(lighting_color.red),
+                        green: compute(lighting_color.green),
+                        blue: compute(lighting_color.blue),
+                        alpha: 1.0,
                     }
                 }
             }
@@ -529,9 +529,9 @@ macro_rules! impl_lighting_filter {
                             let compute =
                                 |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
-                            let r = compute(color.red.unwrap_or(0));
-                            let g = compute(color.green.unwrap_or(0));
-                            let b = compute(color.blue.unwrap_or(0));
+                            let r = compute(color.red);
+                            let g = compute(color.green);
+                            let b = compute(color.blue);
                             let a = $alpha_func(r, g, b);
 
                             let output_pixel = Pixel { r, g, b, a };

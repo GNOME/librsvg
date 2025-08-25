@@ -162,7 +162,7 @@ make_property!(
     /// Most of the time the `color` property is used to call
     /// [`crate::color::resolve_color`].
     Color,
-    default: crate::color::Color::Rgba(crate::color::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))),
+    default: crate::color::Color::Rgba(crate::color::RGBA::new(0, 0, 0, 1.0)),
     inherits_automatically: true,
     newtype_parse: crate::color::Color,
 );
@@ -355,7 +355,7 @@ make_property!(
     /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#FillProperty>
     Fill,
     default: PaintServer::SolidColor(crate::color::Color::Rgba(
-        crate::color::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))
+        crate::color::RGBA::new(0, 0, 0, 1.0)
     )),
     inherits_automatically: true,
     newtype_parse: PaintServer,
@@ -430,7 +430,7 @@ make_property!(
     ///
     /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#FloodColorProperty>
     FloodColor,
-    default: crate::color::Color::Rgba(crate::color::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))),
+    default: crate::color::Color::Rgba(crate::color::RGBA::new(0, 0, 0, 1.0)),
     inherits_automatically: false,
     newtype_parse: crate::color::Color,
 );
@@ -641,7 +641,7 @@ make_property!(
     ///
     /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#LightingColorProperty>
     LightingColor,
-    default: crate::color::Color::Rgba(crate::color::RGBA::new(Some(255), Some(255), Some(255), Some(1.0))),
+    default: crate::color::Color::Rgba(crate::color::RGBA::new(255, 255, 255, 1.0)),
     inherits_automatically: false,
     newtype_parse: crate::color::Color,
 );
@@ -923,7 +923,7 @@ make_property!(
     ///
     /// SVG2: <https://www.w3.org/TR/SVG2/pservers.html#StopColorProperty>
     StopColor,
-    default: crate::color::Color::Rgba(crate::color::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))),
+    default: crate::color::Color::Rgba(crate::color::RGBA::new(0, 0, 0, 1.0)),
     inherits_automatically: false,
     newtype_parse: crate::color::Color,
 );

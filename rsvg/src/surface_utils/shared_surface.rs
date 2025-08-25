@@ -967,7 +967,7 @@ impl ImageSurface<Shared> {
 
         let rgba = color_to_rgba(&color);
 
-        if rgba.alpha.unwrap_or(0.0) > 0.0 {
+        if rgba.alpha > 0.0 {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x(), r.y(), r.width(), r.height());

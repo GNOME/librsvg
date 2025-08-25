@@ -26,13 +26,13 @@ pub enum Color {
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct RGBA {
     /// The red component.
-    pub red: Option<u8>,
+    pub red: u8,
     /// The green component.
-    pub green: Option<u8>,
+    pub green: u8,
     /// The blue component.
-    pub blue: Option<u8>,
+    pub blue: u8,
     /// The alpha component.
-    pub alpha: Option<f32>,
+    pub alpha: f32,
 }
 
 /// Color specified by hue, saturation and lightness components.
@@ -68,28 +68,18 @@ impl RGBA {
     /// green, blue and alpha channels in that order, and all values will be
     /// clamped to the 0.0 ... 1.0 range.
     #[inline]
-    pub fn from_floats(
-        red: Option<f32>,
-        green: Option<f32>,
-        blue: Option<f32>,
-        alpha: Option<f32>,
-    ) -> Self {
+    fn from_floats(red: f32, green: f32, blue: f32, alpha: f32) -> Self {
         Self::new(
-            red.map(clamp_unit_f32),
-            green.map(clamp_unit_f32),
-            blue.map(clamp_unit_f32),
-            alpha.map(|a| a.clamp(0.0, OPAQUE)),
+            clamp_unit_f32(red),
+            clamp_unit_f32(green),
+            clamp_unit_f32(blue),
+            alpha.clamp(0.0, OPAQUE),
         )
     }
 
     /// Same thing, but with `u8` values instead of floats in the 0 to 1 range.
     #[inline]
-    pub const fn new(
-        red: Option<u8>,
-        green: Option<u8>,
-        blue: Option<u8>,
-        alpha: Option<f32>,
-    ) -> Self {
+    pub const fn new(red: u8, green: u8, blue: u8, alpha: f32) -> Self {
         Self {
             red,
             green,
@@ -102,10 +92,10 @@ impl RGBA {
 impl From<cssc::RgbaLegacy> for RGBA {
     fn from(c: cssc::RgbaLegacy) -> RGBA {
         RGBA {
-            red: Some(c.red),
-            green: Some(c.green),
-            blue: Some(c.blue),
-            alpha: Some(c.alpha),
+            red: c.red,
+            green: c.green,
+            blue: c.blue,
+            alpha: c.alpha,
         }
     }
 }
@@ -279,7 +269,7 @@ pub fn color_to_rgba(color: &Color) -> RGBA {
                 hsl.lightness.unwrap_or(0.0),
             );
 
-            RGBA::from_floats(Some(red), Some(green), Some(blue), hsl.alpha)
+            RGBA::from_floats(red, green, blue, hsl.alpha.unwrap_or(OPAQUE))
         }
 
         Color::Hwb(hwb) => {
@@ -290,7 +280,7 @@ pub fn color_to_rgba(color: &Color) -> RGBA {
                 hwb.blackness.unwrap_or(0.0),
             );
 
-            RGBA::from_floats(Some(red), Some(green), Some(blue), hwb.alpha)
+            RGBA::from_floats(red, green, blue, hwb.alpha.unwrap_or(OPAQUE))
         }
 
         _ => unimplemented!(),
@@ -301,18 +291,18 @@ pub fn color_to_rgba(color: &Color) -> RGBA {
 /// alpha for a computed value.
 ///
 /// `alpha` is `Option<f32>` because that is what cssparser uses everywhere.
-fn resolve_alpha(opacity: UnitInterval, alpha: Option<f32>) -> Option<f32> {
+fn resolve_alpha(opacity: UnitInterval, alpha: Option<f32>) -> f32 {
     let UnitInterval(o) = opacity;
 
     let alpha = f64::from(alpha.unwrap_or(0.0)) * o;
     let alpha = util::clamp(alpha, 0.0, 1.0);
     let alpha = cast::f32(alpha).unwrap();
 
-    Some(alpha)
+    alpha
 }
 
 fn black() -> Color {
-    Color::Rgba(RGBA::new(Some(0), Some(0), Some(0), Some(1.0)))
+    Color::Rgba(RGBA::new(0, 0, 0, 1.0))
 }
 
 /// Resolves a CSS color from itself, an `opacity` property, and a `color` property (to resolve `currentColor`).
@@ -339,17 +329,17 @@ pub fn resolve_color(color: &Color, opacity: UnitInterval, current_color: &Color
         Color::CurrentColor => unreachable!(),
 
         Color::Rgba(rgba) => Color::Rgba(RGBA {
-            alpha: resolve_alpha(opacity, rgba.alpha),
+            alpha: resolve_alpha(opacity, Some(rgba.alpha)),
             ..rgba
         }),
 
         Color::Hsl(hsl) => Color::Hsl(Hsl {
-            alpha: resolve_alpha(opacity, hsl.alpha),
+            alpha: Some(resolve_alpha(opacity, hsl.alpha)),
             ..hsl
         }),
 
         Color::Hwb(hwb) => Color::Hwb(Hwb {
-            alpha: resolve_alpha(opacity, hwb.alpha),
+            alpha: Some(resolve_alpha(opacity, hwb.alpha)),
             ..hwb
         }),
     }
@@ -363,7 +353,7 @@ mod tests {
     fn parses_plain_color() {
         assert_eq!(
             Color::parse_str("#112233").unwrap(),
-            Color::Rgba(RGBA::new(Some(0x11), Some(0x22), Some(0x33), Some(1.0)))
+            Color::Rgba(RGBA::new(0x11, 0x22, 0x33, 1.0))
         );
     }
 
@@ -371,12 +361,12 @@ mod tests {
     fn var_with_fallback_parses_as_color() {
         assert_eq!(
             Color::parse_str("var(--foo, #112233)").unwrap(),
-            Color::Rgba(RGBA::new(Some(0x11), Some(0x22), Some(0x33), Some(1.0)))
+            Color::Rgba(RGBA::new(0x11, 0x22, 0x33, 1.0))
         );
 
         assert_eq!(
             Color::parse_str("var(--foo, rgb(100% 50% 25%)").unwrap(),
-            Color::Rgba(RGBA::new(Some(0xff), Some(0x80), Some(0x40), Some(1.0)))
+            Color::Rgba(RGBA::new(0xff, 0x80, 0x40, 1.0))
         );
     }
 

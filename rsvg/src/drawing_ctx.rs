@@ -2058,10 +2058,10 @@ pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &Color) {
     let rgba = color_to_rgba(color);
 
     cr.set_source_rgba(
-        f64::from(rgba.red.unwrap_or(0)) / 255.0,
-        f64::from(rgba.green.unwrap_or(0)) / 255.0,
-        f64::from(rgba.blue.unwrap_or(0)) / 255.0,
-        f64::from(rgba.alpha.unwrap_or(0.0)),
+        f64::from(rgba.red) / 255.0,
+        f64::from(rgba.green) / 255.0,
+        f64::from(rgba.blue) / 255.0,
+        f64::from(rgba.alpha),
     );
 }
 
@@ -2094,10 +2094,10 @@ fn set_gradient_on_cairo(
 
         g.add_color_stop_rgba(
             stop_offset,
-            f64::from(rgba.red.unwrap_or(0)) / 255.0,
-            f64::from(rgba.green.unwrap_or(0)) / 255.0,
-            f64::from(rgba.blue.unwrap_or(0)) / 255.0,
-            f64::from(rgba.alpha.unwrap_or(0.0)),
+            f64::from(rgba.red) / 255.0,
+            f64::from(rgba.green) / 255.0,
+            f64::from(rgba.blue) / 255.0,
+            f64::from(rgba.alpha),
         );
     }
 

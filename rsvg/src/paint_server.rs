@@ -308,12 +308,7 @@ mod tests {
     fn parses_solid_color() {
         assert_eq!(
             PaintServer::parse_str("rgb(255, 128, 64, 0.5)").unwrap(),
-            PaintServer::SolidColor(Color::Rgba(RGBA::new(
-                Some(255),
-                Some(128),
-                Some(64),
-                Some(0.5)
-            )))
+            PaintServer::SolidColor(Color::Rgba(RGBA::new(255, 128, 64, 0.5)))
         );
 
         assert_eq!(
@@ -344,12 +339,7 @@ mod tests {
             PaintServer::parse_str("url(#link) #ff8040").unwrap(),
             PaintServer::Iri {
                 iri: Box::new(NodeId::Internal("link".to_string())),
-                alternate: Some(Color::Rgba(RGBA::new(
-                    Some(255),
-                    Some(128),
-                    Some(64),
-                    Some(1.0)
-                ))),
+                alternate: Some(Color::Rgba(RGBA::new(255, 128, 64, 1.0))),
             }
         );
 
@@ -357,12 +347,7 @@ mod tests {
             PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)").unwrap(),
             PaintServer::Iri {
                 iri: Box::new(NodeId::Internal("link".to_string())),
-                alternate: Some(Color::Rgba(RGBA::new(
-                    Some(255),
-                    Some(128),
-                    Some(64),
-                    Some(0.5)
-                ))),
+                alternate: Some(Color::Rgba(RGBA::new(255, 128, 64, 0.5))),
             }
         );
 
@@ -381,11 +366,11 @@ mod tests {
     fn resolves_explicit_color() {
         assert_eq!(
             resolve_color(
-                &Color::Rgba(RGBA::new(Some(255), Some(0), Some(0), Some(0.5))),
+                &Color::Rgba(RGBA::new(255, 0, 0, 0.5)),
                 UnitInterval::clamp(0.5),
-                &Color::Rgba(RGBA::new(Some(0), Some(255), Some(0), Some(1.0))),
+                &Color::Rgba(RGBA::new(0, 255, 0, 1.0)),
             ),
-            Color::Rgba(RGBA::new(Some(255), Some(0), Some(0), Some(0.25))),
+            Color::Rgba(RGBA::new(255, 0, 0, 0.25)),
         );
     }
 
@@ -395,9 +380,9 @@ mod tests {
             resolve_color(
                 &Color::CurrentColor,
                 UnitInterval::clamp(0.5),
-                &Color::Rgba(RGBA::new(Some(0), Some(255), Some(0), Some(0.5))),
+                &Color::Rgba(RGBA::new(0, 255, 0, 0.5)),
             ),
-            Color::Rgba(RGBA::new(Some(0), Some(255), Some(0), Some(0.25))),
+            Color::Rgba(RGBA::new(0, 255, 0, 0.25)),
         );
     }
 }
