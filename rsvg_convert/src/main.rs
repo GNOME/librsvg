@@ -14,11 +14,11 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
-use cssparser::{match_ignore_ascii_case, Color};
+use cssparser::match_ignore_ascii_case;
 
 use librsvg_c::{handle::PathOrUrl, sizing::LegacySize};
 use rsvg::rsvg_convert_only::{
-    set_source_color_on_cairo, AspectRatio, CssLength, Dpi, Horizontal, Length, Normalize,
+    set_source_color_on_cairo, AspectRatio, Color, CssLength, Dpi, Horizontal, Length, Normalize,
     NormalizeParams, Parse, Rect, ULength, Validate, Vertical, ViewBox,
 };
 use rsvg::{AcceptLanguage, CairoRenderer, Language, LengthUnit, Loader, RenderingError};

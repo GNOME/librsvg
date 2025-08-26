@@ -1,10 +1,10 @@
 use markup5ever::{expanded_name, local_name, ns};
 
+use crate::color::resolve_color;
 use crate::document::AcquiredNodes;
 use crate::element::{set_attribute, ElementTrait};
 use crate::filter_func::drop_shadow_primitives;
 use crate::node::{CascadedValues, Node};
-use crate::paint_server::resolve_color;
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::session::Session;
 use crate::xml::Attributes;

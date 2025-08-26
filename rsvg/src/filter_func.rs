@@ -11,9 +11,10 @@
 //! Those types get aggregated in the [`FilterFunction`] enum.  A [`FilterFunction`] can
 //! then convert itself into a [`FilterSpec`], which is ready to be rendered on a surface.
 
-use cssparser::{Color, Parser};
+use cssparser::Parser;
 
 use crate::angle::Angle;
+use crate::color::{resolve_color, Color};
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
@@ -27,7 +28,6 @@ use crate::filters::{
     FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive, UserSpacePrimitive,
 };
 use crate::length::*;
-use crate::paint_server::resolve_color;
 use crate::parsers::{CustomIdent, NumberOptionalNumber, NumberOrPercentage, Parse};
 use crate::unit_interval::UnitInterval;
 
@@ -693,7 +693,7 @@ impl FilterFunction {
 
 #[cfg(test)]
 mod tests {
-    use cssparser::RGBA;
+    use crate::color::RGBA;
 
     use super::*;
 
@@ -760,10 +760,10 @@ mod tests {
             FilterFunction::parse_str("drop-shadow(#ff0000 4px 5px 32px)").unwrap(),
             FilterFunction::DropShadow(DropShadow {
                 color: Some(Color::Rgba(RGBA {
-                    red: Some(255),
-                    green: Some(0),
-                    blue: Some(0),
-                    alpha: Some(1.0)
+                    red: 255,
+                    green: 0,
+                    blue: 0,
+                    alpha: 1.0
                 })),
                 dx: Some(Length::new(4.0, LengthUnit::Px)),
                 dy: Some(Length::new(5.0, LengthUnit::Px)),
@@ -775,10 +775,10 @@ mod tests {
             FilterFunction::parse_str("drop-shadow(1px 2px blue)").unwrap(),
             FilterFunction::DropShadow(DropShadow {
                 color: Some(Color::Rgba(RGBA {
-                    red: Some(0),
-                    green: Some(0),
-                    blue: Some(255),
-                    alpha: Some(1.0)
+                    red: 0,
+                    green: 0,
+                    blue: 255,
+                    alpha: 1.0
                 })),
                 dx: Some(Length::new(1.0, LengthUnit::Px)),
                 dy: Some(Length::new(2.0, LengthUnit::Px)),

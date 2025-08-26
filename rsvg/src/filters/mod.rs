@@ -553,6 +553,7 @@ impl Parse for EdgeMode {
 mod tests {
     use super::*;
 
+    use crate::color::{Color, RGBA};
     use crate::document::Document;
     use crate::dpi::Dpi;
     use crate::node::NodeBorrow;
@@ -585,7 +586,7 @@ mod tests {
                 filter_value.to_filter_spec(
                     &mut acquired_nodes,
                     &params,
-                    cssparser::Color::parse_str("black").unwrap(),
+                    Color::Rgba(RGBA::new(0, 0, 0, 1.0)),
                     &viewport,
                     &session,
                     "rect",

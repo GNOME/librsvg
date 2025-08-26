@@ -80,13 +80,16 @@ use cssparser::{
 };
 use language_tags::LanguageTag;
 use markup5ever::{self, ns, Namespace, QualName};
+use precomputed_hash::PrecomputedHash;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
+use selectors::bloom::BloomFilter;
+use selectors::context::SelectorCaches;
 use selectors::matching::{
-    ElementSelectorFlags, IgnoreNthChildForInvalidation, MatchingContext, MatchingMode,
+    ElementSelectorFlags, MatchingContext, MatchingForInvalidation, MatchingMode,
     NeedsSelectorFlags, QuirksMode,
 };
 use selectors::parser::ParseRelative;
-use selectors::{NthIndexCache, OpaqueElement, SelectorImpl, SelectorList};
+use selectors::{OpaqueElement, SelectorImpl, SelectorList};
 use std::cmp::Ordering;
 use std::fmt;
 use std::str;
@@ -136,6 +139,7 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         &mut self,
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
+        _declaration_start: &ParserState,
     ) -> Result<RuleBodyItem, cssparser::ParseError<'i, Self::Error>> {
         let prop_name = QualName::new(None, ns!(), markup5ever::LocalName::from(name.as_ref()));
         let property = parse_value(&prop_name, input, ParseAs::Property)?;
@@ -255,6 +259,7 @@ impl<'i> selectors::Parser<'i> for RuleParser {
         &self,
         name: CowRcStr<'i>,
         arguments: &mut Parser<'i, '_>,
+        _after_part: bool,
     ) -> Result<NonTSPseudoClass, cssparser::ParseError<'i, Self::Error>> {
         match &*name {
             "lang" => {
@@ -491,6 +496,12 @@ impl ToCss for Identifier {
     }
 }
 
+impl PrecomputedHash for Identifier {
+    fn precomputed_hash(&self) -> u32 {
+        self.0.precomputed_hash()
+    }
+}
+
 /// Wrapper for local names.
 ///
 /// Used to implement `ToCss` on the `LocalName` foreign type.
@@ -509,6 +520,12 @@ impl ToCss for LocalName {
         W: fmt::Write,
     {
         cssparser::serialize_identifier(&self.0, dest)
+    }
+}
+
+impl PrecomputedHash for LocalName {
+    fn precomputed_hash(&self) -> u32 {
+        self.0.precomputed_hash()
     }
 }
 
@@ -756,6 +773,10 @@ where {
             .unwrap_or(false)
     }
 
+    fn has_custom_state(&self, _name: &<Self::Impl as SelectorImpl>::Identifier) -> bool {
+        false
+    }
+
     fn imported_part(&self, _name: &Identifier) -> Option<Identifier> {
         // unsupported
         None
@@ -784,6 +805,10 @@ where {
     /// if the parent node is a `DocumentFragment`.
     fn is_root(&self) -> bool {
         self.0.parent().is_none()
+    }
+
+    fn add_element_unique_hashes(&self, _filter: &mut BloomFilter) -> bool {
+        false
     }
 
     /// Returns the first child element of this element.
@@ -963,7 +988,7 @@ impl Stylesheet {
         acc: &mut Vec<Match<'a>>,
     ) {
         for rule in &self.qualified_rules {
-            for selector in &rule.selectors.0 {
+            for selector in rule.selectors.slice() {
                 // This magic call is stolen from selectors::matching::matches_selector_list()
                 let matches = selectors::matching::matches_selector(
                     selector,
@@ -1004,15 +1029,15 @@ pub fn cascade(
         let parent = node.parent().clone();
         node.borrow_element_mut().inherit_xml_lang(parent);
 
-        let mut cache = NthIndexCache::default();
+        let mut caches = SelectorCaches::default();
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,
             // FIXME: how the fuck does one set up a bloom filter here?
             None,
-            &mut cache,
+            &mut caches,
             QuirksMode::NoQuirks,
             NeedsSelectorFlags::No,
-            IgnoreNthChildForInvalidation::No,
+            MatchingForInvalidation::No,
         );
 
         for s in ua_stylesheets

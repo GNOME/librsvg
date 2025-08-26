@@ -76,16 +76,16 @@ pub trait Property {
 /// # Properties from an existing, general-purpose type
 ///
 /// For example, both the `lightingColor` and `floodColor` properties can be represented
-/// with a `cssparser::Color`, but their intial values are different.  In this case, the macro
-/// can generate a newtype around `cssparser::Color` for each case:
+/// with a `Color`, but their intial values are different.  In this case, the macro
+/// can generate a newtype around `Color` for each case:
 ///
 /// ```text
 /// make_property!(
 ///     /// Documentation here.
 ///     FloodColor,
-///     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+///     default: Color::RGBA(RGBA::new(0, 0, 0, 0)),
 ///     inherits_automatically: false,
-///     newtype_parse: cssparser::Color,
+///     newtype_parse: Color,
 /// );
 /// ```
 ///

@@ -1,9 +1,7 @@
-use cssparser::Color;
-
+use crate::color::{resolve_color, Color};
 use crate::document::AcquiredNodes;
 use crate::element::ElementTrait;
 use crate::node::{CascadedValues, Node};
-use crate::paint_server::resolve_color;
 use crate::rect::IRect;
 use crate::rsvg_log;
 use crate::session::Session;

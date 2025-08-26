@@ -1,9 +1,10 @@
 //! The `filter` element.
 
-use cssparser::{Color, Parser};
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, ns};
 use std::slice::Iter;
 
+use crate::color::Color;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;

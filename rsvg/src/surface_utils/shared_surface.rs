@@ -5,10 +5,9 @@ use std::ptr::NonNull;
 use std::slice;
 
 use cast::i32;
-use cssparser::Color;
 use nalgebra::{storage::Storage, Dim, Matrix};
 
-use crate::color::color_to_rgba;
+use crate::color::{color_to_rgba, Color};
 use crate::drawing_ctx::set_source_color_on_cairo;
 use crate::error::*;
 use crate::rect::{IRect, Rect};
@@ -968,7 +967,7 @@ impl ImageSurface<Shared> {
 
         let rgba = color_to_rgba(&color);
 
-        if rgba.alpha.unwrap_or(0.0) > 0.0 {
+        if rgba.alpha > 0.0 {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x(), r.y(), r.width(), r.height());
