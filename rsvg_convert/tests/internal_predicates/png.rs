@@ -1,7 +1,7 @@
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
 use std::fmt;
-use std::io::BufReader;
+use std::io::{BufReader, Cursor};
 use std::path::{Path, PathBuf};
 
 use rsvg::rsvg_convert_only::{SharedImageSurface, SurfaceType};
@@ -27,12 +27,12 @@ impl PngPredicate {
 
 impl Predicate<[u8]> for PngPredicate {
     fn eval(&self, data: &[u8]) -> bool {
-        let decoder = png::Decoder::new(data);
+        let decoder = png::Decoder::new(Cursor::new(data));
         decoder.read_info().is_ok()
     }
 
     fn find_case<'a>(&'a self, _expected: bool, data: &[u8]) -> Option<Case<'a>> {
-        let decoder = png::Decoder::new(data);
+        let decoder = png::Decoder::new(Cursor::new(data));
         match decoder.read_info() {
             Ok(_) => None,
             Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
@@ -78,7 +78,7 @@ impl SizePredicate<PngPredicate> {
 
 impl Predicate<[u8]> for SizePredicate<PngPredicate> {
     fn eval(&self, data: &[u8]) -> bool {
-        let decoder = png::Decoder::new(data);
+        let decoder = png::Decoder::new(Cursor::new(data));
         match decoder.read_info() {
             Ok(reader) => self.eval_info(reader.info()),
             _ => false,
@@ -86,7 +86,7 @@ impl Predicate<[u8]> for SizePredicate<PngPredicate> {
     }
 
     fn find_case<'a>(&'a self, expected: bool, data: &[u8]) -> Option<Case<'a>> {
-        let decoder = png::Decoder::new(data);
+        let decoder = png::Decoder::new(Cursor::new(data));
         match decoder.read_info() {
             Ok(reader) => self.find_case_for_info(expected, reader.info()),
             Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
