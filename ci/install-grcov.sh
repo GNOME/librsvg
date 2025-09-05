@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # IMPORTANT: See
 # https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
 
