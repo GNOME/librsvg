@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Utility script so you can pull the container image from CI for local development.
 # Run this script and follow the instructions; the script will tell you how
@@ -19,12 +19,11 @@ fi
 tag=$(grep -e '^  BASE_TAG:' $CONTAINER_BUILDS | head -n 1 | sed -E 's/.*BASE_TAG: "(.+)"/\1/')
 rust_version=$(grep -e '^  RUST_STABLE:' $CONTAINER_BUILDS | head -n 1 | sed -E 's/.*RUST_STABLE: "(.+)"/\1/')
 full_tag=x86_64-$rust_version-$tag
-echo full_tag=\"$full_tag\"
 
 image_name=registry.gitlab.gnome.org/gnome/librsvg/opensuse/tumbleweed:$full_tag
 
-echo pulling image $image_name
-podman pull $image_name
+echo pulling image "$image_name"
+podman pull "$image_name"
 
 echo ""
 echo "You can now run this:"
