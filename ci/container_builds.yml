@@ -8,7 +8,7 @@ include:
 # IMPORTANT: See
 # https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
 variables:
-  BASE_TAG: "2025-06-18.0-main"
+  BASE_TAG: "2025-09-05.0-main"
   RUST_STABLE: "1.87.0"
   RUST_MINIMUM: "1.85.1"
   RUST_NIGHTLY: "nightly"
@@ -64,6 +64,7 @@ variables:
       python3-devel
       shadow
       shared-mime-info
+      ShellCheck
       system-group-wheel
       vala
       wget
