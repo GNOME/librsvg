@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Creates a Python virtual environment in /usr/local/python and installs
 # the modules from requirements.txt in it.  These modules are required
