@@ -289,10 +289,8 @@ fn compute_baseline_offset(
 
     let mut layout_iter = layout.iter();
     loop {
-        let run = layout_iter.run_readonly();
-
-        if run.is_some() {
-            let item = run.unwrap().item();
+        if let Some(layout_run) = layout_iter.run_readonly() {
+            let item = layout_run.item();
             unsafe {
                 let analysis = (*item.as_ptr()).analysis;
                 if analysis.font.is_null() {
