@@ -10,11 +10,6 @@ source ./ci/env.sh
 export CARGO_HOME='/usr/local/cargo'
 
 PARSED=$(getopt --options '' --longoptions 'rustup-version:,stable:,minimum:,nightly:,arch:' --name "$0" -- "$@")
-if [ $? -ne 0 ]; then
-	echo 'Terminating...' >&2
-	exit 1
-fi
-
 eval set -- "$PARSED"
 unset PARSED
 
@@ -78,18 +73,18 @@ if [ -z "$ARCH" ]; then
     exit 1
 fi
 
-RUSTUP_URL=https://static.rust-lang.org/rustup/archive/$RUSTUP_VERSION/$ARCH/rustup-init
-wget $RUSTUP_URL
+RUSTUP_URL="https://static.rust-lang.org/rustup/archive/$RUSTUP_VERSION/$ARCH/rustup-init"
+wget "$RUSTUP_URL"
 
 chmod +x rustup-init
-./rustup-init -y --no-modify-path --profile minimal --default-toolchain $STABLE
+./rustup-init -y --no-modify-path --profile minimal --default-toolchain "$STABLE"
 rm rustup-init
-chmod -R a+w $RUSTUP_HOME $CARGO_HOME
+chmod -R a+w "$RUSTUP_HOME" "$CARGO_HOME"
 
 if [ -n "$MINIMUM" ]; then
-    rustup toolchain install $MINIMUM
+    rustup toolchain install "$MINIMUM"
 fi
 
 if [ -n "$NIGHTLY" ]; then
-    rustup toolchain install $NIGHTLY
+    rustup toolchain install "$NIGHTLY"
 fi
