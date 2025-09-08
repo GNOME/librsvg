@@ -18,11 +18,6 @@ LIBXML2_TAG="v2.13.3"
 GDK_PIXBUF_TAG="2.42.12"
 
 PARSED=$(getopt --options '' --longoptions 'prefix:,meson-flags:' --name "$0" -- "$@")
-if [ $? -ne 0 ]; then
-	echo 'Terminating...' >&2
-	exit 1
-fi
-
 eval set -- "$PARSED"
 unset PARSED
 
