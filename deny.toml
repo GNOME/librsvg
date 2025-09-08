@@ -46,11 +46,8 @@ ignore = [
 # [possible values: any SPDX 3.11 short identifier (+ optional exception)].
 allow = [
     "LGPL-2.1-or-later",
-    "LGPL-2.1",
     "MIT",
     "BSD-3-Clause",
-    "ISC",
-    "Unicode-DFS-2016",
     "Unicode-3.0",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
