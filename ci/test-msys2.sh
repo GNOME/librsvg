@@ -33,10 +33,16 @@ pacboy --noconfirm -S --needed \
     cantarell-fonts:p
 
 # https://github.com/rust-lang/cargo/issues/10885
-export CARGO=$(where cargo)
-export RUSTC=$(where rustc)
+CARGO=$(where cargo)
+export CARGO
+
+RUSTC=$(where rustc)
+export RUSTC
+
 meson setup _build -Dauto_features=disabled -Dpixbuf{,-loader}=enabled
 meson compile -C _build
+
 export RUST_BACKTRACE=1
-export TESTS_OUTPUT_DIR=$(pwd)/tests/output
+TESTS_OUTPUT_DIR=$(pwd)/tests/output
+export TESTS_OUTPUT_DIR
 # meson test -C _build --print-errorlogs

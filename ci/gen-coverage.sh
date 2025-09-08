@@ -29,8 +29,8 @@ call_grcov() {
           --ignore 'cargo_cache/*'               \
           --ignore 'target/*'                    \
           --excl-line 'unreachable!'             \
-          --output-type $output_type             \
-          --output-path $output_path
+          --output-type "$output_type"           \
+          --output-path "$output_path"
 }
 
 call_grcov html public/coverage
@@ -41,8 +41,8 @@ call_grcov html public/coverage
 # 500 MB and that OOM'd gitlab's redis.
 
 call_grcov cobertura coverage.xml
-size=`wc -c < coverage.xml`
-if [ $size -ge 10485760 ]
+size=$(wc -c < coverage.xml)
+if [ "$size" -ge 10485760 ]
 then
     rm coverage.xml
     echo "coverage.xml is over 10 MB, removing it so it will not be used"

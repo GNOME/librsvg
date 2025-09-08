@@ -25,7 +25,7 @@ stages:
   - docs
   - deploy
 
-lint ci scripts:
+lint ci python scripts:
   extends:
     - '.container.opensuse@x86_64.stable'
     - '.fdo.distribution-image@opensuse'
@@ -42,6 +42,15 @@ run ci tests:
   script:
     - source ci/env.sh
     - pytest ci/*.py
+
+lint ci shell scripts:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+  stage: ci-check
+  script:
+    - source ci/env.sh
+    - sh ci/check_shell_scripts.sh
 
 check:
   extends:
