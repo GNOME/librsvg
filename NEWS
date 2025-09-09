@@ -1,3 +1,18 @@
+Version 2.61.1
+==============
+
+librsvg crate version 2.61.1
+
+librsvg-rebind crate version 0.2.1
+
+- #1182 - Don't use GIO-based file sniffing so referencing external
+  files works reliably on Windows.
+
+- #1188 - Fixed miscellaneous lints in the CI's shell scripts and in
+  the pull-container-image.sh script for development.
+
+- Update Rust dependencies.
+
 Version 2.61.0
 ==============
 
