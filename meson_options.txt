@@ -15,7 +15,7 @@ option('pixbuf',
 
 option('pixbuf-loader',
        type: 'feature',
-       value: 'auto',
+       value: 'disabled',
        yield: true,
        description: 'Build the GDK-Pixbuf SVG loader (requires gdk-pixbuf-query-loaders)'
        )
