@@ -25,6 +25,12 @@ Development and beta versions have a micro version starting at 90
 
 The following list is only for stable release streams.
 
+2.59.3
+~~~~~~
+
+:rustsec:`2024-0421` - idna accepts Punycode labels that do not
+produce any non-ASCII when decoded
+         
 2.56.3
 ~~~~~~
 
