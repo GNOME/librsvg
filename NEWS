@@ -1,3 +1,16 @@
+Version 2.61.2
+==============
+
+librsvg crate version 2.61.2
+
+- #1186 - Disable compilation of the gdk-pixbuf loader module by
+  default.  It used to be that if meson detected that
+  gdk-pixbuf-query-loaders(1) is available, then it would build the
+  gdk-pixbuf loader module.  Now that GNOME has switched to glycin
+  loaders for images, which are sandboxed, gdk-pixbuf loaders are
+  deprecated.  You can still compile the gdk-pixbuf loader in librsvg
+  by using the "-Dpixbuf-loader=enabled" option when invoking meson.
+
 Version 2.61.1
 ==============
 
