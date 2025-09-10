@@ -1,13 +1,14 @@
 include:
-  - remote: "https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/80f87b3058efb75a1faae11826211375fba77e7f/templates/opensuse.yml"
+  - remote: "https://gitlab.gnome.org/Infrastructure/freedesktop-ci-templates/-/raw/3cd5fdf6dcfbef9a75514256d210db5178bd9c2a/templates/opensuse.yml"
 
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2024-03-07.1-librsvg-2.57"
+  BASE_TAG: "2025-09-10.0-librsvg-2.57"
   RUST_STABLE: "1.75.0"
   RUST_MINIMUM: "1.70.0"
-  RUSTUP_VERSION: "1.26.0"
+  RUST_NIGHTLY: "nightly"
+  RUSTUP_VERSION: "1.28.0"
 
 # This bunch of packages are the system's C/C++ compilers, and the indirect dependencies needed
 # to build librsvg's direct dependencies.  E.g. we must build cairo from a git tag, but we don't
@@ -26,6 +27,7 @@ variables:
       clang
       clang-tools
       curl
+      dav1d-devel
       diffutils
       findutils
       flex
@@ -36,12 +38,14 @@ variables:
       gettext
       gettext-tools
       git
+      gobject-introspection-devel
       google-roboto-fonts
       gperf
       itstool
       libbrotli-devel
       libbz2-devel
       libexpat-devel
+      libffi-devel
       libjson-c-devel
       libpng-devel
       libstdc++-devel
@@ -50,10 +54,12 @@ variables:
       make
       meson
       openssl-devel
+      pcre2-devel
       python3-pip
-      python311-devel
+      python3-devel
       shadow
       shared-mime-info
+      ShellCheck
       system-group-wheel
       vala
       wget
@@ -69,7 +75,7 @@ variables:
       bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
                               --stable ${RUST_STABLE} \
                               --minimum ${RUST_MINIMUM} \
-                              --nightly \
+                              --nightly ${RUST_NIGHTLY} \
                               --arch x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
       bash ci/install-grcov.sh &&
@@ -102,3 +108,4 @@ opensuse-container@aarch64:
     - .fdo.container-build@opensuse@aarch64
     - .container.opensuse@aarch64
   stage: "container-build"
+
