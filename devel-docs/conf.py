@@ -57,6 +57,9 @@ html_static_path = ['_static']
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-the-linkcheck-builder
 
 linkcheck_ignore = [
+    # Ignore all links for this old branch.
+    r'.*',
+
     # These URLs fail for some reason, but work in the browser.
     r'https://crates.io/crates/.*',
 
