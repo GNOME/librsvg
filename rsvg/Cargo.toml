@@ -74,7 +74,7 @@ rgb = { version="0.8", features=["argb"] }
 selectors = "0.25.0"
 string_cache = "0.8.0"
 tinyvec = { version = "1.2.0", features = ["alloc", "rustc_1_55"] }
-url = "2"
+url = "2.5.7"
 xml5ever = "0.17.0"
 
 [target.'cfg(not(windows))'.dependencies]
