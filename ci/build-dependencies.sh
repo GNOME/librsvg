@@ -57,35 +57,35 @@ source ci/setup-dependencies-env.sh
 cd ..
 git clone --depth 1 --branch $FREETYPE2_TAG https://gitlab.freedesktop.org/freetype/freetype
 cd freetype
-meson setup _build --prefix $PREFIX -Dharfbuzz=disabled $MESON_FLAGS
+meson setup _build --prefix "$PREFIX" -Dharfbuzz=disabled $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $FONTCONFIG_TAG https://gitlab.freedesktop.org/fontconfig/fontconfig
 cd fontconfig
-meson setup _build --prefix $PREFIX $MESON_FLAGS
+meson setup _build --prefix "$PREFIX" $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $CAIRO_TAG https://gitlab.freedesktop.org/cairo/cairo
 cd cairo
-meson setup _build --prefix $PREFIX $MESON_FLAGS
+meson setup _build --prefix "$PREFIX" $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $HARFBUZZ_TAG https://github.com/harfbuzz/harfbuzz
 cd harfbuzz
-meson setup _build --prefix $PREFIX $MESON_FLAGS
+meson setup _build --prefix "$PREFIX" $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $PANGO_TAG https://gitlab.gnome.org/GNOME/pango
 cd pango
-meson setup _build --prefix $PREFIX $MESON_FLAGS
+meson setup _build --prefix "$PREFIX" $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
@@ -94,13 +94,13 @@ git clone --depth 1 --branch $LIBXML2_TAG https://gitlab.gnome.org/GNOME/libxml2
 cd libxml2
 mkdir _build
 cd _build
-../autogen.sh --prefix $PREFIX --libdir $PREFIX/lib64 --without-python
+../autogen.sh --prefix "$PREFIX" --libdir "$PREFIX"/lib64 --without-python
 make
 make install
 
 cd ..
 git clone --depth 1 --branch $GDK_PIXBUF_TAG https://gitlab.gnome.org/GNOME/gdk-pixbuf
 cd gdk-pixbuf
-meson setup _build --prefix $PREFIX -Dman=false $MESON_FLAGS
+meson setup _build --prefix "$PREFIX" -Dman=false $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
