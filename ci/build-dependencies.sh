@@ -4,7 +4,7 @@ set -o errexit -o pipefail -o noclobber -o nounset
 
 FREETYPE2_TAG="VER-2-13-2"
 FONTCONFIG_TAG="2.14.2"
-CAIRO_TAG="1.17.8"
+CAIRO_TAG="1.18.2"
 HARFBUZZ_TAG="8.2.0"
 PANGO_TAG="1.51.1"
 LIBXML2_TAG="v2.11.5"
