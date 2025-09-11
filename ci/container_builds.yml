@@ -4,9 +4,9 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2025-09-10.0-librsvg-2.57"
-  RUST_STABLE: "1.75.0"
-  RUST_MINIMUM: "1.70.0"
+  BASE_TAG: "2025-09-11.0-librsvg-2.57"
+  RUST_STABLE: "1.85.0"
+  RUST_MINIMUM: "1.85.0"
   RUST_NIGHTLY: "nightly"
   RUSTUP_VERSION: "1.28.0"
 

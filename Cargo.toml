@@ -12,7 +12,7 @@ repository = "https://gitlab.gnome.org/GNOME/librsvg/"
 categories = [ "graphics", "multimedia::images", "rendering::data-formats" ]
 keywords = [ "svg", "cairo" ]
 edition = "2021"
-rust-version = "1.70.0"
+rust-version = "1.85.0"
 
 [profile.overflow]
 inherits = "release"
