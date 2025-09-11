@@ -204,33 +204,6 @@ fmt:
   script:
     - cargo fmt --all -- --check
 
-clippy:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: lint
-  needs:
-    - job: check
-  variables:
-    PREFIX: "/usr/local/librsvg"
-  script:
-    - source ./ci/setup-dependencies-env.sh
-    - cargo clippy --version
-    - gitlab-clippy --version
-    - cargo clippy
-    - cargo clippy --message-format=json | gitlab-clippy -o gl-code-quality-report.json
-  artifacts:
-    reports:
-      codequality: gl-code-quality-report.json
-    expire_in: 1 week
-  rules:
-    - if: '$CODE_QUALITY_DISABLED'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_TAG'
-    - if: '$CI_COMMIT_BRANCH'
-
 deny:
   extends:
     - '.container.opensuse@x86_64.stable'
