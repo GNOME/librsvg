@@ -142,19 +142,6 @@ cargo test - opensuse@x86_64.minimum:
   variables:
     RUST_VERSION: ${RUST_MINIMUM}
 
-cargo test - opensuse@x86_64.nightly:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - .fdo.distribution-image@opensuse
-    - .cargo-test
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-    - job: check
-      artifacts: false
-  variables:
-    RUST_VERSION: nightly
-
 cargo test - opensuse@aarch64:
   extends:
     - .container.opensuse@aarch64
