@@ -45,7 +45,7 @@ ignore = [
 # See https://spdx.org/licenses/ for list of possible licenses
 # [possible values: any SPDX 3.11 short identifier (+ optional exception)].
 allow = [
-    "LGPL-2.1-or-later",
+    "LGPL-2.1",
     "MIT",
     "BSD-3-Clause",
     "Unicode-3.0",
