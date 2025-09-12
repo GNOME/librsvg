@@ -2,6 +2,10 @@
 
 include:
   - local: 'ci/container_builds.yml'
+  - component: "gitlab.gnome.org/GNOME/citemplates/release-service@master"
+    inputs:
+      dist-job-name: "distcheck"
+      tarball-artifact-path: "${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.tar.xz"
 
 # Enable merge request pipelines and avoid duplicate pipelines
 # https://docs.gitlab.com/ee/ci/yaml/index.html#switch-between-branch-pipelines-and-merge-request-pipelines
@@ -27,6 +31,7 @@ stages:
   - analysis
   - acceptance test
   - docs
+  - deploy
 
 default:
   interruptible: true
