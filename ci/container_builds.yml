@@ -82,29 +82,8 @@ variables:
       bash ci/build-dependencies.sh --prefix /usr/local/librsvg --meson-flags "--buildtype=release" &&
       rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
 
-.container.opensuse@aarch64:
-  extends: .container.opensuse@common
-  variables:
-    FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
-    FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
-                              --stable ${RUST_STABLE} \
-                              --arch aarch64-unknown-linux-gnu &&
-      mkdir -p /usr/local/librsvg &&
-      bash ci/build-dependencies.sh --prefix /usr/local/librsvg --meson-flags "--buildtype=release" &&
-      rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
-  tags:
-    - aarch64
-
 opensuse-container@x86_64.stable:
   extends:
     - .fdo.container-build@opensuse@x86_64
     - .container.opensuse@x86_64.stable
   stage: "container-build"
-
-opensuse-container@aarch64:
-  extends:
-    - .fdo.container-build@opensuse@aarch64
-    - .container.opensuse@aarch64
-  stage: "container-build"
-

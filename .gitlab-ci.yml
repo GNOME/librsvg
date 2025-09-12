@@ -147,18 +147,6 @@ cargo test - opensuse@x86_64.minimum:
   variables:
     RUST_VERSION: ${RUST_MINIMUM}
 
-cargo test - opensuse@aarch64:
-  extends:
-    - .container.opensuse@aarch64
-    - .fdo.distribution-image@opensuse
-    - .cargo-test
-  needs:
-    - job: opensuse-container@aarch64
-      artifacts: false
-    - job: check
-      artifacts: false
-  allow_failure: true
-
 .cache:
   variables:
     # Only stuff inside the repo directory can be cached
