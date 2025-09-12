@@ -78,7 +78,6 @@ variables:
                               --nightly ${RUST_NIGHTLY} \
                               --arch x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
-      bash ci/install-grcov.sh &&
       mkdir -p /usr/local/librsvg &&
       bash ci/build-dependencies.sh --prefix /usr/local/librsvg --meson-flags "--buildtype=release" &&
       rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
