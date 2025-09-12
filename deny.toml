@@ -25,11 +25,11 @@ db-path = "~/.cargo/advisory-db"
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    # paste is no longer maintained but there's no alternative
-    "RUSTSEC-2024-0436",
+    { id = "RUSTSEC-2024-0436", reason = "paste is no longer maintained but there's no alternative" },
 
-    # fxhash is no longer maintained but selectors 0.31.0 still depends on it
-    "RUSTSEC-2025-0057"
+    { id = "RUSTSEC-2025-0057", reason = "fxhash is no longer maintained but selectors 0.31.0 still depends on it" },
+
+    { id = "RUSTSEC-2025-0056", reason = "adler is unmaintained" }
 
     #"RUSTSEC-0000-0000",
     #{ id = "RUSTSEC-0000-0000", reason = "you can specify a reason the advisory is ignored" },
