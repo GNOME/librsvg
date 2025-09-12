@@ -1070,7 +1070,7 @@ checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
 name = "librsvg"
-version = "2.57.3"
+version = "2.57.4"
 dependencies = [
  "anyhow",
  "cairo-rs",
@@ -1118,7 +1118,7 @@ dependencies = [
 
 [[package]]
 name = "librsvg-c"
-version = "2.57.3"
+version = "2.57.4"
 dependencies = [
  "cairo-rs",
  "cast",
@@ -1924,7 +1924,7 @@ dependencies = [
 
 [[package]]
 name = "rsvg-bench"
-version = "2.57.3"
+version = "2.57.4"
 dependencies = [
  "anyhow",
  "cairo-rs",
@@ -1935,7 +1935,7 @@ dependencies = [
 
 [[package]]
 name = "rsvg_convert"
-version = "2.57.3"
+version = "2.57.4"
 dependencies = [
  "assert_cmd",
  "cairo-rs",
