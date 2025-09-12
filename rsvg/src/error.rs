@@ -284,41 +284,49 @@ impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O> for Result<O, E> {
     }
 }
 
+/// Convert a short-lived ParseError into a long-lived ElementError
+///
+/// We extract this as a function, instead of putting it directly in the `map_err` invocation
+/// below in `impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>>`, because
+/// putting it there as a closure generates too many duplicated copies of the code.  The generic
+/// parameter `O` in that `impl` is for the result `Ok()` value, not for the `Err`, after all.
+fn parse_error_to_element_error<'i>(e: ParseError<'i>, attr: QualName) -> ElementError {
+    // FIXME: eventually, here we'll want to preserve the location information
+
+    let ParseError {
+        kind,
+        location: _location,
+    } = e;
+
+    match kind {
+        ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(tok)) => {
+            let mut s = String::from("unexpected token '");
+            tok.to_css(&mut s).unwrap(); // FIXME: what do we do with a fmt::Error?
+            s.push('\'');
+
+            ElementError {
+                attr,
+                err: ValueErrorKind::Parse(s),
+            }
+        }
+
+        ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput) => ElementError {
+            attr,
+            err: ValueErrorKind::parse_error("unexpected end of input"),
+        },
+
+        ParseErrorKind::Basic(_) => {
+            unreachable!("attribute parsers should not return errors for CSS rules")
+        }
+
+        ParseErrorKind::Custom(err) => ElementError { attr, err },
+    }
+}
+
 /// Turns a short-lived `ParseError` into a long-lived `ElementError`
 impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
     fn attribute(self, attr: QualName) -> Result<O, ElementError> {
-        self.map_err(|e| {
-            // FIXME: eventually, here we'll want to preserve the location information
-
-            let ParseError {
-                kind,
-                location: _location,
-            } = e;
-
-            match kind {
-                ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(tok)) => {
-                    let mut s = String::from("unexpected token '");
-                    tok.to_css(&mut s).unwrap(); // FIXME: what do we do with a fmt::Error?
-                    s.push('\'');
-
-                    ElementError {
-                        attr,
-                        err: ValueErrorKind::Parse(s),
-                    }
-                }
-
-                ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput) => ElementError {
-                    attr,
-                    err: ValueErrorKind::parse_error("unexpected end of input"),
-                },
-
-                ParseErrorKind::Basic(_) => {
-                    unreachable!("attribute parsers should not return errors for CSS rules")
-                }
-
-                ParseErrorKind::Custom(err) => ElementError { attr, err },
-            }
-        })
+        self.map_err(|e| parse_error_to_element_error(e, attr))
     }
 }
 
