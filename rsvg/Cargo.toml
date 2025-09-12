@@ -97,6 +97,12 @@ tempfile = "3"
 [build-dependencies]
 system-deps = "6.0.0"
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(system_deps_have_fontconfig)',
+    'cfg(system_deps_have_pangoft2)',
+] }
+
 [[bench]]
 name = "box_blur"
 harness = false
