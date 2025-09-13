@@ -1,3 +1,23 @@
+Version 2.57.4
+==============
+
+librsvg crate version 2.57.4
+
+This is a security release for RUSTSEC-2024-0421.
+
+Note that even in unpatched releases, librsvg disallows references to
+external URLs that do not have a file:// method, so http/https URLs
+are rejected.
+
+The Minimum Supported Rust Version has unfortunately had to be raised
+to Rust 1.85.0, to accomodate the updated chains of dependencies.
+
+* #1193 - RUSTSEC-2024-0421 - idna accepts Punycode labels that do
+not produce any non-ASCII when decoded.
+
+* RUSTSEC-2024-0404 - Unsoundness in anstream.
+
+
 Version 2.57.3
 ==============
 

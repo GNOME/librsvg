@@ -1,7 +1,7 @@
 [package]
 name = "librsvg"
 documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html"
-version = "2.57.3"
+version = "2.57.4"
 authors.workspace = true
 description.workspace = true
 license.workspace = true
@@ -74,7 +74,7 @@ rgb = { version="0.8", features=["argb"] }
 selectors = "0.25.0"
 string_cache = "0.8.0"
 tinyvec = { version = "1.2.0", features = ["alloc", "rustc_1_55"] }
-url = "2"
+url = "2.5.7"
 xml5ever = "0.17.0"
 
 [target.'cfg(not(windows))'.dependencies]
@@ -96,6 +96,12 @@ tempfile = "3"
 
 [build-dependencies]
 system-deps = "6.0.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(system_deps_have_fontconfig)',
+    'cfg(system_deps_have_pangoft2)',
+] }
 
 [[bench]]
 name = "box_blur"

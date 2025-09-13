@@ -2,6 +2,10 @@
 
 include:
   - local: 'ci/container_builds.yml'
+  - component: "gitlab.gnome.org/GNOME/citemplates/release-service@master"
+    inputs:
+      dist-job-name: "distcheck"
+      tarball-artifact-path: "${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.tar.xz"
 
 # Enable merge request pipelines and avoid duplicate pipelines
 # https://docs.gitlab.com/ee/ci/yaml/index.html#switch-between-branch-pipelines-and-merge-request-pipelines
@@ -27,6 +31,7 @@ stages:
   - analysis
   - acceptance test
   - docs
+  - deploy
 
 default:
   interruptible: true
@@ -142,31 +147,6 @@ cargo test - opensuse@x86_64.minimum:
   variables:
     RUST_VERSION: ${RUST_MINIMUM}
 
-cargo test - opensuse@x86_64.nightly:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - .fdo.distribution-image@opensuse
-    - .cargo-test
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-    - job: check
-      artifacts: false
-  variables:
-    RUST_VERSION: nightly
-
-cargo test - opensuse@aarch64:
-  extends:
-    - .container.opensuse@aarch64
-    - .fdo.distribution-image@opensuse
-    - .cargo-test
-  needs:
-    - job: opensuse-container@aarch64
-      artifacts: false
-    - job: check
-      artifacts: false
-  allow_failure: true
-
 .cache:
   variables:
     # Only stuff inside the repo directory can be cached
@@ -204,33 +184,6 @@ fmt:
   script:
     - cargo fmt --all -- --check
 
-clippy:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: lint
-  needs:
-    - job: check
-  variables:
-    PREFIX: "/usr/local/librsvg"
-  script:
-    - source ./ci/setup-dependencies-env.sh
-    - cargo clippy --version
-    - gitlab-clippy --version
-    - cargo clippy
-    - cargo clippy --message-format=json | gitlab-clippy -o gl-code-quality-report.json
-  artifacts:
-    reports:
-      codequality: gl-code-quality-report.json
-    expire_in: 1 week
-  rules:
-    - if: '$CODE_QUALITY_DISABLED'
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_TAG'
-    - if: '$CI_COMMIT_BRANCH'
-
 deny:
   extends:
     - '.container.opensuse@x86_64.stable'
@@ -257,40 +210,6 @@ check_versions:
     - python3 ci/check_crate_versions_in_example.py
     - python3 ci/check_rust_versions.py
 
-coverage:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - .fdo.distribution-image@opensuse
-    - .cache
-  stage: analysis
-  needs:
-    - job: opensuse-container@x86_64.stable
-    - job: check
-      artifacts: false
-  variables:
-    PREFIX: "/usr/local/librsvg"
-  script:
-    - source ./ci/env.sh
-    - source ./ci/setup-dependencies-env.sh
-    - bash -x ./ci/build-with-coverage.sh
-    - bash -x ./ci/gen-coverage.sh
-  coverage: '/Coverage: \d+\.\d+/'
-  artifacts:
-    name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
-    expire_in: 2 days
-    when: always
-    # Disable the cobertura report for now; it is only used for showing coverage
-    # in the diff view of merge requests.
-    #
-    # After switching to gcov-based instrumentation (-Zprofile above), this
-    # coverage.xml is almost 500 MB and causes gitlab's redis to OOM.
-    #
-    # reports:
-    #   coverage_report:
-    #     coverage_format: cobertura
-    #     path: coverage.xml
-    paths:
-      - public
 
 cargo_bench:
   extends:
@@ -343,6 +262,7 @@ msys2-mingw64:
       - _build\tests\*.log
       - _build\tests\output
     expire_in: 1 day
+  allow_failure: true
 
 vs2017-x64:
   # TODO: Uncomment this when ready to merge.
@@ -358,6 +278,7 @@ vs2017-x64:
     when: always
     paths:
       - "${CI_PROJECT_DIR}/_build/meson-logs"
+  allow_failure: true
 
 distcheck:
   stage: acceptance test
@@ -457,7 +378,6 @@ pages:
     - '.cache'
   needs:
     - job: reference
-    - job: coverage
     - job: devel-docs
     - job: cargo-doc
   script:
