@@ -1190,9 +1190,8 @@ fn no_keep_image_data_option() {
     RsvgConvert::accepts_arg("--no-keep-image-data");
 }
 
-fn is_version_output() -> AndPredicate<StartsWithPredicate, TrimPredicate<EndsWithPredicate>, str> {
-    starts_with("rsvg-convert version ")
-        .and(predicates::str::ends_with(env!("CARGO_PKG_VERSION")).trim())
+fn is_version_output() -> RegexPredicate {
+    predicates::str::is_match(r"rsvg-convert version \d+\.\d+\.\d+").unwrap()
 }
 
 #[test]

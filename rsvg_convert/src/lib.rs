@@ -58,7 +58,7 @@ pub fn build_cli() -> clap::Command {
                 .short('v')
                 .long("version")
                 .help("Display the version information")
-                .action(clap::ArgAction::Version)
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
             clap::Arg::new("res_x")

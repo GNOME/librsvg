@@ -2302,6 +2302,7 @@ dependencies = [
  "librsvg",
  "librsvg-c",
  "lopdf",
+ "pango",
  "png",
  "predicates",
  "system-deps",

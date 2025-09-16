@@ -1,3 +1,4 @@
+use clap::crate_version;
 use clap_complete::{Generator, Shell};
 
 use gio::prelude::*;
@@ -6,10 +7,11 @@ use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
 #[cfg(unix)]
 use gio::{UnixInputStream, UnixOutputStream};
 
+use glib::translate::*;
+
 #[cfg(windows)]
 mod windows_imports {
     pub use gio::{Win32InputStream, WriteOutputStream};
-    pub use glib::translate::*;
 }
 #[cfg(windows)]
 use self::windows_imports::*;
@@ -806,6 +808,63 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut clap::Command) {
     clap_complete::generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
 }
 
+extern "C" {
+    fn hb_version_string() -> *const libc::c_char;
+
+    #[cfg(unix)]
+    fn FcGetVersion() -> libc::c_int;
+}
+
+fn harfbuzz_version_string() -> String {
+    unsafe { String::from_glib_none(hb_version_string()) }
+}
+
+#[cfg(unix)]
+fn split_fontconfig_version(version: u32) -> (u32, u32, u32) {
+    let major = version / 10000;
+    let minor = version % 10000 / 100;
+    let revision = version % 100;
+
+    (major, minor, revision)
+}
+
+#[cfg(unix)]
+fn fontconfig_version_string() -> String {
+    let version = unsafe { FcGetVersion() };
+
+    let (major, minor, revision) = split_fontconfig_version(version as u32);
+
+    format!("{major}.{minor}.{revision}")
+}
+
+#[cfg(unix)]
+fn print_fontconfig_version() {
+    let fontconfig_version = fontconfig_version_string();
+    println!("  fontconfig {}", fontconfig_version);
+}
+
+#[cfg(windows)]
+fn print_fontconfig_version() {
+    // fontconfig is not used on Windows, so print nothing
+}
+
+fn print_version() {
+    let cairo_version = cairo::version_string();
+    let pango_version = pango::version_string();
+    let harfbuzz_version = harfbuzz_version_string();
+
+    // We can't get the freetype library version from FT_Library_Version(), because that function
+    // requires a FT_Library.  However, that is hidden as an internal field of PangoFT2FontMap.
+
+    println!("rsvg-convert version {}\n", crate_version!());
+    println!("libraries used:");
+    println!("  cairo {}", cairo_version);
+    println!("  pango {}", pango_version);
+    println!("  harfbuzz {}", harfbuzz_version);
+
+    print_fontconfig_version();
+}
+
 fn parse_args() -> Result<Converter, Error> {
     let cli = build_cli();
     let matches = cli.get_matches();
@@ -814,6 +873,11 @@ fn parse_args() -> Result<Converter, Error> {
         let mut cmd = build_cli();
         eprintln!("Generating completion file for {shell}");
         print_completions(shell, &mut cmd);
+        std::process::exit(0);
+    }
+
+    if matches.get_flag("version") {
+        print_version();
         std::process::exit(0);
     }
 
@@ -1258,5 +1322,11 @@ mod sizing_tests {
             strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
             Size::new(2.0, 10.0),
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn splits_fontconfig_versions() {
+        assert_eq!(split_fontconfig_version(123456), (12, 34, 56));
     }
 }

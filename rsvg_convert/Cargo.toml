@@ -38,6 +38,7 @@ glib.workspace = true
 libc.workspace = true
 librsvg.workspace = true
 librsvg-c.workspace = true
+pango.workspace = true
 
 [dev-dependencies]
 assert_cmd.workspace = true
