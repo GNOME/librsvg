@@ -44,6 +44,15 @@ harfbuzz = "2.0"
 freetype2 = "20.0.14"
 libxml2 = { name = "libxml-2.0", version = "2.9" }
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(system_deps_have_fontconfig)',
+    'cfg(system_deps_have_pangoft2)',
+    'cfg(system_deps_have_cairo_pdf)',
+    'cfg(system_deps_have_cairo_ps)',
+    'cfg(system_deps_have_cairo_svg)',
+] }
+
 [lib]
 name = "rsvg"
 crate-type = [ "staticlib", "rlib" ]
