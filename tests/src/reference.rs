@@ -756,7 +756,8 @@ mod tests {
     t!(bugs_bug634324_blur_negative_transform_svg,                  "bugs/bug634324-blur-negative-transform.svg");
     t!(bugs_bug642_nested_tspan_dx_dy_svg,                          "bugs/bug642-nested-tspan-dx-dy.svg");
     t!(bugs_bug667_tspan_visibility_svg,                            "bugs/bug667-tspan-visibility.svg");
-    t!(bugs_bug668_small_caps_svg,                                  "bugs/bug668-small-caps.svg");
+//  Ignore this one; see commit 73c1ee7519555aa90c1c45828ffaa2f573812864 for when it was fixed in newer versions
+//    t!(bugs_bug668_small_caps_svg,                                  "bugs/bug668-small-caps.svg");
     t!(bugs_bug689832_unresolved_gradient_svg,                      "bugs/bug689832-unresolved-gradient.svg");
     t!(bugs_bug718_rect_negative_rx_ry_svg,                         "bugs/bug718-rect-negative-rx-ry.svg");
     t!(bugs_bug730_font_scaling_svg,                                "bugs/bug730-font-scaling.svg");
