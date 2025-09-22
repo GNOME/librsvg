@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use float_cmp::approx_eq;
 use lopdf::{self, Dictionary, Object};
 use predicates::prelude::*;
@@ -209,23 +209,6 @@ impl DetailPredicate<PdfPredicate> {
     }
 }
 
-// Extensions to lopdf::Object; can be removed after lopdf 0.26
-trait ObjExt {
-    /// Get the object value as a float.
-    /// Unlike as_f32() this will also cast an Integer to a Real.
-    fn as_float(&self) -> lopdf::Result<f32>;
-}
-
-impl ObjExt for lopdf::Object {
-    fn as_float(&self) -> lopdf::Result<f32> {
-        match *self {
-            lopdf::Object::Integer(ref value) => Ok(*value as f32),
-            lopdf::Object::Real(ref value) => Ok(*value),
-            _ => Err(lopdf::Error::Type),
-        }
-    }
-}
-
 impl Details for lopdf::Document {
     fn get_page_count(self: &Self) -> usize {
         self.get_pages().len()
@@ -236,7 +219,7 @@ impl Details for lopdf::Document {
             Ok(obj) => {
                 let unit = self
                     .get_from_page(idx, b"UserUnit")
-                    .and_then(ObjExt::as_float)
+                    .and_then(Object::as_float)
                     .ok();
                 Dimensions::from_media_box(obj, unit).ok()
             }
@@ -246,7 +229,15 @@ impl Details for lopdf::Document {
 
     fn get_creation_date(self: &Self) -> Option<DateTime<Utc>> {
         match self.get_from_trailer(b"CreationDate") {
-            Ok(obj) => obj.as_datetime().map(|date| date.with_timezone(&Utc)),
+            Ok(obj) => match obj.as_datetime() {
+                Some(d) => {
+                    let local_datetime = DateTime::<Local>::try_from(d).ok()?;
+                    Some(local_datetime.into())
+                }
+
+                None => None,
+            },
+
             Err(_) => None,
         }
     }
@@ -267,7 +258,7 @@ impl Details for lopdf::Document {
         }
         match iter.next() {
             Some(id) => self.get_object(id)?.as_dict()?.get(key),
-            None => Err(lopdf::Error::ObjectNotFound),
+            None => Err(lopdf::Error::PageNumberNotFound(idx as u32)),
         }
     }
 }
@@ -337,8 +328,8 @@ fn object_is_annotation_with_link(object: &Object, link_text: &str) -> bool {
 
 fn dict_is_annotation(dict: &Dictionary) -> bool {
     dict.get(b"Type")
-        .and_then(|type_val| type_val.as_name_str())
-        .map(|name| name == "Annot")
+        .and_then(|type_val| type_val.as_name())
+        .map(|name| name == b"Annot")
         .unwrap_or(false)
 }
 

@@ -104,7 +104,7 @@ chrono = { version = "0.4.23", default-features = false, features = ["clock", "s
 criterion = "0.5"
 glib = "0.17"
 libc = "0.2"
-lopdf = "0.29.0"
+lopdf = "0.36"
 matches = "0.1"
 pango = "0.17"
 pangocairo = "0.17"
