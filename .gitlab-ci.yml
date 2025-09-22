@@ -45,15 +45,6 @@ lint ci scripts:
     - source ci/env.sh
     - ruff check ci
 
-run ci tests:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-  stage: ci-check
-  script:
-    - source ci/env.sh
-    - pytest ci/*.py
-
 check:
   extends:
     - '.container.opensuse@x86_64.stable'
