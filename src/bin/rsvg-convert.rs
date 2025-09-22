@@ -217,6 +217,7 @@ impl ResizeStrategy {
     }
 }
 
+#[allow(dead_code)]
 enum Surface {
     Png(cairo::ImageSurface, OutputStream),
     #[cfg(system_deps_have_cairo_pdf)]
@@ -1183,33 +1184,6 @@ fn parse_zoom_factor(v: &str) -> Result<ZoomFactor, String> {
         Ok(res) if res > 0.0 => Ok(ZoomFactor(res)),
         Ok(_) => Err(String::from("Invalid zoom factor")),
         Err(e) => Err(format!("{e}")),
-    }
-}
-
-trait NotFound {
-    type Ok;
-    type Error;
-
-    fn or_none(self) -> Result<Option<Self::Ok>, Self::Error>;
-}
-
-impl<T> NotFound for Result<T, clap::Error> {
-    type Ok = T;
-    type Error = clap::Error;
-
-    /// Maps the Result to an Option, translating the ArgumentNotFound error to
-    /// Ok(None), while mapping other kinds of errors to Err(e).
-    ///
-    /// This allows to get proper error reporting for invalid values on optional
-    /// arguments.
-    fn or_none(self) -> Result<Option<T>, clap::Error> {
-        self.map_or_else(
-            |e| match e.kind() {
-                clap::error::ErrorKind::UnknownArgument => Ok(None),
-                _ => Err(e),
-            },
-            |v| Ok(Some(v)),
-        )
     }
 }
 

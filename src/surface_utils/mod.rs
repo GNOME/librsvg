@@ -21,6 +21,8 @@ use rgb::alt::ARGB8;
 #[allow(clippy::upper_case_acronyms)]
 pub type CairoARGB = ARGB8;
 
+use rgb::ColorComponentMap;
+
 /// GdkPixbuf's endian-independent RGBA8 pixel layout.
 pub type GdkPixbufRGBA = rgb::RGBA8;
 
@@ -179,7 +181,7 @@ impl PixelOps for Pixel {
             }
         } else {
             let alpha = f32::from(self.a) / 255.0;
-            self.map_rgb(|x| ((f32::from(x) / alpha) + 0.5) as u8)
+            self.map_colors(|x| ((f32::from(x) / alpha) + 0.5) as u8)
         }
     }
 
@@ -187,7 +189,7 @@ impl PixelOps for Pixel {
     #[inline]
     fn premultiply(self) -> Self {
         let a = self.a as u32;
-        self.map_rgb(|x| (((x as u32) * a + 127) / 255) as u8)
+        self.map_colors(|x| (((x as u32) * a + 127) / 255) as u8)
     }
 
     #[inline]
@@ -303,7 +305,7 @@ mod tests {
     // Floating-point reference implementation
     fn premultiply_float(pixel: Pixel) -> Pixel {
         let alpha = f64::from(pixel.a) / 255.0;
-        pixel.map_rgb(|x| ((f64::from(x) * alpha) + 0.5) as u8)
+        pixel.map_colors(|x| ((f64::from(x) * alpha) + 0.5) as u8)
     }
 
     prop_compose! {

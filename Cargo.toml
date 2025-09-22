@@ -1,6 +1,6 @@
 [package]
 name = "librsvg"
-version = "2.56.4"
+version = "2.56.5"
 authors = ["Federico Mena Quintero <federico@gnome.org>", "Many others"]
 description = "Render SVG documents with Cairo"
 license = "LGPL-2.1-or-later"
@@ -9,7 +9,7 @@ homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
 build = "build.rs"
 edition = "2021"
-rust-version = "1.65.0"
+rust-version = "1.85.0"
 
 [profile.overflow]
 inherits = "release"
@@ -43,6 +43,15 @@ cairo-png = "1.16"
 harfbuzz = "2.0"
 freetype2 = "20.0.14"
 libxml2 = { name = "libxml-2.0", version = "2.9" }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(system_deps_have_fontconfig)',
+    'cfg(system_deps_have_pangoft2)',
+    'cfg(system_deps_have_cairo_pdf)',
+    'cfg(system_deps_have_cairo_ps)',
+    'cfg(system_deps_have_cairo_svg)',
+] }
 
 [lib]
 name = "rsvg"
@@ -92,10 +101,10 @@ assert_cmd = "2.0.2"
 cairo-rs = { version = "0.17", features = ["png"] }
 cast = "0.3.0"
 chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
-criterion = "0.4"
+criterion = "0.5"
 glib = "0.17"
 libc = "0.2"
-lopdf = "0.29.0"
+lopdf = "0.36"
 matches = "0.1"
 pango = "0.17"
 pangocairo = "0.17"
@@ -105,7 +114,7 @@ proptest = "1.0.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3"
-yeslogic-fontconfig-sys = "4.0.1"
+yeslogic-fontconfig-sys = "6.0.0"
 
 [build-dependencies]
 regex = "1.7.1"
