@@ -29,8 +29,6 @@ ignore = [
 
     { id = "RUSTSEC-2025-0057", reason = "fxhash is no longer maintained but selectors 0.31.0 still depends on it" },
 
-    { id = "RUSTSEC-2025-0056", reason = "adler is unmaintained" },
-
     { id = "RUSTSEC-2024-0429", reason = "librsvg does not use the affected APIs in glib-rs" },
 
     { id = "RUSTSEC-2024-0370", reason = "proc_macro_error is unmaintained" }
