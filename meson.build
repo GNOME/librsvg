@@ -24,7 +24,7 @@ cc = meson.get_compiler('c')
 msrv = '1.85.1'
 cargo = find_program('cargo', version:'>= @0@'.format(msrv))
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)
-cargo_c = find_program('cargo-cbuild', version:'>= 0.10.0') # https://github.com/lu-zero/cargo-c
+cargo_c = find_program('cargo-cbuild', version:'>= 0.10.10') # https://github.com/lu-zero/cargo-c
 rustc = find_program('rustc', version:'>= @0@'.format(msrv))
 makedef = find_program('meson/makedef.py', native: true)
 
