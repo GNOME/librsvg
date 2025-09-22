@@ -229,7 +229,8 @@ mod tests {
     t!(include_compressed_svg,                                      "include-compressed.svg");
     t!(include_fallback_svg,                                        "include-fallback.svg");
     t!(include_text_svg,                                            "include-text.svg");
-    t!(rtl_tspan_svg,                                               "rtl-tspan.svg");
+    // Removed for librsvg-2.56 because it does not have the necessary font for the test suite.
+    // t!(rtl_tspan_svg,                                               "rtl-tspan.svg");
     t!(specificity_svg,                                             "specificity.svg");
     t!(structural_pseudo_classes_svg,                               "structural-pseudo-classes.svg");
     t!(style_with_xml_comments_svg,                                 "style-with-xml-comments.svg");
