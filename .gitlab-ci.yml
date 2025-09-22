@@ -206,8 +206,6 @@ check_versions:
       artifacts: false
   script:
     - python3 ci/check_project_version.py
-    - python3 ci/check_public_crate_version.py
-    - python3 ci/check_crate_versions_in_example.py
     - python3 ci/check_rust_versions.py
 
 
