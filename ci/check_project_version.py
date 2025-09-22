@@ -7,7 +7,7 @@ from utils import get_configure_ac_version
 
 def get_cargo_toml_version():
     doc = toml.load('Cargo.toml')
-    return doc['workspace']['package']['version']
+    return doc['package']['version']
 
 def get_doc_version():
     doc = toml.load('doc/librsvg.toml')
