@@ -173,6 +173,8 @@ Please update all of these values when increasing the MSRV:
 
 - ``msrv`` in ``meson.build``.
 
+- ``cargo_c`` version in ``meson.build``.
+
 - ``rust-version`` in ``Cargo.toml``.
 
 - ``RUST_MINIMUM`` in ``ci/container_builds.yml``.

@@ -35,7 +35,6 @@ resolver = "2"
 
 [workspace.dependencies]
 afl = "*"
-anyhow = "1.0"
 assert_cmd = "2.0.2"
 bitflags = "2.0"
 cairo-rs = "0.21"
@@ -64,7 +63,7 @@ libc = "0.2"
 librsvg = { path = "rsvg" }
 librsvg-c = { path = "librsvg-c" }
 locale_config = "0.3.0"                                   # not "*" as per the documentation, since crates.io doesn't accept wildcards
-lopdf = "0.36"
+lopdf = "0.38"
 markup5ever = "0.35.0"
 matches = "0.1"
 nalgebra = "0.33.0"
@@ -87,7 +86,6 @@ shell-words = "1.1"
 string_cache = "0.9.0"
 system-deps = "7.0.0"
 tempfile = "3"
-thiserror = "2.0"
 tinyvec = "1.2.0"
 url = "2"
 xml5ever = "0.35.0"

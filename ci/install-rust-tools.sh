@@ -10,7 +10,7 @@ export CARGO_HOME='/usr/local/cargo'
 
 rustup component add clippy
 rustup component add rustfmt
-cargo install --force --locked cargo-c
+cargo install --force --locked cargo-c --version 0.10.10
 cargo install --version ^1.0 gitlab_clippy
 cargo install --force --locked cargo-deny
 # cargo install --force cargo-outdated

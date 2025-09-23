@@ -25,12 +25,26 @@ Development and beta versions have a micro version starting at 90
 
 The following list is only for stable release streams.
 
-2.59.3
+2.57.4
 ~~~~~~
 
 :rustsec:`2024-0421` - idna accepts Punycode labels that do not
 produce any non-ASCII when decoded
-         
+
+:rustsec:`2024-0404` - Unsoundness in anstream
+
+2.56.5
+~~~~~~
+
+:rustsec:`2024-0421` - idna accepts Punycode labels that do not
+produce any non-ASCII when decoded
+
+:rustsec:`2024-0404` - Unsoundness in anstream
+
+`GHSA-c827-hfw6-qwvm
+<https://github.com/advisories/GHSA-c827-hfw6-qwvm>`__
+(CVE-2024-43806) - memory explosion in rustix.
+
 2.56.3
 ~~~~~~
 
