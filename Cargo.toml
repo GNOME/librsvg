@@ -35,7 +35,6 @@ resolver = "2"
 
 [workspace.dependencies]
 afl = "*"
-anyhow = "1.0"
 assert_cmd = "2.0.2"
 bitflags = "2.0"
 cairo-rs = "0.21"
