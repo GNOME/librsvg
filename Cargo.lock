@@ -1473,9 +1473,9 @@ checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 
 [[package]]
 name = "lopdf"
-version = "0.36.0"
+version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59fa2559e99ba0f26a12458aabc754432c805bbb8cba516c427825a997af1fb7"
+checksum = "c7184fdea2bc3cd272a1acec4030c321a8f9875e877b3f92a53f2f6033fdc289"
 dependencies = [
  "aes",
  "bitflags",
@@ -1484,6 +1484,7 @@ dependencies = [
  "ecb",
  "encoding_rs",
  "flate2",
+ "getrandom",
  "indexmap",
  "itoa",
  "jiff",
@@ -1498,6 +1499,7 @@ dependencies = [
  "stringprep",
  "thiserror",
  "time",
+ "ttf-parser",
  "weezl",
 ]
 
@@ -2747,6 +2749,12 @@ dependencies = [
  "toml_datetime",
  "winnow",
 ]
+
+[[package]]
+name = "ttf-parser"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
 
 [[package]]
 name = "typenum"
