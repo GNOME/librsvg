@@ -2277,11 +2277,9 @@ dependencies = [
 name = "rsvg-bench"
 version = "2.61.1"
 dependencies = [
- "anyhow",
  "cairo-rs",
  "clap",
  "librsvg",
- "thiserror",
 ]
 
 [[package]]
