@@ -13,6 +13,13 @@ option('pixbuf',
        description: 'Build with GDK-Pixbuf'
        )
 
+option('rsvg-convert',
+       type: 'feature',
+       value: 'enabled',
+       yield: true,
+       description: 'Build the rsvg-convert util to convert SVG files to other image formats'
+       )
+
 option('pixbuf-loader',
        type: 'feature',
        value: 'disabled',
