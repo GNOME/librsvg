@@ -333,7 +333,7 @@ if build_gir.allowed()
     'cairo',
   ]
 
-  if build_pixbuf_loader.allowed()
+  if pixbuf_dep.found()
     gir_includes += [
       'GdkPixbuf-2.0',
     ]
