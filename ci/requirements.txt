@@ -1,0 +1,13 @@
+# IMPORTANT: See
+# https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
+
+docutils
+furo
+gi-docgen
+pytest
+ruff
+semver
+setuptools
+Sphinx
+sphinx-issues
+toml
