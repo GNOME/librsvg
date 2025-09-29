@@ -73,6 +73,10 @@ These are librsvg's options:
   gdk-pixbuf load and render SVG files as if they were raster images.
   Values are ``enabled``/``disabled``/``auto``.
 
+* ``rsvg-convert`` - Specifies whether to build the `rsvg-convert`
+  binary.  You can disable this if you just need the library to link
+  into other programs.  Values are ``enabled``/``disabled``/``auto``.
+
 * ``docs`` - Specifies whether the C API reference and the
   rsvg-convert manual page should be built.  These require ``gi-docgen
   <https://gnome.pages.gitlab.gnome.org/gi-docgen/>`_ and ``rst2man``
