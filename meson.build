@@ -161,6 +161,8 @@ else
 endif
 build_vala = get_option('vala').require(meson.can_run_host_binaries() and vapigen_dep.found())
 
+build_rsvg_convert = get_option('rsvg-convert')
+
 build_pixbuf_loader = get_option('pixbuf-loader').require(pixbuf_dep.found())
 
 build_docs = get_option('docs')
@@ -520,7 +522,9 @@ subdir('rsvg')
 if build_tests
   subdir('librsvg-c/tests-c')
 endif
-subdir('rsvg_convert')
+if build_rsvg_convert.allowed()
+  subdir('rsvg_convert')
+endif
 if build_pixbuf_loader.allowed()
   subdir('gdk-pixbuf-loader')
 endif
