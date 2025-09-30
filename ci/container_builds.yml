@@ -41,6 +41,7 @@ variables:
       gobject-introspection-devel
       google-roboto-fonts
       gperf
+      gtk-doc
       itstool
       libbrotli-devel
       libbz2-devel
