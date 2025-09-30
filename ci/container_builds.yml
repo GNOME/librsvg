@@ -63,6 +63,7 @@ variables:
       system-group-wheel
       vala
       wget
+      which
       xz
       zlib-devel
 
