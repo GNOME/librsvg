@@ -98,6 +98,15 @@ yeslogic-fontconfig-sys = "2.11.1"
 regex = "1.3.9"
 system-deps = "6.0.0"
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(system_deps_have_fontconfig)',
+    'cfg(system_deps_have_pangoft2)',
+    'cfg(system_deps_have_cairo_pdf)',
+    'cfg(system_deps_have_cairo_ps)',
+    'cfg(system_deps_have_cairo_svg)',
+] }
+
 [[bench]]
 name = "box_blur"
 harness = false
