@@ -166,6 +166,7 @@ impl ResizeStrategy {
     }
 }
 
+#[allow(dead_code)]
 enum Surface {
     Png(cairo::ImageSurface, OutputStream),
     #[cfg(system_deps_have_cairo_pdf)]
