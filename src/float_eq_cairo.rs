@@ -6,17 +6,6 @@ use float_cmp::ApproxEq;
 // cairo-fixed-type-private.h}
 
 const CAIRO_FIXED_FRAC_BITS: u64 = 8;
-const CAIRO_MAGIC_NUMBER_FIXED: f64 = (1u64 << (52 - CAIRO_FIXED_FRAC_BITS)) as f64 * 1.5;
-
-fn cairo_magic_double(d: f64) -> f64 {
-    d + CAIRO_MAGIC_NUMBER_FIXED
-}
-
-fn cairo_fixed_from_double(d: f64) -> i32 {
-    let bits = cairo_magic_double(d).to_bits();
-    let lower = bits & 0xffffffff;
-    lower as i32
-}
 
 /// Checks whether two floating-point numbers are approximately equal,
 /// considering Cairo's limitations on numeric representation.
