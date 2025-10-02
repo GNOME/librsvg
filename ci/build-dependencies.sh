@@ -7,7 +7,6 @@ FONTCONFIG_TAG="2.14.2"
 CAIRO_TAG="1.18.2"
 HARFBUZZ_TAG="8.2.0"
 PANGO_TAG="1.48.11"
-LIBXML2_TAG="v2.11.5"
 GDK_PIXBUF_TAG="2.42.10"
 
 PARSED=$(getopt --options '' --longoptions 'prefix:,meson-flags:' --name "$0" -- "$@")
@@ -88,15 +87,6 @@ cd pango
 meson setup _build --prefix "$PREFIX" $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
-
-cd ..
-git clone --depth 1 --branch $LIBXML2_TAG https://gitlab.gnome.org/GNOME/libxml2
-cd libxml2
-mkdir _build
-cd _build
-../autogen.sh --prefix "$PREFIX" --libdir "$PREFIX"/lib64 --without-python
-make
-make install
 
 cd ..
 git clone --depth 1 --branch $GDK_PIXBUF_TAG https://gitlab.gnome.org/GNOME/gdk-pixbuf
