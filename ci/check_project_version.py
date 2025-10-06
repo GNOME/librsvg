@@ -9,15 +9,10 @@ def get_cargo_toml_version():
     doc = toml.load('Cargo.toml')
     return doc['package']['version']
 
-def get_doc_version():
-    doc = toml.load('doc/librsvg.toml')
-    return doc['library']['version']
-
 def main():
     versions = [
         ['configure.ac', get_configure_ac_version()],
         ['Cargo.toml', get_cargo_toml_version()],
-        ['doc/librsvg.toml', get_doc_version()],
     ]
 
     all_the_same = True
