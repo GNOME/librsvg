@@ -44,7 +44,7 @@ crate-type = [ "staticlib", "rlib" ]
 #   src/lib.rs - toplevel example in the docs
 cairo-rs = { version="0.14.0", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
-chrono = "0.4.0" # rsvg-convert
+chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] } # rsvg-convert
 clap = "2.34.0" # rsvg-convert
 cssparser = "0.28.0"
 data-url = "0.1"
@@ -78,7 +78,7 @@ anyhow = "1.0"
 assert_cmd = "2.0.2"
 cairo-rs = { version="0.14.0", features = ["png"] }
 cast = "0.3.0"
-chrono = "0.4.0"
+chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
 criterion = "0.3"
 glib = "0.14.0"
 libc = "0.2"
