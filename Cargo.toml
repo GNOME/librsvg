@@ -4,6 +4,7 @@ version = "2.52.11"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 build = "build.rs"
 edition = "2018"
+rust-version = "1.85.0"
 
 [package.metadata.system-deps]
 cairo-pdf = { version = "1.16", optional = true }
