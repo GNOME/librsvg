@@ -8,7 +8,6 @@ PLACES_TO_CHECK = [
     ['configure.ac',                     r'MINIMUM_RUST_VER=(.*)'],
     ['Cargo.toml',                       r'rust-version\s*=\s*"(.*)"'],
     ['ci/container_builds.yml',          r'RUST_MINIMUM:\s*"(.*)"'],
-    ['devel-docs/devel_environment.rst', r'rust (.*) or later'],
 ]
 
 def main():
