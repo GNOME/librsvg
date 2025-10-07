@@ -81,6 +81,7 @@ impl UrlResolver {
         // The rest of this function assumes file: URLs; guard against
         // incorrect refactoring.
         assert!(url.scheme() == "file");
+        assert!(base_url.scheme() == "file");
 
         // If we have a base_uri of "file:///foo/bar.svg", and resolve an href of ".",
         // Url.parse() will give us "file:///foo/".  We don't want that, so check
