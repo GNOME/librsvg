@@ -212,6 +212,26 @@ mod tests {
     }
 
     #[test]
+    fn disallows_hostname_in_base_url() {
+        let base_url = Url::parse("file://192.168.1.1/some/file.svg").unwrap();
+        let url_resolver = UrlResolver::new(Some(base_url));
+        assert!(dbg!(url_resolver.resolve_href("bar/foo.svg")).is_err());
+    }
+
+    #[test]
+    fn disallows_hostname_in_href_no_base_url() {
+        let url_resolver = UrlResolver::new(None);
+        assert!(dbg!(url_resolver.resolve_href("file://192.168.1.1/foo.svg")).is_err());
+    }
+
+    #[test]
+    fn disallows_hostname_in_href_with_base_url() {
+        let base_url = Url::parse("file:///foo/bar.svg").unwrap();
+        let url_resolver = UrlResolver::new(Some(base_url));
+        assert!(dbg!(url_resolver.resolve_href("file://192.168.1.1/foo.svg")).is_err());
+    }
+
+    #[test]
     fn allows_data_url_with_no_base_file() {
         let url_resolver = UrlResolver::new(None);
         assert_eq!(
