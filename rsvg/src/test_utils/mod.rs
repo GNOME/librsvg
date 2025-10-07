@@ -5,7 +5,6 @@ use cairo;
 use gio;
 use glib;
 use std::env;
-use std::path::PathBuf;
 use std::sync::Once;
 
 use crate::{
@@ -51,6 +50,7 @@ pub fn render_document<F: FnOnce(&cairo::Context)>(
 ))]
 mod pango_ft2 {
     use super::*;
+    use std::path::PathBuf;
     use glib::prelude::*;
     use glib::translate::*;
     use libc;
