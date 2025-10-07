@@ -102,6 +102,8 @@ impl UrlResolver {
         // We have two file: URIs.  Now canonicalize them (remove .. and symlinks, etc.)
         // and see if the directories match
 
+        dbg!(url.as_str());
+
         let url_path = url
             .to_file_path()
             .map_err(|_| AllowedUrlError::InvalidPathInUrl)?;
