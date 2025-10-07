@@ -103,10 +103,10 @@ impl UrlResolver {
 
         let url_path = url
             .to_file_path()
-            .map_err(|_| AllowedUrlError::InvalidPath)?;
+            .map_err(|_| AllowedUrlError::InvalidPathInUrl)?;
         let base_path = base_url
             .to_file_path()
-            .map_err(|_| AllowedUrlError::InvalidPath)?;
+            .map_err(|_| AllowedUrlError::InvalidPathInBaseUrl)?;
 
         let base_parent = base_path.parent();
         if base_parent.is_none() {
