@@ -799,19 +799,6 @@ impl SpecifiedValues {
         }
     }
 
-    pub fn is_overflow(&self) -> bool {
-        if let Some(overflow_index) = self.property_index(PropertyId::Overflow) {
-            match self.props[overflow_index] {
-                ParsedProperty::Overflow(SpecifiedValue::Specified(Overflow::Auto)) => true,
-                ParsedProperty::Overflow(SpecifiedValue::Specified(Overflow::Visible)) => true,
-                ParsedProperty::Overflow(_) => false,
-                _ => unreachable!(),
-            }
-        } else {
-            false
-        }
-    }
-
     fn parse_one_presentation_attribute(&mut self, session: &Session, attr: QualName, value: &str) {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
