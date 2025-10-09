@@ -311,6 +311,9 @@ fn is_absolute_unit(u: LengthUnit) -> bool {
     match u {
         Percent | Em | Ex | Ch => false,
         Px | In | Cm | Mm | Pt | Pc => true,
+
+        // coverage: the following is because LengthUnit is marked non_exhaustive, but
+        // the cases above should really test all the units librsvg knows about.
         _ => false,
     }
 }

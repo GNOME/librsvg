@@ -755,6 +755,16 @@ fn negative_resolution_is_invalid() {
 }
 
 #[test]
+fn unparsable_resolution_is_invalid() {
+    RsvgConvert::new_with_input("tests/fixtures/dpi.svg")
+        .arg("--dpi-x=blah")
+        .arg("--dpi-y=blah")
+        .assert()
+        .failure()
+        .stderr(contains("invalid value")); // this comes from clap
+}
+
+#[test]
 fn zero_offset_png() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions-in.svg")
         .arg("--page-width=640")
