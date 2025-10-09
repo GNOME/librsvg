@@ -83,6 +83,12 @@ impl UrlResolver {
         assert!(url.scheme() == "file");
         assert!(base_url.scheme() == "file");
 
+        // Hostnames are not allowed.  The URL crate rejects them on Unix; but on Windows
+        // they are allowed.  In that case, reject them here.
+        if url.host().is_some() {
+            return Err(AllowedUrlError::NoHostAllowed);
+        }
+
         // If we have a base_uri of "file:///foo/bar.svg", and resolve an href of ".",
         // Url.parse() will give us "file:///foo/".  We don't want that, so check
         // if the last path segment is empty - it will not be empty for a normal file.
@@ -101,8 +107,6 @@ impl UrlResolver {
 
         // We have two file: URIs.  Now canonicalize them (remove .. and symlinks, etc.)
         // and see if the directories match
-
-        dbg!(url.as_str());
 
         let url_path = url
             .to_file_path()
@@ -215,7 +219,7 @@ mod tests {
 
     #[test]
     fn disallows_hostname_in_base_url() {
-        let base_url = Url::parse("file://192.168.1.1/some/file.svg").unwrap();
+        let base_url = Url::parse("file://www.example.com/some/file.svg").unwrap();
         let url_resolver = UrlResolver::new(Some(base_url));
         assert!(dbg!(url_resolver.resolve_href("bar/foo.svg")).is_err());
     }
@@ -223,14 +227,21 @@ mod tests {
     #[test]
     fn disallows_hostname_in_href_no_base_url() {
         let url_resolver = UrlResolver::new(None);
-        assert!(dbg!(url_resolver.resolve_href("file://192.168.1.1/foo.svg")).is_err());
+        assert!(dbg!(url_resolver.resolve_href("file://www.example.com/foo.svg")).is_err());
     }
 
     #[test]
     fn disallows_hostname_in_href_with_base_url() {
         let base_url = Url::parse("file:///foo/bar.svg").unwrap();
         let url_resolver = UrlResolver::new(Some(base_url));
-        assert!(dbg!(url_resolver.resolve_href("file://192.168.1.1/foo.svg")).is_err());
+        assert!(dbg!(url_resolver.resolve_href("file://www.example.com/foo.svg")).is_err());
+    }
+
+    #[test]
+    fn disallows_unc_path() {
+        let base_url = Url::parse("file:///foo/bar.svg").unwrap();
+        let url_resolver = UrlResolver::new(Some(base_url));
+        assert!(dbg!(url_resolver.resolve_href("//server/share_name/foo/bar.svg")).is_err());
     }
 
     #[test]
