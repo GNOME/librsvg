@@ -239,18 +239,6 @@ impl From<IRect> for Rect {
     }
 }
 
-impl From<cairo::Rectangle> for IRect {
-    #[inline]
-    fn from(r: cairo::Rectangle) -> Self {
-        Self {
-            x0: r.x().floor() as i32,
-            y0: r.y().floor() as i32,
-            x1: (r.x() + r.width()).ceil() as i32,
-            y1: (r.y() + r.height()).ceil() as i32,
-        }
-    }
-}
-
 impl From<IRect> for cairo::Rectangle {
     #[inline]
     fn from(r: IRect) -> Self {
