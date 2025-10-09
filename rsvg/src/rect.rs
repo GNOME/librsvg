@@ -149,16 +149,6 @@ mod rect {
             self.width().approx_eq_cairo(0.0) || self.height().approx_eq_cairo(0.0)
         }
 
-        #[inline]
-        pub fn scale(self, x: f64, y: f64) -> Self {
-            Self {
-                x0: self.x0 * x,
-                y0: self.y0 * y,
-                x1: self.x1 * x,
-                y1: self.y1 * y,
-            }
-        }
-
         pub fn approx_eq(&self, other: &Self) -> bool {
             // FIXME: this is super fishy; shouldn't we be using 2x the epsilon against the width/height
             // instead of the raw coordinates?
