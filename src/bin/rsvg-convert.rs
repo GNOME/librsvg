@@ -47,7 +47,7 @@ impl From<cairo::Error> for Error {
                  Librsvg currently cannot render to images bigger than that.\n\
                  Please specify a smaller size.",
             )),
-            e => Self(format!("{}", e)),
+            e => Self(format!("{e}")),
         }
     }
 }
@@ -56,7 +56,7 @@ macro_rules! impl_error_from {
     ($err:ty) => {
         impl From<$err> for Error {
             fn from(e: $err) -> Self {
-                Self(format!("{}", e))
+                Self(format!("{e}"))
             }
         }
     };
