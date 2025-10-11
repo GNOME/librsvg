@@ -1133,29 +1133,27 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests {
-    mod color {
-        use super::super::*;
+mod color_tests {
+    use super::*;
 
-        #[test]
-        fn valid_color_is_ok() {
-            assert!(parse_color_string("Red").is_ok());
-        }
+    #[test]
+    fn valid_color_is_ok() {
+        assert!(parse_color_string("Red").is_ok());
+    }
 
-        #[test]
-        fn none_is_handled_as_not_found() {
-            assert_eq!(
-                parse_color_string("None").map_err(|e| e.kind),
-                Err(clap::ErrorKind::ArgumentNotFound)
-            );
-        }
+    #[test]
+    fn none_is_handled_as_not_found() {
+        assert_eq!(
+            parse_color_string("None").map_err(|e| e.kind),
+            Err(clap::ErrorKind::ArgumentNotFound)
+        );
+    }
 
-        #[test]
-        fn invalid_is_handled_as_invalid_value() {
-            assert_eq!(
-                parse_color_string("foo").map_err(|e| e.kind),
-                Err(clap::ErrorKind::InvalidValue)
-            );
-        }
+    #[test]
+    fn invalid_is_handled_as_invalid_value() {
+        assert_eq!(
+            parse_color_string("foo").map_err(|e| e.kind),
+            Err(clap::ErrorKind::InvalidValue)
+        );
     }
 }
