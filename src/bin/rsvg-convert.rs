@@ -104,7 +104,7 @@ enum ResizeStrategy {
 }
 
 impl ResizeStrategy {
-    pub fn apply(self, input: Size, keep_aspect_ratio: bool) -> Option<Size> {
+    pub fn apply(self, input: &Size, keep_aspect_ratio: bool) -> Option<Size> {
         if input.w == 0.0 || input.h == 0.0 {
             return None;
         }
@@ -674,10 +674,7 @@ impl Converter {
         input: &Input,
     ) -> Result<Size, Error> {
         strategy
-            .apply(
-                Size::new(natural_size.w, natural_size.h),
-                self.keep_aspect_ratio,
-            )
+            .apply(natural_size, self.keep_aspect_ratio)
             .ok_or_else(|| error!("The SVG {} has no dimensions", input))
     }
 
