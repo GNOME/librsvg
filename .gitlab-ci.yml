@@ -288,6 +288,7 @@ distcheck:
   script:
     - source ./ci/setup-dependencies-env.sh
     - ./autogen.sh --enable-vala
+    - make
     - make distcheck
   artifacts:
     when: 'on_success'
