@@ -284,6 +284,7 @@ distcheck:
     DESTDIR: "/tmp/distcheck"
     LIBRSVG_DEBUG: "no"
     PREFIX: "/usr/local/librsvg"
+    XML_CATALOG_FILES: "/etc/xml/catalog"
   script:
     - source ./ci/setup-dependencies-env.sh
     - ./autogen.sh --enable-vala
