@@ -368,7 +368,7 @@ unsafe extern "C" fn stream_ctx_close(context: *mut libc::c_void) -> libc::c_int
         }
     };
 
-    Box::from_raw(ctx);
+    drop(Box::from_raw(ctx));
 
     ret
 }

@@ -438,7 +438,7 @@ fn env_source_data_epoch_controls_pdf_creation_date() {
         .arg(input)
         .assert()
         .success()
-        .stdout(file::is_pdf().with_creation_date(Utc.timestamp(date, 0)));
+        .stdout(file::is_pdf().with_creation_date(Utc.timestamp_opt(date, 0).unwrap()));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -624,7 +624,7 @@ fn invalid_zoom_factor_yields_error() {
         .arg("--zoom=foo")
         .assert()
         .failure()
-        .stderr(contains("Invalid value"));
+        .stderr(contains("invalid value"));
 }
 
 #[test]
@@ -972,7 +972,7 @@ fn keep_aspect_ratio_option() {
         .arg("--keep-aspect-ratio")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(500, 2000));
+        .stdout(file::is_png().with_size(250, 1000));
 }
 
 #[test]

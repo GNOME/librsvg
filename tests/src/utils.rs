@@ -49,7 +49,6 @@ pub fn render_document<F: FnOnce(&cairo::Context)>(
 #[cfg(system_deps_have_pangoft2)]
 mod pango_ft2 {
     use super::*;
-    use fontconfig_sys::fontconfig;
     use glib::prelude::*;
     use pangocairo::FontMap;
 
@@ -59,7 +58,7 @@ mod pango_ft2 {
         // This is not bound in gtk-rs, and PangoFcFontMap is not even exposed, so we'll bind it by hand.
         fn pango_fc_font_map_set_config(
             font_map: *mut libc::c_void,
-            config: *mut fontconfig::FcConfig,
+            config: *mut fontconfig_sys::FcConfig,
         );
     }
 
@@ -73,15 +72,17 @@ mod pango_ft2 {
             "tests/resources/Roboto-BoldItalic.ttf",
         ];
 
-        let config = fontconfig::FcConfigCreate();
-        if fontconfig::FcConfigSetCurrent(config) == 0 {
+        let config = fontconfig_sys::FcConfigCreate();
+        if fontconfig_sys::FcConfigSetCurrent(config) == 0 {
             panic!("Could not set a fontconfig configuration");
         }
 
         for path in &font_paths {
             let path_cstring = CString::new(*path).unwrap();
 
-            if fontconfig::FcConfigAppFontAddFile(config, path_cstring.as_ptr() as *const _) == 0 {
+            if fontconfig_sys::FcConfigAppFontAddFile(config, path_cstring.as_ptr() as *const _)
+                == 0
+            {
                 panic!("Could not load font file {} for tests; aborting", path,);
             }
         }
@@ -90,7 +91,7 @@ mod pango_ft2 {
         let raw_font_map: *mut pango::ffi::PangoFontMap = font_map.to_glib_none().0;
 
         pango_fc_font_map_set_config(raw_font_map as *mut _, config);
-        fontconfig::FcConfigDestroy(config);
+        fontconfig_sys::FcConfigDestroy(config);
 
         FontMap::set_default(Some(font_map.downcast::<pangocairo::FontMap>().unwrap()));
     }

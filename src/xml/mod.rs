@@ -1,7 +1,6 @@
 //! The main XML parser.
 
-use encoding::label::encoding_from_whatwg_label;
-use encoding::DecoderTrap;
+use encoding_rs::Encoding;
 use gio::{
     prelude::BufferedInputStreamExt, BufferedInputStream, Cancellable, ConverterInputStream,
     InputStream, ZlibCompressorFormat, ZlibDecompressor,
@@ -524,7 +523,7 @@ impl XmlState {
 
         let encoding = encoding.unwrap_or("utf-8");
 
-        let encoder = encoding_from_whatwg_label(encoding).ok_or_else(|| {
+        let encoder = Encoding::for_label_no_replacement(encoding.as_bytes()).ok_or_else(|| {
             AcquireError::FatalError(format!(
                 "unknown encoding \"{}\" for \"{}\"",
                 encoding, aurl
@@ -532,12 +531,9 @@ impl XmlState {
         })?;
 
         let utf8_data = encoder
-            .decode(&binary.data, DecoderTrap::Strict)
-            .map_err(|e| {
-                AcquireError::FatalError(format!(
-                    "could not convert contents of \"{}\" from character encoding \"{}\": {}",
-                    aurl, encoding, e
-                ))
+            .decode_without_bom_handling_and_without_replacement(&binary.data)
+            .ok_or_else(|| {
+                AcquireError::FatalError(format!("could not convert contents of \"{aurl}\" from character encoding \"{encoding}\""))
             })?;
 
         self.element_creation_characters(&utf8_data);

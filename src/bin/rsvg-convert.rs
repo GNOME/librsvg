@@ -1,4 +1,4 @@
-use clap::{arg_enum, crate_version, value_t};
+use clap::crate_version;
 
 use gio::prelude::*;
 use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
@@ -18,13 +18,15 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
+use cssparser::{_cssparser_internal_to_lowercase, match_ignore_ascii_case};
+
 use librsvg::rsvg_convert_only::{
-    CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, PathOrUrl, ULength,
-    Validate, Vertical,
+    AspectRatio, CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, Parse,
+    PathOrUrl, Rect, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
 };
-use librsvg::{
-    AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, Parse, RenderingError,
-};
+use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, RenderingError};
+
+use std::ffi::OsString;
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -45,7 +47,7 @@ impl From<cairo::Error> for Error {
                  Librsvg currently cannot render to images bigger than that.\n\
                  Please specify a smaller size.",
             )),
-            e => Self(format!("{}", e)),
+            e => Self(format!("{e}")),
         }
     }
 }
@@ -54,7 +56,7 @@ macro_rules! impl_error_from {
     ($err:ty) => {
         impl From<$err> for Error {
             fn from(e: $err) -> Self {
-                Self(format!("{}", e))
+                Self(format!("{e}"))
             }
         }
     };
@@ -82,7 +84,7 @@ impl Scale {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Size {
     pub w: f64,
     pub h: f64,
@@ -97,75 +99,123 @@ impl Size {
 #[derive(Clone, Copy, Debug)]
 enum ResizeStrategy {
     Scale(Scale),
-    Fit(f64, f64),
+    Fit {
+        size: Size,
+        keep_aspect_ratio: bool,
+    },
     FitWidth(f64),
     FitHeight(f64),
-    FitLargestScale(Scale, Option<f64>, Option<f64>),
+    ScaleWithMaxSize {
+        scale: Scale,
+        max_width: Option<f64>,
+        max_height: Option<f64>,
+        keep_aspect_ratio: bool,
+    },
 }
 
 impl ResizeStrategy {
-    pub fn apply(self, input: Size, keep_aspect_ratio: bool) -> Option<Size> {
+    pub fn apply(self, input: &Size) -> Option<Size> {
         if input.w == 0.0 || input.h == 0.0 {
             return None;
         }
 
-        let output = match self {
-            ResizeStrategy::Scale(s) => Size {
-                w: input.w * s.x,
-                h: input.h * s.y,
-            },
-            ResizeStrategy::Fit(w, h) => Size { w, h },
-            ResizeStrategy::FitWidth(w) => Size {
-                w,
-                h: input.h * w / input.w,
-            },
-            ResizeStrategy::FitHeight(h) => Size {
-                w: input.w * h / input.h,
-                h,
-            },
-            ResizeStrategy::FitLargestScale(s, w, h) => {
-                let scaled_input_w = input.w * s.x;
-                let scaled_input_h = input.h * s.y;
+        let output_size = match self {
+            ResizeStrategy::Scale(s) => Size::new(input.w * s.x, input.h * s.y),
 
-                let f = match (w, h) {
-                    (Some(w), Some(h)) if w < scaled_input_w || h < scaled_input_h => {
-                        let sx = w / scaled_input_w;
+            ResizeStrategy::Fit {
+                size,
+                keep_aspect_ratio,
+            } => {
+                if keep_aspect_ratio {
+                    let aspect = AspectRatio::parse_str("xMinYMin meet").unwrap();
+                    let rect = aspect.compute(
+                        &ViewBox::from(Rect::from_size(input.w, input.h)),
+                        &Rect::from_size(size.w, size.h),
+                    );
+                    Size::new(rect.width(), rect.height())
+                } else {
+                    size
+                }
+            }
 
-                        let sy = h / scaled_input_h;
-                        if sx > sy {
-                            sy
+            ResizeStrategy::FitWidth(w) => Size::new(w, input.h * w / input.w),
+
+            ResizeStrategy::FitHeight(h) => Size::new(input.w * h / input.h, h),
+
+            ResizeStrategy::ScaleWithMaxSize {
+                scale,
+                max_width,
+                max_height,
+                keep_aspect_ratio,
+            } => {
+                let scaled = Size::new(input.w * scale.x, input.h * scale.y);
+
+                match (max_width, max_height, keep_aspect_ratio) {
+                    (None, None, _) => scaled,
+
+                    (Some(max_width), Some(max_height), false) => {
+                        if scaled.w <= max_width && scaled.h <= max_height {
+                            scaled
                         } else {
-                            sx
+                            Size::new(max_width, max_height)
                         }
                     }
-                    (Some(w), None) if w < scaled_input_w => w / scaled_input_w,
-                    (None, Some(h)) if h < scaled_input_h => h / scaled_input_h,
-                    _ => 1.0,
-                };
 
-                Size {
-                    w: input.w * f * s.x,
-                    h: input.h * f * s.y,
+                    (Some(max_width), Some(max_height), true) => {
+                        if scaled.w <= max_width && scaled.h <= max_height {
+                            scaled
+                        } else {
+                            let aspect = AspectRatio::parse_str("xMinYMin meet").unwrap();
+                            let rect = aspect.compute(
+                                &ViewBox::from(Rect::from_size(scaled.w, scaled.h)),
+                                &Rect::from_size(max_width, max_height),
+                            );
+                            Size::new(rect.width(), rect.height())
+                        }
+                    }
+
+                    (Some(max_width), None, false) => {
+                        if scaled.w <= max_width {
+                            scaled
+                        } else {
+                            Size::new(max_width, scaled.h)
+                        }
+                    }
+
+                    (Some(max_width), None, true) => {
+                        if scaled.w <= max_width {
+                            scaled
+                        } else {
+                            let factor = max_width / scaled.w;
+                            Size::new(max_width, scaled.h * factor)
+                        }
+                    }
+
+                    (None, Some(max_height), false) => {
+                        if scaled.h <= max_height {
+                            scaled
+                        } else {
+                            Size::new(scaled.w, max_height)
+                        }
+                    }
+
+                    (None, Some(max_height), true) => {
+                        if scaled.h <= max_height {
+                            scaled
+                        } else {
+                            let factor = max_height / scaled.h;
+                            Size::new(scaled.w * factor, max_height)
+                        }
+                    }
                 }
             }
         };
 
-        if !keep_aspect_ratio {
-            Some(output)
-        } else if output.w < output.h {
-            Some(Size {
-                w: output.w,
-                h: input.h * (output.w / input.w),
-            })
-        } else {
-            Some(Size {
-                w: input.w * (output.h / input.h),
-                h: output.h,
-            })
-        }
+        Some(output_size)
     }
 }
 
+#[allow(dead_code)]
 enum Surface {
     Png(cairo::ImageSurface, OutputStream),
     #[cfg(system_deps_have_cairo_pdf)]
@@ -345,7 +395,7 @@ mod metadata {
         match env::var("SOURCE_DATE_EPOCH") {
             Ok(epoch) => match i64::from_str(&epoch) {
                 Ok(seconds) => {
-                    let datetime = Utc.timestamp(seconds, 0);
+                    let datetime = Utc.timestamp_opt(seconds, 0).unwrap();
                     Ok(Some(datetime.to_rfc3339()))
                 }
                 Err(e) => Err(error!("Environment variable $SOURCE_DATE_EPOCH: {}", e)),
@@ -423,20 +473,19 @@ impl std::fmt::Display for Output {
     }
 }
 
-arg_enum! {
-    // Keep this enum in sync with supported_formats in parse_args()
-    #[derive(Clone, Copy, Debug)]
-    enum Format {
-        Png,
-        Pdf,
-        Ps,
-        Eps,
-        Svg,
-    }
+// Keep this enum in sync with supported_formats in parse_args()
+#[derive(Clone, Copy, Debug)]
+enum Format {
+    Png,
+    Pdf,
+    Ps,
+    Eps,
+    Svg,
 }
 
 struct Converter {
-    pub dpi: (f64, f64),
+    pub dpi_x: Resolution,
+    pub dpi_y: Resolution,
     pub zoom: Scale,
     pub width: Option<ULength<Horizontal>>,
     pub height: Option<ULength<Vertical>>,
@@ -510,7 +559,7 @@ impl Converter {
             }
 
             let renderer = CairoRenderer::new(&handle)
-                .with_dpi(self.dpi.0, self.dpi.1)
+                .with_dpi(self.dpi_x.0, self.dpi_y.0)
                 .with_language(&self.language)
                 .test_mode(self.testing);
 
@@ -518,7 +567,7 @@ impl Converter {
 
             let natural_size = Size::new(geometry.width, geometry.height);
 
-            let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
+            let params = NormalizeParams::from_dpi(Dpi::new(self.dpi_x.0, self.dpi_y.0));
 
             // Convert natural size and requested size to pixels or points, depending on the target format,
             let (natural_size, requested_width, requested_height, page_size) = match self.format {
@@ -600,7 +649,10 @@ impl Converter {
                 (None, None) => ResizeStrategy::Scale(self.zoom),
 
                 // when w and h are specified, but zoom is not, scale to the requested size
-                (Some(w), Some(h)) if self.zoom.is_identity() => ResizeStrategy::Fit(w, h),
+                (Some(width), Some(height)) if self.zoom.is_identity() => ResizeStrategy::Fit {
+                    size: Size::new(width, height),
+                    keep_aspect_ratio: self.keep_aspect_ratio,
+                },
 
                 // if only one between w and h is specified and there is no zoom, scale to the
                 // requested w or h and use the same scaling factor for the other
@@ -608,7 +660,12 @@ impl Converter {
                 (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
 
                 // otherwise scale the image, but cap the zoom to match the requested size
-                _ => ResizeStrategy::FitLargestScale(self.zoom, requested_width, requested_height),
+                _ => ResizeStrategy::ScaleWithMaxSize {
+                    scale: self.zoom,
+                    max_width: requested_width,
+                    max_height: requested_height,
+                    keep_aspect_ratio: self.keep_aspect_ratio,
+                },
             };
 
             let final_size = self.final_size(&strategy, &natural_size, input)?;
@@ -673,10 +730,7 @@ impl Converter {
         input: &Input,
     ) -> Result<Size, Error> {
         strategy
-            .apply(
-                Size::new(natural_size.w, natural_size.h),
-                self.keep_aspect_ratio,
-            )
+            .apply(natural_size)
             .ok_or_else(|| error!("The SVG {} has no dimensions", input))
     }
 
@@ -718,258 +772,304 @@ fn natural_geometry(
 
 fn parse_args() -> Result<Converter, Error> {
     let supported_formats = vec![
-        "Png",
+        "png",
         #[cfg(system_deps_have_cairo_pdf)]
-        "Pdf",
+        "pdf",
         #[cfg(system_deps_have_cairo_ps)]
-        "Ps",
+        "ps",
         #[cfg(system_deps_have_cairo_ps)]
-        "Eps",
+        "eps",
         #[cfg(system_deps_have_cairo_svg)]
-        "Svg",
+        "svg",
     ];
 
-    let app = clap::App::new("rsvg-convert")
+    let app = clap::Command::new("rsvg-convert")
         .version(concat!("version ", crate_version!()))
         .about("Convert SVG files to other image formats")
-        .help_short("?")
-        .version_short("v")
+        .disable_version_flag(true)
+        .disable_help_flag(true)
         .arg(
-            clap::Arg::with_name("res_x")
-                .short("d")
+            clap::Arg::new("help")
+                .short('?')
+                .long("help")
+                .help("Display the help")
+                .action(clap::ArgAction::Help)
+        )
+        .arg(
+            clap::Arg::new("version")
+                .short('v')
+                .long("version")
+                .help("Display the version information")
+                .action(clap::ArgAction::Version)
+        )
+        .arg(
+            clap::Arg::new("res_x")
+                .short('d')
                 .long("dpi-x")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .default_value("96")
-                .validator(is_valid_resolution)
-                .help("Pixels per inch"),
+                .value_parser(parse_resolution)
+                .help("Pixels per inch")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("res_y")
-                .short("p")
+            clap::Arg::new("res_y")
+                .short('p')
                 .long("dpi-y")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .default_value("96")
-                .validator(is_valid_resolution)
-                .help("Pixels per inch"),
+                .value_parser(parse_resolution)
+                .help("Pixels per inch")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("zoom_x")
-                .short("x")
+            clap::Arg::new("zoom_x")
+                .short('x')
                 .long("x-zoom")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .conflicts_with("zoom")
-                .validator(is_valid_zoom_factor)
-                .help("Horizontal zoom factor"),
+                .value_parser(parse_zoom_factor)
+                .help("Horizontal zoom factor")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("zoom_y")
-                .short("y")
+            clap::Arg::new("zoom_y")
+                .short('y')
                 .long("y-zoom")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .conflicts_with("zoom")
-                .validator(is_valid_zoom_factor)
-                .help("Vertical zoom factor"),
+                .value_parser(parse_zoom_factor)
+                .help("Vertical zoom factor")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("zoom")
-                .short("z")
+            clap::Arg::new("zoom")
+                .short('z')
                 .long("zoom")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
-                .validator(is_valid_zoom_factor)
-                .help("Zoom factor"),
+                .value_parser(parse_zoom_factor)
+                .help("Zoom factor")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("size_x")
-                .short("w")
+            clap::Arg::new("size_x")
+                .short('w')
                 .long("width")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
-                .help("Width [defaults to the width of the SVG]"),
+                .value_parser(parse_length::<Horizontal, Unsigned>)
+                .help("Width [defaults to the width of the SVG]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("size_y")
-                .short("h")
+            clap::Arg::new("size_y")
+                .short('h')
                 .long("height")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
-                .help("Height [defaults to the height of the SVG]"),
+                .value_parser(parse_length::<Vertical, Unsigned>)
+                .help("Height [defaults to the height of the SVG]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("top")
+            clap::Arg::new("top")
                 .long("top")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
-                .help("Distance between top edge of page and the image [defaults to 0]"),
+                .value_parser(parse_length::<Vertical, Signed>)
+                .help("Distance between top edge of page and the image [defaults to 0]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("left")
+            clap::Arg::new("left")
                 .long("left")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
-                .help("Distance between left edge of page and the image [defaults to 0]"),
+                .value_parser(parse_length::<Horizontal, Signed>)
+                .help("Distance between left edge of page and the image [defaults to 0]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("page_width")
+            clap::Arg::new("page_width")
                 .long("page-width")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
-                .help("Width of output media [defaults to the width of the SVG]"),
+                .value_parser(parse_length::<Horizontal, Unsigned>)
+                .help("Width of output media [defaults to the width of the SVG]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("page_height")
+            clap::Arg::new("page_height")
                 .long("page-height")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
-                .help("Height of output media [defaults to the height of the SVG]"),
+                .value_parser(parse_length::<Vertical, Unsigned>)
+                .help("Height of output media [defaults to the height of the SVG]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("format")
-                .short("f")
+            clap::Arg::new("format")
+                .short('f')
                 .long("format")
-                .takes_value(true)
-                .possible_values(supported_formats.as_slice())
-                .case_insensitive(true)
+                .num_args(1)
+                .value_parser(clap::builder::PossibleValuesParser::new(supported_formats.as_slice()))
+                .ignore_case(true)
                 .default_value("png")
-                .help("Output format"),
+                .help("Output format")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("output")
-                .short("o")
+            clap::Arg::new("output")
+                .short('o')
                 .long("output")
-                .empty_values(false)
-                .help("Output filename [defaults to stdout]"),
+                .num_args(1)
+                .value_parser(clap::value_parser!(PathBuf))
+                .help("Output filename [defaults to stdout]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("export_id")
-                .short("i")
+            clap::Arg::new("export_id")
+                .short('i')
                 .long("export-id")
-                .empty_values(false)
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
                 .value_name("object id")
-                .help("SVG id of object to export [default is to export all objects]"),
+                .help("SVG id of object to export [default is to export all objects]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("accept-language")
-                .short("l")
+            clap::Arg::new("accept-language")
+                .short('l')
                 .long("accept-language")
-                .empty_values(false)
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
                 .value_name("languages")
-                .help("Languages to accept, for example \"es-MX,de,en\" [default uses language from the environment]"),
+                .help("Languages to accept, for example \"es-MX,de,en\" [default uses language from the environment]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("keep_aspect")
-                .short("a")
+            clap::Arg::new("keep_aspect")
+                .short('a')
                 .long("keep-aspect-ratio")
-                .help("Preserve the aspect ratio"),
+                .help("Preserve the aspect ratio")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("background")
-                .short("b")
+            clap::Arg::new("background")
+                .short('b')
                 .long("background-color")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("color")
-                .help("Set the background color using a CSS color spec"),
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
+                .default_value("none")
+                .help("Set the background color using a CSS color spec")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("stylesheet")
-                .short("s")
+            clap::Arg::new("stylesheet")
+                .short('s')
                 .long("stylesheet")
-                .empty_values(false)
+            .num_args(1)
+                .value_parser(clap::value_parser!(PathBuf))
                 .value_name("filename.css")
-                .help("Filename of CSS stylesheet to apply"),
+                .help("Filename of CSS stylesheet to apply")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("unlimited")
-                .short("u")
+            clap::Arg::new("unlimited")
+                .short('u')
                 .long("unlimited")
-                .help("Allow huge SVG files"),
+                .help("Allow huge SVG files")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("keep_image_data")
+            clap::Arg::new("keep_image_data")
                 .long("keep-image-data")
-                .help("Keep image data"),
+                .help("Keep image data")
+                .conflicts_with("no_keep_image_data")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("no_keep_image_data")
+            clap::Arg::new("no_keep_image_data")
                 .long("no-keep-image-data")
-                .help("Do not keep image data"),
+                .help("Do not keep image data")
+                .conflicts_with("keep_image_data")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("testing")
+            clap::Arg::new("testing")
                 .long("testing")
                 .help("Render images for librsvg's test suite")
-                .hidden(true),
+                .hide(true)
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("FILE")
+            clap::Arg::new("FILE")
+                .value_parser(clap::value_parser!(OsString))
                 .help("The input file(s) to convert")
-                .multiple(true),
+                .num_args(1..)
+                .action(clap::ArgAction::Append),
         );
 
     let matches = app.get_matches();
 
-    let format = value_t!(matches, "format", Format)?;
+    let format_str: &String = matches
+        .get_one("format")
+        .expect("already provided default_value");
 
-    let keep_image_data = match format {
-        Format::Ps | Format::Eps | Format::Pdf => !matches.is_present("no_keep_image_data"),
-        _ => matches.is_present("keep_image_data"),
+    let format = match_ignore_ascii_case! {
+        format_str,
+        "png" => Format::Png,
+        "pdf" => Format::Pdf,
+        "ps" => Format::Ps,
+        "eps" => Format::Eps,
+        "svg" => Format::Svg,
+        _ => unreachable!("clap should already have the list of possible values"),
     };
 
-    let language = value_t!(matches, "accept-language", String)
-        .or_none()
-        .and_then(|lang_str| match lang_str {
-            None => Ok(Language::FromEnvironment),
-            Some(s) => AcceptLanguage::parse(&s)
-                .map(Language::AcceptLanguage)
-                .map_err(|e| {
-                    let desc = format!("{}", e);
-                    clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
-                }),
-        });
+    let keep_image_data = match format {
+        Format::Ps | Format::Eps | Format::Pdf => !matches.get_flag("no_keep_image_data"),
+        _ => matches.get_flag("keep_image_data"),
+    };
 
-    let background_color = value_t!(matches, "background", String).and_then(parse_color_string);
+    let language = match matches.get_one::<String>("accept-language") {
+        None => Language::FromEnvironment,
+        Some(s) => AcceptLanguage::parse(s)
+            .map(Language::AcceptLanguage)
+            .map_err(|e| {
+                let desc = format!("{}", e);
+                clap::Error::raw(clap::error::ErrorKind::InvalidValue, desc)
+            })?,
+    };
+
+    let background_str: &String = matches
+        .get_one("background")
+        .expect("already provided default_value");
+    let background_color: Option<Color> = parse_background_color(background_str)
+        .map_err(|e| clap::Error::raw(clap::error::ErrorKind::InvalidValue, e))?;
 
     // librsvg expects ids starting with '#', so it can lookup ids in externs like "subfile.svg#subid".
     // For the user's convenience, we prepend '#' automatically; we only support specifying ids from
     // the toplevel, and don't expect users to lookup things in externs.
-    let lookup_id = |id: String| {
+    let lookup_id = |id: &String| {
         if id.starts_with('#') {
-            id
+            id.clone()
         } else {
             format!("#{}", id)
         }
     };
 
-    let width = value_t!(matches, "size_x", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
-    let height = value_t!(matches, "size_y", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
+    let width: Option<ULength<Horizontal>> = matches.get_one("size_x").copied();
+    let height: Option<ULength<Vertical>> = matches.get_one("size_y").copied();
 
-    let left = value_t!(matches, "left", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
-    let top = value_t!(matches, "top", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
+    let left: Option<Length<Horizontal>> = matches.get_one("left").copied();
+    let top: Option<Length<Vertical>> = matches.get_one("top").copied();
 
-    let page_width = value_t!(matches, "page_width", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
-    let page_height = value_t!(matches, "page_height", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
+    let page_width: Option<ULength<Horizontal>> = matches.get_one("page_width").copied();
+    let page_height: Option<ULength<Vertical>> = matches.get_one("page_height").copied();
 
     let page_size = match (page_width, page_height) {
         (None, None) => None,
@@ -981,11 +1081,18 @@ fn parse_args() -> Result<Converter, Error> {
         (Some(w), Some(h)) => Some((w, h)),
     };
 
-    let zoom = value_t!(matches, "zoom", f64).or_none()?;
-    let zoom_x = value_t!(matches, "zoom_x", f64).or_none()?;
-    let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
+    let dpi_x = *matches
+        .get_one::<Resolution>("res_x")
+        .expect("already provided default_value");
+    let dpi_y = *matches
+        .get_one::<Resolution>("res_y")
+        .expect("already provided default_value");
 
-    let input = match matches.values_of_os("FILE") {
+    let zoom: Option<ZoomFactor> = matches.get_one("zoom").copied();
+    let zoom_x: Option<ZoomFactor> = matches.get_one("zoom_x").copied();
+    let zoom_y: Option<ZoomFactor> = matches.get_one("zoom_y").copied();
+
+    let input = match matches.get_many::<std::ffi::OsString>("FILE") {
         Some(values) => values
             .map(|f| PathOrUrl::from_os_str(f).map_err(Error))
             .map(|r| r.map(Input::Named))
@@ -1000,14 +1107,19 @@ fn parse_args() -> Result<Converter, Error> {
         ));
     }
 
+    let export_id: Option<String> = matches.get_one::<String>("export_id").map(lookup_id);
+
+    let output = match matches.get_one::<PathBuf>("output") {
+        None => Output::Stdout,
+        Some(path) => Output::Path(path.clone()),
+    };
+
     Ok(Converter {
-        dpi: (
-            value_t!(matches, "res_x", f64)?,
-            value_t!(matches, "res_y", f64)?,
-        ),
+        dpi_x,
+        dpi_y,
         zoom: Scale {
-            x: zoom.or(zoom_x).unwrap_or(1.0),
-            y: zoom.or(zoom_y).unwrap_or(1.0),
+            x: zoom.or(zoom_x).map(|factor| factor.0).unwrap_or(1.0),
+            y: zoom.or(zoom_y).map(|factor| factor.0).unwrap_or(1.0),
         },
         width,
         height,
@@ -1015,80 +1127,49 @@ fn parse_args() -> Result<Converter, Error> {
         top,
         page_size,
         format,
-        export_id: value_t!(matches, "export_id", String)
-            .or_none()?
-            .map(lookup_id),
-        keep_aspect_ratio: matches.is_present("keep_aspect"),
-        background_color: background_color.or_none()?,
-        stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
-        unlimited: matches.is_present("unlimited"),
+        export_id,
+        keep_aspect_ratio: matches.get_flag("keep_aspect"),
+        background_color,
+        stylesheet: matches.get_one("stylesheet").cloned(),
+        unlimited: matches.get_flag("unlimited"),
         keep_image_data,
-        language: language?,
+        language,
         input,
-        output: matches
-            .value_of_os("output")
-            .map(PathBuf::from)
-            .map(Output::Path)
-            .unwrap_or(Output::Stdout),
-        testing: matches.is_present("testing"),
+        output,
+        testing: matches.get_flag("testing"),
     })
 }
 
-fn is_valid_resolution(v: String) -> Result<(), String> {
+#[derive(Copy, Clone)]
+struct Resolution(f64);
+
+fn parse_resolution(v: &str) -> Result<Resolution, String> {
     match v.parse::<f64>() {
-        Ok(res) if res > 0.0 => Ok(()),
+        Ok(res) if res > 0.0 => Ok(Resolution(res)),
         Ok(_) => Err(String::from("Invalid resolution")),
         Err(e) => Err(format!("{}", e)),
     }
 }
 
-fn is_valid_zoom_factor(v: String) -> Result<(), String> {
+#[derive(Copy, Clone)]
+struct ZoomFactor(f64);
+
+fn parse_zoom_factor(v: &str) -> Result<ZoomFactor, String> {
     match v.parse::<f64>() {
-        Ok(res) if res > 0.0 => Ok(()),
+        Ok(res) if res > 0.0 => Ok(ZoomFactor(res)),
         Ok(_) => Err(String::from("Invalid zoom factor")),
         Err(e) => Err(format!("{}", e)),
     }
 }
 
-trait NotFound {
-    type Ok;
-    type Error;
-
-    fn or_none(self) -> Result<Option<Self::Ok>, Self::Error>;
-}
-
-impl<T> NotFound for Result<T, clap::Error> {
-    type Ok = T;
-    type Error = clap::Error;
-
-    /// Maps the Result to an Option, translating the ArgumentNotFound error to
-    /// Ok(None), while mapping other kinds of errors to Err(e).
-    ///
-    /// This allows to get proper error reporting for invalid values on optional
-    /// arguments.
-    fn or_none(self) -> Result<Option<T>, clap::Error> {
-        self.map_or_else(
-            |e| match e.kind {
-                clap::ErrorKind::ArgumentNotFound => Ok(None),
-                _ => Err(e),
-            },
-            |v| Ok(Some(v)),
-        )
-    }
-}
-
-fn parse_color_string<T: AsRef<str> + std::fmt::Display>(s: T) -> Result<Color, clap::Error> {
-    match s.as_ref() {
-        "none" | "None" => Err(clap::Error::with_description(
-            s.as_ref(),
-            clap::ErrorKind::ArgumentNotFound,
-        )),
-        _ => <Color as Parse>::parse_str(s.as_ref()).map_err(|_| {
-            let desc = format!(
+fn parse_background_color(s: &str) -> Result<Option<Color>, String> {
+    match s {
+        "none" | "None" => Ok(None),
+        _ => <Color as Parse>::parse_str(s).map(Some).map_err(|_| {
+            format!(
                 "Invalid value: The argument '{}' can not be parsed as a CSS color value",
                 s
-            );
-            clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
+            )
         }),
     }
 }
@@ -1102,26 +1183,21 @@ fn is_absolute_unit(u: LengthUnit) -> bool {
     }
 }
 
-fn parse_length<N: Normalize, V: Validate>(s: String) -> Result<CssLength<N, V>, clap::Error> {
-    <CssLength<N, V> as Parse>::parse_str(&s)
+fn parse_length<N: Normalize, V: Validate>(s: &str) -> Result<CssLength<N, V>, String> {
+    <CssLength<N, V> as Parse>::parse_str(s)
         .map_err(|_| {
-            let desc = format!(
+            format!(
                 "Invalid value: The argument '{}' can not be parsed as a length",
                 s
-            );
-            clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
+            )
         })
         .and_then(|l| {
             if is_absolute_unit(l.unit) {
                 Ok(l)
             } else {
-                let desc = format!(
+                Err(format!(
                     "Invalid value '{}': supported units are px, in, cm, mm, pt, pc",
                     s
-                );
-                Err(clap::Error::with_description(
-                    &desc,
-                    clap::ErrorKind::InvalidValue,
                 ))
             }
         })
@@ -1135,29 +1211,297 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests {
-    mod color {
-        use super::super::*;
+mod color_tests {
+    use super::*;
 
-        #[test]
-        fn valid_color_is_ok() {
-            assert!(parse_color_string("Red").is_ok());
-        }
+    #[test]
+    fn valid_color_is_ok() {
+        assert!(parse_background_color("Red").is_ok());
+    }
 
-        #[test]
-        fn none_is_handled_as_not_found() {
-            assert_eq!(
-                parse_color_string("None").map_err(|e| e.kind),
-                Err(clap::ErrorKind::ArgumentNotFound)
-            );
-        }
+    #[test]
+    fn none_is_handled_as_transparent() {
+        assert_eq!(parse_background_color("None").unwrap(), None,);
+    }
 
-        #[test]
-        fn invalid_is_handled_as_invalid_value() {
-            assert_eq!(
-                parse_color_string("foo").map_err(|e| e.kind),
-                Err(clap::ErrorKind::InvalidValue)
-            );
-        }
+    #[test]
+    fn invalid_is_handled_as_invalid_value() {
+        assert!(parse_background_color("foo").is_err());
+    }
+}
+
+#[cfg(test)]
+mod sizing_tests {
+    use super::*;
+
+    #[test]
+    fn detects_empty_size() {
+        let strategy = ResizeStrategy::Scale(Scale { x: 42.0, y: 42.0 });
+        assert!(strategy.apply(&Size::new(0.0, 0.0)).is_none());
+    }
+
+    #[test]
+    fn scale() {
+        let strategy = ResizeStrategy::Scale(Scale { x: 2.0, y: 3.0 });
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(2.0, 6.0),
+        );
+    }
+
+    #[test]
+    fn fit_non_proportional() {
+        let strategy = ResizeStrategy::Fit {
+            size: Size::new(40.0, 10.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(2.0, 1.0)).unwrap(),
+            Size::new(40.0, 10.0),
+        );
+    }
+
+    #[test]
+    fn fit_proportional_wider_than_tall() {
+        let strategy = ResizeStrategy::Fit {
+            size: Size::new(40.0, 10.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(2.0, 1.0)).unwrap(),
+            Size::new(20.0, 10.0),
+        );
+    }
+
+    #[test]
+    fn fit_proportional_taller_than_wide() {
+        let strategy = ResizeStrategy::Fit {
+            size: Size::new(100.0, 50.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(25.0, 50.0),
+        );
+    }
+
+    #[test]
+    fn fit_width() {
+        let strategy = ResizeStrategy::FitWidth(100.0);
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(100.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn fit_height() {
+        let strategy = ResizeStrategy::FitHeight(100.0);
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(50.0, 100.0),
+        );
+    }
+
+    #[test]
+    fn scale_no_max_size_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 2.0, y: 3.0 },
+            max_width: None,
+            max_height: None,
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(2.0, 6.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_fits_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 2.0, y: 3.0 },
+            max_width: Some(10.0),
+            max_height: Some(20.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 2.0)).unwrap(),
+            Size::new(8.0, 6.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 2.0, y: 3.0 },
+            max_width: Some(10.0),
+            max_height: Some(20.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 2.0)).unwrap(),
+            Size::new(8.0, 6.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: Some(20.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 5.0)).unwrap(),
+            Size::new(10.0, 20.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: Some(15.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            // this will end up with a 40:120 aspect ratio
+            strategy.apply(&Size::new(4.0, 6.0)).unwrap(),
+            // which should be shrunk to 1:3 that fits in (10, 15) per the max_width/max_height above
+            Size::new(5.0, 15.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_fits_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 5.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 10.0)).unwrap(),
+            Size::new(5.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 5.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 10.0)).unwrap(),
+            Size::new(5.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_fits_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 20.0, y: 5.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(10.0, 1.0)).unwrap(),
+            Size::new(200.0, 5.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 20.0, y: 5.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(10.0, 1.0)).unwrap(),
+            Size::new(200.0, 5.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(10.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(10.0, 40.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(50.0, 10.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 8.0, y: 20.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(2.0, 10.0),
+        );
     }
 }

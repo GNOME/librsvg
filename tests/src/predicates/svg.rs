@@ -105,10 +105,6 @@ impl cmp::PartialEq for Dimensions {
 
 impl cmp::Eq for Dimensions {}
 
-trait Details {
-    fn get_size(&self) -> Option<Dimensions>;
-}
-
 impl DetailPredicate<SvgPredicate> {
     fn eval_doc(&self, handle: &SvgHandle) -> bool {
         match &self.d {

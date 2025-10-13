@@ -1,9 +1,10 @@
 [package]
 name = "librsvg"
-version = "2.52.11"
+version = "2.52.12"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 build = "build.rs"
 edition = "2018"
+rust-version = "1.85.0"
 
 [package.metadata.system-deps]
 cairo-pdf = { version = "1.16", optional = true }
@@ -43,11 +44,11 @@ crate-type = [ "staticlib", "rlib" ]
 #   src/lib.rs - toplevel example in the docs
 cairo-rs = { version="0.14.0", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
-chrono = "0.4.0" # rsvg-convert
-clap = "2.34.0" # rsvg-convert
+chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] } # rsvg-convert
+clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
 cssparser = "0.28.0"
 data-url = "0.1"
-encoding = "0.2.33"
+encoding_rs = "0.8.32"
 float-cmp = "0.9.0"
 gdk-pixbuf = "0.14.0"
 gio = { version="0.14.0", features = ["v2_50"] } # per configure.ac
@@ -56,7 +57,7 @@ itertools = "0.10.3"
 language-tags = "0.3.1"
 libc = "0.2"
 locale_config = "*" # recommended explicitly by locale_config's README.md
-markup5ever = "0.10"
+markup5ever = "0.11.0"
 nalgebra = "0.29.0"
 num-traits = "0.2"
 once_cell = "1.2.0"
@@ -70,18 +71,18 @@ selectors = "0.23.0"
 string_cache = "0.8.0"
 tinyvec = { version = "1.2.0", features = ["alloc"] }
 url = "2"
-xml5ever = "0.16.1"
+xml5ever = "0.17.0"
 
 [dev-dependencies]
 anyhow = "1.0"
 assert_cmd = "2.0.2"
 cairo-rs = { version="0.14.0", features = ["png"] }
 cast = "0.3.0"
-chrono = "0.4.0"
-criterion = "0.3"
+chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
+criterion = "0.5"
 glib = "0.14.0"
 libc = "0.2"
-lopdf = "0.26.0"
+lopdf = "0.36"
 matches = "0.1"
 pango = "0.14.0"
 pangocairo = "0.14.0"
@@ -92,11 +93,20 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3"
 test-generator = "0.3"
-yeslogic-fontconfig-sys = "2.11.1"
+yeslogic-fontconfig-sys = "6.0.0"
 
 [build-dependencies]
 regex = "1.3.9"
 system-deps = "6.0.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(system_deps_have_fontconfig)',
+    'cfg(system_deps_have_pangoft2)',
+    'cfg(system_deps_have_cairo_pdf)',
+    'cfg(system_deps_have_cairo_ps)',
+    'cfg(system_deps_have_cairo_svg)',
+] }
 
 [[bench]]
 name = "box_blur"

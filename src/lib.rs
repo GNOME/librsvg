@@ -152,8 +152,6 @@ pub use crate::api::*;
 
 pub use crate::color::Color;
 
-pub use crate::parsers::Parse;
-
 pub use crate::rect::{IRect, Rect};
 
 #[macro_use]
@@ -245,11 +243,16 @@ pub mod doctest_only {
 
 #[doc(hidden)]
 pub mod rsvg_convert_only {
+    pub use crate::aspect_ratio::AspectRatio;
     pub use crate::c_api::handle::PathOrUrl;
     pub use crate::c_api::sizing::LegacySize;
     pub use crate::dpi::Dpi;
     pub use crate::error::ParseError;
     pub use crate::length::{
-        CssLength, Horizontal, Length, Normalize, NormalizeParams, ULength, Validate, Vertical,
+        CssLength, Horizontal, Length, Normalize, NormalizeParams, Signed, ULength, Unsigned,
+        Validate, Vertical,
     };
+    pub use crate::parsers::{Parse, ParseValue};
+    pub use crate::rect::Rect;
+    pub use crate::viewbox::ViewBox;
 }
