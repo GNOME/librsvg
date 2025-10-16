@@ -384,6 +384,8 @@ impl NodeDraw for Node {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_ctx.print_stack_depth("Node::draw_children");
+
         let mut bbox = viewport.empty_bbox();
 
         for child in self.children().filter(|c| c.is_element()) {

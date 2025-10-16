@@ -216,6 +216,13 @@ pub struct DrawingCtx {
     /// We use this to set a hard limit on how many nested layers there can be, to avoid
     /// malicious SVGs that would cause unbounded stack consumption.
     recursion_depth: u16,
+
+    /// Cheap hack to monitor stack usage in recursive calls.
+    ///
+    /// We store the address of a local variable when first creating the DrawingCtx, and
+    /// then subtract it from another local variable at trace points.  See the print_stack_depth()
+    /// function.
+    stack_ptr: *const u8,
 }
 
 pub enum DrawingMode {
@@ -342,6 +349,8 @@ impl DrawingCtx {
         config: RenderingConfiguration,
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
+        let stack_variable: u8 = 42;
+
         DrawingCtx {
             session,
             initial_viewport: *initial_viewport,
@@ -350,6 +359,14 @@ impl DrawingCtx {
             drawsub_stack,
             config,
             recursion_depth: 0,
+
+            // We store this pointer to pinpoint the stack depth at this point in the program.
+            // Later, in the print_stack_depth() function, we'll use it to subtract from the
+            // current stack pointer.  This is a cheap hack to monitor how much stack space
+            // is consumed between recursive calls to the drawing machinery.
+            //
+            // The pointer is otherwise meaningless and should never be dereferenced.
+            stack_ptr: &stack_variable,
         }
     }
 
@@ -376,11 +393,25 @@ impl DrawingCtx {
             drawsub_stack: self.drawsub_stack.clone(),
             config: self.config.clone(),
             recursion_depth: self.recursion_depth,
+            stack_ptr: self.stack_ptr,
         })
     }
 
     pub fn session(&self) -> &Session {
         &self.session
+    }
+
+    pub fn print_stack_depth(&self, place_name: &str) {
+        let stack_variable: u8 = 42;
+
+        let current_stack_ptr = &stack_variable;
+
+        let stack_size = unsafe { self.stack_ptr.byte_offset_from(current_stack_ptr) };
+        rsvg_log!(
+            self.session,
+            "{place_name}: recursion_depth={}, stack_depth={stack_size}",
+            self.recursion_depth
+        );
     }
 
     /// Returns the `RenderingOptions` being used for rendering.
@@ -793,6 +824,8 @@ impl DrawingCtx {
             &Viewport,
         ) -> Result<BoundingBox, InternalRenderingError>,
     ) -> Result<BoundingBox, InternalRenderingError> {
+        self.print_stack_depth("DrawingCtx::draw_layer_internal entry");
+
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
         let viewport = viewport.with_composed_transform(stacking_ctx_transform)?;
@@ -800,7 +833,11 @@ impl DrawingCtx {
         let res = if clipping {
             self.draw_in_optional_new_viewport(acquired_nodes, &viewport, &layout_viewport, draw_fn)
         } else {
+            self.print_stack_depth("DrawingCtx::draw_layer_internal not clipping");
+
             with_saved_cr(&self.cr.clone(), || {
+                self.print_stack_depth("DrawingCtx::draw_layer_internal in with_saved_cr");
+
                 if let Some(ref link_target) = stacking_ctx.link_target {
                     self.link_tag_begin(link_target);
                 }
@@ -822,6 +859,8 @@ impl DrawingCtx {
                 let should_isolate = stacking_ctx.should_isolate();
 
                 let res = if should_isolate {
+                    self.print_stack_depth("DrawingCtx::draw_layer_internal should_isolate=true");
+
                     // Compute our assortment of affines
 
                     let affines = Box::new(CompositingAffines::new(
@@ -911,6 +950,8 @@ impl DrawingCtx {
                     // Mask
 
                     if let Some(ref mask_node) = stacking_ctx.mask {
+                        self.print_stack_depth("DrawingCtx::draw_layer_internal creating mask");
+
                         res = res.and_then(|bbox| {
                             self.generate_cairo_mask(
                                 mask_node,
@@ -988,6 +1029,7 @@ impl DrawingCtx {
         self.check_cancellation()?;
 
         self.recursion_depth += 1;
+        self.print_stack_depth("DrawingCtx::with_discrete_layer");
 
         match self.check_layer_nesting_depth() {
             Ok(()) => {
