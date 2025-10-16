@@ -838,9 +838,7 @@ impl DrawingCtx {
             with_saved_cr(&self.cr.clone(), || {
                 self.print_stack_depth("DrawingCtx::draw_layer_internal in with_saved_cr");
 
-                if let Some(ref link_target) = stacking_ctx.link_target {
-                    self.link_tag_begin(link_target);
-                }
+                self.link_tag_begin(&stacking_ctx.link_target);
 
                 let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
@@ -1002,9 +1000,7 @@ impl DrawingCtx {
                     )
                 };
 
-                if stacking_ctx.link_target.is_some() {
-                    self.link_tag_end();
-                }
+                self.link_tag_end(&stacking_ctx.link_target);
 
                 res
             })
@@ -1071,16 +1067,20 @@ impl DrawingCtx {
     }
 
     /// Start a Cairo tag for PDF links
-    fn link_tag_begin(&mut self, link_target: &str) {
-        let attributes = format!("uri='{}'", escape_link_target(link_target));
+    fn link_tag_begin(&mut self, link_target: &Option<String>) {
+        if let Some(ref link_target) = *link_target {
+            let attributes = format!("uri='{}'", escape_link_target(link_target));
 
-        let cr = self.cr.clone();
-        cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+            let cr = self.cr.clone();
+            cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+        }
     }
 
     /// End a Cairo tag for PDF links
-    fn link_tag_end(&mut self) {
-        self.cr.tag_end(CAIRO_TAG_LINK);
+    fn link_tag_end(&mut self, link_target: &Option<String>) {
+        if link_target.is_some() {
+            self.cr.tag_end(CAIRO_TAG_LINK);
+        }
     }
 
     fn make_filter_plan(
@@ -1666,9 +1666,7 @@ impl DrawingCtx {
         self.cr.new_path();
 
         if span.is_visible {
-            if let Some(ref link_target) = span.link_target {
-                self.link_tag_begin(link_target);
-            }
+            self.link_tag_begin(&span.link_target);
 
             for &target in &span.paint_order.targets {
                 match target {
@@ -1714,9 +1712,7 @@ impl DrawingCtx {
                 }
             }
 
-            if span.link_target.is_some() {
-                self.link_tag_end();
-            }
+            self.link_tag_end(&span.link_target);
         }
 
         Ok(bbox)
