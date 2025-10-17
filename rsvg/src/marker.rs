@@ -12,7 +12,7 @@ use crate::bbox::BoundingBox;
 use crate::borrow_element_as;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{set_attribute, DrawResult, ElementTrait};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::layout::{self, Shape, StackingContext};
@@ -122,7 +122,7 @@ impl Marker {
         clipping: bool,
         marker_type: MarkerType,
         marker: &layout::Marker,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let mut cascaded = CascadedValues::new_from_node(node);
         cascaded.context_fill = Some(marker.context_fill.clone());
         cascaded.context_stroke = Some(marker.context_stroke.clone());
@@ -610,7 +610,7 @@ fn emit_marker_by_node(
     line_width: f64,
     clipping: bool,
     marker_type: MarkerType,
-) -> Result<BoundingBox, InternalRenderingError> {
+) -> DrawResult {
     match acquired_nodes.acquire_ref(marker.node_ref.as_ref().unwrap()) {
         Ok(acquired) => {
             let node = acquired.get();
@@ -651,9 +651,9 @@ fn emit_marker<E>(
     marker_type: MarkerType,
     orient: Angle,
     emit_fn: &mut E,
-) -> Result<BoundingBox, InternalRenderingError>
+) -> DrawResult
 where
-    E: FnMut(MarkerType, f64, f64, Angle) -> Result<BoundingBox, InternalRenderingError>,
+    E: FnMut(MarkerType, f64, f64, Angle) -> DrawResult,
 {
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
@@ -673,7 +673,7 @@ pub fn render_markers_for_shape(
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
     clipping: bool,
-) -> Result<BoundingBox, InternalRenderingError> {
+) -> DrawResult {
     if shape.stroke.width.approx_eq_cairo(0.0) {
         return Ok(viewport.empty_bbox());
     }
@@ -715,13 +715,9 @@ pub fn render_markers_for_shape(
     )
 }
 
-fn emit_markers_for_path<E>(
-    path: &Path,
-    empty_bbox: BoundingBox,
-    emit_fn: &mut E,
-) -> Result<BoundingBox, InternalRenderingError>
+fn emit_markers_for_path<E>(path: &Path, empty_bbox: BoundingBox, emit_fn: &mut E) -> DrawResult
 where
-    E: FnMut(MarkerType, f64, f64, Angle) -> Result<BoundingBox, InternalRenderingError>,
+    E: FnMut(MarkerType, f64, f64, Angle) -> DrawResult,
 {
     enum SubpathState {
         NoSubpath,
@@ -1174,11 +1170,7 @@ mod marker_tests {
         assert!(emit_markers_for_path(
             &builder.into_path(),
             BoundingBox::new(),
-            &mut |marker_type: MarkerType,
-                  x: f64,
-                  y: f64,
-                  computed_angle: Angle|
-             -> Result<BoundingBox, InternalRenderingError> {
+            &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| -> DrawResult {
                 v.push((marker_type, x, y, computed_angle));
                 Ok(BoundingBox::new())
             }
@@ -1210,11 +1202,7 @@ mod marker_tests {
         assert!(emit_markers_for_path(
             &builder.into_path(),
             BoundingBox::new(),
-            &mut |marker_type: MarkerType,
-                  x: f64,
-                  y: f64,
-                  computed_angle: Angle|
-             -> Result<BoundingBox, InternalRenderingError> {
+            &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| -> DrawResult {
                 v.push((marker_type, x, y, computed_angle));
                 Ok(BoundingBox::new())
             }

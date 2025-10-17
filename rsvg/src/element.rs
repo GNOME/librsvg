@@ -48,6 +48,8 @@ use crate::text::{TRef, TSpan, Text};
 use crate::text2::Text2;
 use crate::xml::Attributes;
 
+pub type DrawResult = Result<BoundingBox, InternalRenderingError>;
+
 pub trait ElementTrait {
     /// Sets per-element attributes.
     ///
@@ -69,7 +71,7 @@ pub trait ElementTrait {
         viewport: &Viewport,
         _draw_ctx: &mut DrawingCtx,
         _clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         // by default elements don't draw themselves
         Ok(viewport.empty_bbox())
     }
@@ -495,7 +497,7 @@ impl Element {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let values = cascaded.get();
         if values.is_displayed() {
             self.element_data
@@ -536,7 +538,7 @@ impl ElementData {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         use ElementData::*;
 
         let data: &dyn ElementTrait = match self {

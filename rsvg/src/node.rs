@@ -12,7 +12,6 @@ use std::cell::{Ref, RefMut};
 use std::fmt;
 use std::rc::Rc;
 
-use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::*;
@@ -321,7 +320,7 @@ pub trait NodeDraw {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError>;
+    ) -> DrawResult;
 
     fn draw_children(
         &self,
@@ -330,7 +329,7 @@ pub trait NodeDraw {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError>;
+    ) -> DrawResult;
 }
 
 impl NodeDraw for Node {
@@ -341,7 +340,7 @@ impl NodeDraw for Node {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         match *self.borrow() {
             NodeData::Element(ref e) => {
                 rsvg_log!(draw_ctx.session(), "({}", e);
@@ -384,7 +383,7 @@ impl NodeDraw for Node {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         draw_ctx.print_stack_depth("Node::draw_children");
 
         let mut bbox = viewport.empty_bbox();

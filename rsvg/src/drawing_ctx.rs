@@ -16,7 +16,7 @@ use crate::color::{color_to_rgba, Color};
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
 use crate::dpi::Dpi;
-use crate::element::{Element, ElementData};
+use crate::element::{DrawResult, Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, InternalRenderingError, InvalidTransform};
 use crate::filters::{self, FilterPlan, FilterSpec, InputRequirements};
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -255,7 +255,7 @@ pub fn draw_tree(
     viewport_rect: Rect,
     config: RenderingConfiguration,
     acquired_nodes: &mut AcquiredNodes<'_>,
-) -> Result<BoundingBox, InternalRenderingError> {
+) -> DrawResult {
     let (drawsub_stack, node) = match mode {
         DrawingMode::LimitToStack { node, root } => (node.ancestors().collect(), root),
 
@@ -794,12 +794,8 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
         layout_viewport: &Option<LayoutViewport>,
-        draw_fn: &mut dyn FnMut(
-            &mut AcquiredNodes<'_>,
-            &mut DrawingCtx,
-            &Viewport,
-        ) -> Result<BoundingBox, InternalRenderingError>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_fn: &mut dyn FnMut(&mut AcquiredNodes<'_>, &mut DrawingCtx, &Viewport) -> DrawResult,
+    ) -> DrawResult {
         if let Some(layout_viewport) = layout_viewport.as_ref() {
             if let Some(new_viewport) = self.push_new_viewport(viewport, layout_viewport) {
                 draw_fn(acquired_nodes, self, &new_viewport)
@@ -818,12 +814,8 @@ impl DrawingCtx {
         viewport: &Viewport,
         layout_viewport: Option<LayoutViewport>,
         clipping: bool,
-        draw_fn: &mut dyn FnMut(
-            &mut AcquiredNodes<'_>,
-            &mut DrawingCtx,
-            &Viewport,
-        ) -> Result<BoundingBox, InternalRenderingError>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_fn: &mut dyn FnMut(&mut AcquiredNodes<'_>, &mut DrawingCtx, &Viewport) -> DrawResult,
+    ) -> DrawResult {
         self.print_stack_depth("DrawingCtx::draw_layer_internal entry");
 
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
@@ -1010,12 +1002,8 @@ impl DrawingCtx {
         viewport: &Viewport,
         layout_viewport: Option<LayoutViewport>,
         clipping: bool,
-        draw_fn: &mut dyn FnMut(
-            &mut AcquiredNodes<'_>,
-            &mut DrawingCtx,
-            &Viewport,
-        ) -> Result<BoundingBox, InternalRenderingError>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_fn: &mut dyn FnMut(&mut AcquiredNodes<'_>, &mut DrawingCtx, &Viewport) -> DrawResult,
+    ) -> DrawResult {
         self.check_cancellation()?;
 
         self.recursion_depth += 1;
@@ -1044,8 +1032,8 @@ impl DrawingCtx {
     fn with_alpha(
         &mut self,
         opacity: UnitInterval,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, InternalRenderingError>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> DrawResult,
+    ) -> DrawResult {
         let res;
         let UnitInterval(o) = opacity;
         if o < 1.0 {
@@ -1385,7 +1373,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         match &layer.kind {
             LayerKind::Shape(shape) => self.draw_shape(
                 shape,
@@ -1425,7 +1413,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
@@ -1547,7 +1535,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let image_width = image.surface.width();
         let image_height = image.surface.height();
         if clipping || image.rect.is_empty() || image_width == 0 || image_height == 0 {
@@ -1600,7 +1588,7 @@ impl DrawingCtx {
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _clipping: bool,
         _viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         unimplemented!();
         /*
         self.with_discrete_layer(
@@ -1624,7 +1612,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let path = pango_layout_to_cairo_path(span.x, span.y, &span.layout, span.gravity)?;
         if path.is_empty() {
             // Empty strings, or only-whitespace text, get turned into empty paths.
@@ -1719,7 +1707,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
@@ -1824,7 +1812,7 @@ impl DrawingCtx {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         self.print_stack_depth("DrawingCtx::draw_node_from_stack");
 
         let stack_top = self.drawsub_stack.pop();
@@ -1859,7 +1847,7 @@ impl DrawingCtx {
         viewport: &Viewport,
         fill_paint: Rc<PaintSource>,
         stroke_paint: Rc<PaintSource>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         // <use> is an element that is used directly, unlike
         // <pattern>, which is used through a fill="url(#...)"
         // reference.  However, <use> will always reference another
@@ -2338,7 +2326,7 @@ fn compute_stroke_and_fill_box(
     stroke: &Stroke,
     stroke_paint_source: &UserSpacePaintSource,
     initial_viewport: &Viewport,
-) -> Result<BoundingBox, InternalRenderingError> {
+) -> DrawResult {
     let extents =
         compute_stroke_and_fill_extents(cr, stroke, stroke_paint_source, initial_viewport)?;
 
