@@ -345,6 +345,7 @@ impl NodeDraw for Node {
         match *self.borrow() {
             NodeData::Element(ref e) => {
                 rsvg_log!(draw_ctx.session(), "({}", e);
+                draw_ctx.print_stack_depth("Node::draw");
                 let res = match e.draw(self, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
                 {
                     Ok(bbox) => Ok(bbox),

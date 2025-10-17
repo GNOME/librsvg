@@ -833,11 +833,7 @@ impl DrawingCtx {
         let res = if clipping {
             self.draw_in_optional_new_viewport(acquired_nodes, &viewport, &layout_viewport, draw_fn)
         } else {
-            self.print_stack_depth("DrawingCtx::draw_layer_internal not clipping");
-
             with_saved_cr(&self.cr.clone(), || {
-                self.print_stack_depth("DrawingCtx::draw_layer_internal in with_saved_cr");
-
                 self.link_tag_begin(&stacking_ctx.link_target);
 
                 if let Some(rect) = stacking_ctx.clip_rect.as_ref() {
@@ -1829,6 +1825,8 @@ impl DrawingCtx {
         viewport: &Viewport,
         clipping: bool,
     ) -> Result<BoundingBox, InternalRenderingError> {
+        self.print_stack_depth("DrawingCtx::draw_node_from_stack");
+
         let stack_top = self.drawsub_stack.pop();
 
         let draw = if let Some(ref top) = stack_top {
