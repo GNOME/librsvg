@@ -715,7 +715,11 @@ pub fn render_markers_for_shape(
     )
 }
 
-fn emit_markers_for_path<E>(path: &Path, empty_bbox: BoundingBox, emit_fn: &mut E) -> DrawResult
+fn emit_markers_for_path<E>(
+    path: &Path,
+    empty_bbox: Box<BoundingBox>,
+    emit_fn: &mut E,
+) -> DrawResult
 where
     E: FnMut(MarkerType, f64, f64, Angle) -> DrawResult,
 {
@@ -1169,10 +1173,10 @@ mod marker_tests {
 
         assert!(emit_markers_for_path(
             &builder.into_path(),
-            BoundingBox::new(),
+            Box::new(BoundingBox::new()),
             &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| -> DrawResult {
                 v.push((marker_type, x, y, computed_angle));
-                Ok(BoundingBox::new())
+                Ok(Box::new(BoundingBox::new()))
             }
         )
         .is_ok());
@@ -1201,10 +1205,10 @@ mod marker_tests {
 
         assert!(emit_markers_for_path(
             &builder.into_path(),
-            BoundingBox::new(),
+            Box::new(BoundingBox::new()),
             &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| -> DrawResult {
                 v.push((marker_type, x, y, computed_angle));
-                Ok(BoundingBox::new())
+                Ok(Box::new(BoundingBox::new()))
             }
         )
         .is_ok());

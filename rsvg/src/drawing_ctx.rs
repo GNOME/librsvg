@@ -183,8 +183,8 @@ impl Viewport {
         })
     }
 
-    pub fn empty_bbox(&self) -> BoundingBox {
-        BoundingBox::new().with_transform(*self.transform)
+    pub fn empty_bbox(&self) -> Box<BoundingBox> {
+        Box::new(BoundingBox::new().with_transform(*self.transform))
     }
 }
 
@@ -267,7 +267,7 @@ pub fn draw_tree(
     // Preserve the user's transform and use it for the outermost bounding box.  All bounds/extents
     // will be converted to this transform in the end.
     let user_transform = Transform::from(cr.matrix());
-    let mut user_bbox = BoundingBox::new().with_transform(user_transform);
+    let mut user_bbox = Box::new(BoundingBox::new().with_transform(user_transform));
 
     // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
     //
@@ -884,9 +884,11 @@ impl DrawingCtx {
                         );
 
                         let bbox = if let Ok(ref bbox) = res {
-                            *bbox
+                            bbox.clone()
                         } else {
-                            BoundingBox::new().with_transform(*transform_for_temporary_surface)
+                            Box::new(
+                                BoundingBox::new().with_transform(*transform_for_temporary_surface),
+                            )
                         };
 
                         if let Some(ref filter) = stacking_ctx.filter {
@@ -1548,7 +1550,7 @@ impl DrawingCtx {
 
         // The bounding box for <image> is decided by the values of the image's x, y, w, h
         // and not by the final computed image bounds.
-        let bounds = viewport.empty_bbox().with_rect(image.rect);
+        let bounds = Box::new(viewport.empty_bbox().with_rect(image.rect));
 
         let layout_viewport = LayoutViewport {
             vbox: Some(vbox),
@@ -1573,7 +1575,7 @@ impl DrawingCtx {
                         new_viewport,
                     )?;
 
-                    Ok(bounds)
+                    Ok(bounds.clone())
                 },
             )
         } else {
@@ -2007,7 +2009,7 @@ impl DrawingCtx {
         };
 
         if let Ok(bbox) = res {
-            let mut res_bbox = BoundingBox::new().with_transform(*viewport.transform);
+            let mut res_bbox = Box::new(BoundingBox::new().with_transform(*viewport.transform));
             res_bbox.insert(&bbox);
             Ok(res_bbox)
         } else {
@@ -2347,7 +2349,7 @@ fn compute_stroke_and_fill_box(
         bbox = bbox.with_ink_rect(ink_rect);
     }
 
-    Ok(bbox)
+    Ok(Box::new(bbox))
 }
 
 fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {

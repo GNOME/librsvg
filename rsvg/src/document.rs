@@ -486,6 +486,7 @@ impl Document {
             config,
             &mut AcquiredNodes::new(self, cancellable),
         )
+        .map(|boxed_bbox| *boxed_bbox)
     }
 
     fn ensure_is_cascaded(&self) {

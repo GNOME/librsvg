@@ -48,7 +48,7 @@ use crate::text::{TRef, TSpan, Text};
 use crate::text2::Text2;
 use crate::xml::Attributes;
 
-pub type DrawResult = Result<BoundingBox, InternalRenderingError>;
+pub type DrawResult = Result<Box<BoundingBox>, InternalRenderingError>;
 
 pub trait ElementTrait {
     /// Sets per-element attributes.
