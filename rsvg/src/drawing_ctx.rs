@@ -77,7 +77,7 @@ impl<'a> PathHelper<'a> {
         }
     }
 
-    pub fn set(&mut self) -> Result<(), InternalRenderingError> {
+    pub fn set(&mut self) -> Result<(), Box<InternalRenderingError>> {
         match self.has_path {
             Some(false) | None => {
                 self.has_path = Some(true);
@@ -312,15 +312,15 @@ pub fn draw_tree(
     user_bbox.insert(&content_bbox);
 
     if draw_ctx.is_rendering_cancelled() {
-        Err(InternalRenderingError::Cancelled)
+        Err(InternalRenderingError::Cancelled)?
     } else {
         Ok(user_bbox)
     }
 }
 
-pub fn with_saved_cr<O, F>(cr: &cairo::Context, f: F) -> Result<O, InternalRenderingError>
+pub fn with_saved_cr<O, F>(cr: &cairo::Context, f: F) -> Result<O, Box<InternalRenderingError>>
 where
-    F: FnOnce() -> Result<O, InternalRenderingError>,
+    F: FnOnce() -> Result<O, Box<InternalRenderingError>>,
 {
     cr.save()?;
     match f() {
@@ -440,7 +440,7 @@ impl DrawingCtx {
         viewport: &Viewport,
         stacking_ctx: &StackingContext,
         clipping: bool,
-    ) -> Result<ValidTransform, InternalRenderingError> {
+    ) -> Result<ValidTransform, Box<InternalRenderingError>> {
         if stacking_ctx.should_isolate() && !clipping {
             let affines = CompositingAffines::new(
                 *viewport.transform,
@@ -483,7 +483,7 @@ impl DrawingCtx {
 
     pub fn create_surface_for_toplevel_viewport(
         &self,
-    ) -> Result<cairo::ImageSurface, InternalRenderingError> {
+    ) -> Result<cairo::ImageSurface, Box<InternalRenderingError>> {
         let (w, h) = self.size_for_temporary_surface();
 
         Ok(cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?)
@@ -492,7 +492,7 @@ impl DrawingCtx {
     fn create_similar_surface_for_toplevel_viewport(
         &self,
         surface: &cairo::Surface,
-    ) -> Result<cairo::Surface, InternalRenderingError> {
+    ) -> Result<cairo::Surface, Box<InternalRenderingError>> {
         let (w, h) = self.size_for_temporary_surface();
 
         Ok(cairo::Surface::create_similar(
@@ -562,7 +562,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
         bbox: &BoundingBox,
-    ) -> Result<(), InternalRenderingError> {
+    ) -> Result<(), Box<InternalRenderingError>> {
         if clip_node.is_none() {
             return Ok(());
         }
@@ -604,7 +604,7 @@ impl DrawingCtx {
         transform: Transform,
         bbox: &BoundingBox,
         acquired_nodes: &mut AcquiredNodes<'_>,
-    ) -> Result<Option<cairo::ImageSurface>, InternalRenderingError> {
+    ) -> Result<Option<cairo::ImageSurface>, Box<InternalRenderingError>> {
         if bbox.rect.is_none() {
             // The node being masked is empty / doesn't have a
             // bounding box, so there's nothing to mask!
@@ -720,19 +720,19 @@ impl DrawingCtx {
     ///
     /// If so, returns an Err.  This is used from [`DrawingCtx::with_discrete_layer`] to
     /// exit early instead of proceeding with rendering.
-    fn check_cancellation(&self) -> Result<(), InternalRenderingError> {
+    fn check_cancellation(&self) -> Result<(), Box<InternalRenderingError>> {
         if self.is_rendering_cancelled() {
-            return Err(InternalRenderingError::Cancelled);
+            return Err(Box::new(InternalRenderingError::Cancelled));
         }
 
         Ok(())
     }
 
-    fn check_layer_nesting_depth(&self) -> Result<(), InternalRenderingError> {
+    fn check_layer_nesting_depth(&self) -> Result<(), Box<InternalRenderingError>> {
         if self.recursion_depth > limits::MAX_LAYER_NESTING_DEPTH {
-            return Err(InternalRenderingError::LimitExceeded(
+            return Err(Box::new(InternalRenderingError::LimitExceeded(
                 ImplementationLimit::MaximumLayerNestingDepthExceeded,
-            ));
+            )));
         }
 
         Ok(())
@@ -745,7 +745,7 @@ impl DrawingCtx {
         viewport: &Viewport,
         element_name: &str,
         bbox: &BoundingBox,
-    ) -> Result<cairo::Surface, InternalRenderingError> {
+    ) -> Result<cairo::Surface, Box<InternalRenderingError>> {
         let surface_to_filter = SharedImageSurface::copy_from_surface(
             &cairo::ImageSurface::try_from(self.cr.target()).unwrap(),
         )?;
@@ -1076,7 +1076,7 @@ impl DrawingCtx {
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
         viewport: &Viewport,
-    ) -> Result<Rc<FilterPlan>, InternalRenderingError> {
+    ) -> Result<Rc<FilterPlan>, Box<InternalRenderingError>> {
         let requirements = InputRequirements::new_from_filter_specs(specs);
 
         let background_image =
@@ -1131,7 +1131,7 @@ impl DrawingCtx {
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
         node_bbox: &BoundingBox,
-    ) -> Result<SharedImageSurface, InternalRenderingError> {
+    ) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
         let session = self.session();
 
         // We try to convert each item in the filter_list to a FilterSpec.
@@ -1194,7 +1194,7 @@ impl DrawingCtx {
         pattern: &UserSpacePattern,
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
-    ) -> Result<bool, InternalRenderingError> {
+    ) -> Result<bool, Box<InternalRenderingError>> {
         // Bail out early if the pattern has zero size, per the spec
         if approx_eq!(f64, pattern.width, 0.0) || approx_eq!(f64, pattern.height, 0.0) {
             return Ok(false);
@@ -1317,7 +1317,7 @@ impl DrawingCtx {
         paint_source: &UserSpacePaintSource,
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
-    ) -> Result<bool, InternalRenderingError> {
+    ) -> Result<bool, Box<InternalRenderingError>> {
         match *paint_source {
             UserSpacePaintSource::Gradient(ref gradient, _c) => {
                 set_gradient_on_cairo(&self.cr, gradient)?;
@@ -1349,7 +1349,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
         viewport: &Viewport,
-    ) -> Result<SharedImageSurface, InternalRenderingError> {
+    ) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
@@ -1733,7 +1733,7 @@ impl DrawingCtx {
         &self,
         width: i32,
         height: i32,
-    ) -> Result<SharedImageSurface, InternalRenderingError> {
+    ) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.
@@ -1782,7 +1782,7 @@ impl DrawingCtx {
         transform: ValidTransform,
         width: i32,
         height: i32,
-    ) -> Result<SharedImageSurface, InternalRenderingError> {
+    ) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         let save_cr = self.cr.clone();
@@ -1862,7 +1862,9 @@ impl DrawingCtx {
 
             Err(AcquireError::CircularReference(circular)) => {
                 rsvg_log!(self.session, "circular reference in element {}", circular);
-                return Err(InternalRenderingError::CircularReference(circular));
+                return Err(Box::new(InternalRenderingError::CircularReference(
+                    circular,
+                )));
             }
 
             _ => unreachable!(),
@@ -1878,13 +1880,15 @@ impl DrawingCtx {
                     node,
                     circular
                 );
-                return Err(InternalRenderingError::CircularReference(circular));
+                return Err(Box::new(InternalRenderingError::CircularReference(
+                    circular,
+                )));
             }
 
             Err(AcquireError::MaxReferencesExceeded) => {
-                return Err(InternalRenderingError::LimitExceeded(
+                return Err(Box::new(InternalRenderingError::LimitExceeded(
                     ImplementationLimit::TooManyReferencedElements,
-                ));
+                )));
             }
 
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
@@ -2092,7 +2096,7 @@ pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &Color) {
 fn set_gradient_on_cairo(
     cr: &cairo::Context,
     gradient: &UserSpaceGradient,
-) -> Result<(), InternalRenderingError> {
+) -> Result<(), Box<InternalRenderingError>> {
     let g = match gradient.variant {
         GradientVariant::Linear { x1, y1, x2, y2 } => {
             cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
@@ -2162,7 +2166,7 @@ fn pango_layout_to_cairo_path(
     y: f64,
     layout: &pango::Layout,
     gravity: pango::Gravity,
-) -> Result<CairoPath, InternalRenderingError> {
+) -> Result<CairoPath, Box<InternalRenderingError>> {
     let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
     let cr = cairo::Context::new(&surface)?;
 
@@ -2255,7 +2259,7 @@ fn compute_stroke_and_fill_extents(
     stroke: &Stroke,
     stroke_paint_source: &UserSpacePaintSource,
     initial_viewport: &Viewport,
-) -> Result<PathExtents, InternalRenderingError> {
+) -> Result<PathExtents, Box<InternalRenderingError>> {
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
     // really needed here? */

@@ -66,7 +66,7 @@ impl ElementTrait for Group {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let mut child_layers = Vec::new();
 
         for child in node.children().filter(|c| c.is_element()) {
@@ -119,7 +119,7 @@ impl Group {
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         child_layers: Vec<Layer>,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
 
         let extents = extents_of_transformed_children(&child_layers);

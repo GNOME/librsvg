@@ -349,22 +349,26 @@ impl NodeDraw for Node {
                 {
                     Ok(bbox) => Ok(bbox),
 
-                    // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
-                    //
-                    // "If a transform function causes the current transformation matrix of an
-                    // object to be non-invertible, the object and its content do not get
-                    // displayed."
-                    Err(InternalRenderingError::InvalidTransform) => Ok(viewport.empty_bbox()),
+                    Err(boxed_e) => match *boxed_e {
+                        // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
+                        //
+                        // "If a transform function causes the current transformation matrix of an
+                        // object to be non-invertible, the object and its content do not get
+                        // displayed."
+                        InternalRenderingError::InvalidTransform => Ok(viewport.empty_bbox()),
 
-                    Err(InternalRenderingError::CircularReference(node)) => {
-                        if node != *self {
-                            return Ok(viewport.empty_bbox());
-                        } else {
-                            return Err(InternalRenderingError::CircularReference(node));
+                        InternalRenderingError::CircularReference(node) => {
+                            if node != *self {
+                                return Ok(viewport.empty_bbox());
+                            } else {
+                                return Err(Box::new(InternalRenderingError::CircularReference(
+                                    node,
+                                )));
+                            }
                         }
-                    }
 
-                    Err(e) => Err(e),
+                        _ => Err(boxed_e),
+                    },
                 };
 
                 rsvg_log!(draw_ctx.session(), ")");

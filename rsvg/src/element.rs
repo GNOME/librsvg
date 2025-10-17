@@ -48,7 +48,7 @@ use crate::text::{TRef, TSpan, Text};
 use crate::text2::Text2;
 use crate::xml::Attributes;
 
-pub type DrawResult = Result<Box<BoundingBox>, InternalRenderingError>;
+pub type DrawResult = Result<Box<BoundingBox>, Box<InternalRenderingError>>;
 
 pub trait ElementTrait {
     /// Sets per-element attributes.
@@ -88,7 +88,7 @@ pub trait ElementTrait {
         _viewport: &Viewport,
         _draw_ctx: &mut DrawingCtx,
         _clipping: bool,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         Ok(None)
     }
 }
@@ -516,7 +516,7 @@ impl Element {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
         if values.is_displayed() {
             self.element_data
@@ -611,7 +611,7 @@ impl ElementData {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         use ElementData::*;
 
         let data: &dyn ElementTrait = match self {

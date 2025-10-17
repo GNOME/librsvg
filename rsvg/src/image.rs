@@ -54,7 +54,7 @@ impl ElementTrait for Image {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         if let Some(ref url) = self.href {
             self.layout_from_url(url, node, acquired_nodes, cascaded, viewport, draw_ctx)
         } else {
@@ -90,7 +90,7 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         match acquired_nodes.lookup_resource(url) {
             Ok(Resource::Image(surface)) => self.layout_from_surface(
                 &surface,
@@ -131,7 +131,7 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
 
         let params = NormalizeParams::new(values, viewport);
@@ -193,7 +193,7 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let dimensions = document.get_intrinsic_dimensions();
 
         let values = cascaded.get();

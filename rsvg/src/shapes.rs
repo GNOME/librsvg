@@ -51,7 +51,7 @@ fn draw_basic_shape(
     cascaded: &CascadedValues<'_>,
     viewport: &Viewport,
     session: &Session,
-) -> Result<Option<Layer>, InternalRenderingError> {
+) -> Result<Option<Layer>, Box<InternalRenderingError>> {
     let values = cascaded.get();
     let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
@@ -168,7 +168,7 @@ macro_rules! impl_draw {
             viewport: &Viewport,
             draw_ctx: &mut DrawingCtx,
             _clipping: bool,
-        ) -> Result<Option<Layer>, InternalRenderingError> {
+        ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
             draw_basic_shape(
                 self,
                 node,
