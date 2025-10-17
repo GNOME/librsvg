@@ -840,8 +840,6 @@ impl DrawingCtx {
 
                 self.link_tag_begin(&stacking_ctx.link_target);
 
-                let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
-
                 if let Some(rect) = stacking_ctx.clip_rect.as_ref() {
                     clip_to_rectangle(&self.cr, &viewport.transform, rect);
                 }
@@ -980,6 +978,8 @@ impl DrawingCtx {
                         self.cr
                             .set_matrix(ValidTransform::try_from(affines.compositing)?.into());
                         self.cr.set_operator(stacking_ctx.mix_blend_mode.into());
+
+                        let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
                         if opacity < 1.0 {
                             self.cr.paint_with_alpha(opacity)?;
