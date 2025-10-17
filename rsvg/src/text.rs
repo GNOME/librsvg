@@ -7,10 +7,9 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
 
-use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, Viewport};
-use crate::element::{set_attribute, ElementData, ElementTrait};
+use crate::element::{set_attribute, DrawResult, ElementData, ElementTrait};
 use crate::error::*;
 use crate::layout::{self, FontProperties, Layer, LayerKind, StackingContext, Stroke, TextSpan};
 use crate::length::*;
@@ -855,7 +854,7 @@ impl ElementTrait for Text {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
         let params = NormalizeParams::new(values, viewport);
 
@@ -975,7 +974,7 @@ impl ElementTrait for Text {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
             .and_then(|layer| {
                 draw_ctx.draw_layer(layer.as_ref().unwrap(), acquired_nodes, clipping, viewport)

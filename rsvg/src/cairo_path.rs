@@ -86,7 +86,7 @@ fn coordinates_are_unsuitable(x: f64, y: f64, transform: &Transform) -> bool {
 pub struct CairoPath(Vec<PathSegment>);
 
 impl CairoPath {
-    pub fn to_cairo_context(&self, cr: &cairo::Context) -> Result<(), InternalRenderingError> {
+    pub fn to_cairo_context(&self, cr: &cairo::Context) -> Result<(), Box<InternalRenderingError>> {
         for segment in &self.0 {
             match *segment {
                 PathSegment::MoveTo((x, y)) => cr.move_to(x, y),
@@ -148,7 +148,7 @@ impl CairoPath {
     }
 }
 
-fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingError> {
+fn compute_path_extents(path: &Path) -> Result<Option<Rect>, Box<InternalRenderingError>> {
     if path.is_empty() {
         return Ok(None);
     }
@@ -166,7 +166,7 @@ impl Path {
     pub fn to_cairo_path(
         &self,
         is_square_linecap: bool,
-    ) -> Result<CairoPath, InternalRenderingError> {
+    ) -> Result<CairoPath, Box<InternalRenderingError>> {
         let mut segments = Vec::new();
 
         for subpath in self.iter_subpath() {
@@ -194,7 +194,7 @@ impl Path {
         &self,
         cr: &cairo::Context,
         is_square_linecap: bool,
-    ) -> Result<(), InternalRenderingError> {
+    ) -> Result<(), Box<InternalRenderingError>> {
         let cairo_path = self.to_cairo_path(is_square_linecap)?;
         cairo_path.to_cairo_context(cr)
     }
@@ -260,7 +260,7 @@ pub fn validate_path(
     path: &Rc<Path>,
     stroke: &Stroke,
     viewport: &Viewport,
-) -> Result<ValidatedPath, InternalRenderingError> {
+) -> Result<ValidatedPath, Box<InternalRenderingError>> {
     let is_square_linecap = stroke.line_cap == StrokeLinecap::Square;
     let cairo_path = path.to_cairo_path(is_square_linecap)?;
 

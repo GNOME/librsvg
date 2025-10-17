@@ -345,8 +345,9 @@ impl Document {
                 viewport,
                 config,
             )
-            .map(|_bbox| ())
         })
+        .map(|_bbox| ())
+        .map_err(|err| *err)
     }
 
     fn geometry_for_layer(
@@ -354,7 +355,7 @@ impl Document {
         node: Node,
         viewport: Rect,
         options: &RenderingOptions,
-    ) -> Result<(Rect, Rect), InternalRenderingError> {
+    ) -> Result<(Rect, Rect), Box<InternalRenderingError>> {
         let root = self.root();
 
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
@@ -383,7 +384,9 @@ impl Document {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
         let viewport = Rect::from(*viewport);
 
-        let (ink_rect, logical_rect) = self.geometry_for_layer(node, viewport, options)?;
+        let (ink_rect, logical_rect) = self
+            .geometry_for_layer(node, viewport, options)
+            .map_err(|err| *err)?;
 
         Ok((
             cairo::Rectangle::from(ink_rect),
@@ -404,6 +407,7 @@ impl Document {
         let config = options.to_rendering_configuration(true);
 
         self.draw_tree(DrawingMode::OnlyNode(node), &cr, unit_rectangle(), config)
+            .map_err(|err| *err)
     }
 
     /// Returns (ink_rect, logical_rect)
@@ -461,8 +465,9 @@ impl Document {
             let config = options.to_rendering_configuration(false);
 
             self.draw_tree(DrawingMode::OnlyNode(node), cr, unit_rectangle(), config)
-                .map(|_bbox| ())
         })
+        .map(|_bbox| ())
+        .map_err(|err| *err)
     }
 
     /// Wrapper for [`drawing_ctx::draw_tree`].  This just ensures that the document
@@ -473,7 +478,7 @@ impl Document {
         cr: &cairo::Context,
         viewport_rect: Rect,
         config: RenderingConfiguration,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> Result<BoundingBox, Box<InternalRenderingError>> {
         self.ensure_is_cascaded();
 
         let cancellable = config.cancellable.clone();
@@ -486,6 +491,7 @@ impl Document {
             config,
             &mut AcquiredNodes::new(self, cancellable),
         )
+        .map(|boxed_bbox| *boxed_bbox)
     }
 
     fn ensure_is_cascaded(&self) {

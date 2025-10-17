@@ -12,7 +12,6 @@ use std::cell::{Ref, RefMut};
 use std::fmt;
 use std::rc::Rc;
 
-use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::*;
@@ -321,7 +320,7 @@ pub trait NodeDraw {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError>;
+    ) -> DrawResult;
 
     fn draw_children(
         &self,
@@ -330,7 +329,7 @@ pub trait NodeDraw {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError>;
+    ) -> DrawResult;
 }
 
 impl NodeDraw for Node {
@@ -341,30 +340,35 @@ impl NodeDraw for Node {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         match *self.borrow() {
             NodeData::Element(ref e) => {
                 rsvg_log!(draw_ctx.session(), "({}", e);
+                draw_ctx.print_stack_depth("Node::draw");
                 let res = match e.draw(self, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
                 {
                     Ok(bbox) => Ok(bbox),
 
-                    // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
-                    //
-                    // "If a transform function causes the current transformation matrix of an
-                    // object to be non-invertible, the object and its content do not get
-                    // displayed."
-                    Err(InternalRenderingError::InvalidTransform) => Ok(viewport.empty_bbox()),
+                    Err(boxed_e) => match *boxed_e {
+                        // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
+                        //
+                        // "If a transform function causes the current transformation matrix of an
+                        // object to be non-invertible, the object and its content do not get
+                        // displayed."
+                        InternalRenderingError::InvalidTransform => Ok(viewport.empty_bbox()),
 
-                    Err(InternalRenderingError::CircularReference(node)) => {
-                        if node != *self {
-                            return Ok(viewport.empty_bbox());
-                        } else {
-                            return Err(InternalRenderingError::CircularReference(node));
+                        InternalRenderingError::CircularReference(node) => {
+                            if node != *self {
+                                return Ok(viewport.empty_bbox());
+                            } else {
+                                return Err(Box::new(InternalRenderingError::CircularReference(
+                                    node,
+                                )));
+                            }
                         }
-                    }
 
-                    Err(e) => Err(e),
+                        _ => Err(boxed_e),
+                    },
                 };
 
                 rsvg_log!(draw_ctx.session(), ")");
@@ -383,7 +387,9 @@ impl NodeDraw for Node {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
+        draw_ctx.print_stack_depth("Node::draw_children");
+
         let mut bbox = viewport.empty_bbox();
 
         for child in self.children().filter(|c| c.is_element()) {

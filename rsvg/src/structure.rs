@@ -8,7 +8,7 @@ use crate::coord_units;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
-use crate::element::{set_attribute, ElementData, ElementTrait};
+use crate::element::{set_attribute, DrawResult, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::{self, Layer, LayerKind, LayoutViewport, StackingContext};
@@ -33,7 +33,7 @@ impl ElementTrait for Group {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
@@ -66,7 +66,7 @@ impl ElementTrait for Group {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let mut child_layers = Vec::new();
 
         for child in node.children().filter(|c| c.is_element()) {
@@ -119,7 +119,7 @@ impl Group {
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         child_layers: Vec<Layer>,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
 
         let extents = extents_of_transformed_children(&child_layers);
@@ -169,7 +169,7 @@ impl ElementTrait for Switch {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
@@ -402,7 +402,7 @@ impl ElementTrait for Svg {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
@@ -496,7 +496,7 @@ impl ElementTrait for Use {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         if let Some(link) = self.link.as_ref() {
             let values = cascaded.get();
             let params = NormalizeParams::new(values, viewport);
@@ -690,7 +690,7 @@ impl ElementTrait for Link {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         // If this element is inside of <text>, do not draw it.
         // The <text> takes care of it.
         for an in node.ancestors() {

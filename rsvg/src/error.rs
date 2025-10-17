@@ -188,6 +188,20 @@ impl From<cairo::Error> for InternalRenderingError {
     }
 }
 
+macro_rules! box_error {
+    ($from_ty:ty) => {
+        impl From<$from_ty> for Box<InternalRenderingError> {
+            fn from(e: $from_ty) -> Box<InternalRenderingError> {
+                Box::new(e.into())
+            }
+        }
+    };
+}
+
+box_error!(DefsLookupErrorKind);
+box_error!(InvalidTransform);
+box_error!(cairo::Error);
+
 /// Indicates that a transform is not invertible.
 ///
 /// This generally represents an error from [`crate::transform::ValidTransform::try_from`], which is what we use

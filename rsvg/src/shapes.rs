@@ -6,11 +6,10 @@ use markup5ever::{expanded_name, local_name, ns};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use crate::bbox::BoundingBox;
 use crate::cairo_path::{validate_path, ValidatedPath};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{set_attribute, DrawResult, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
 use crate::is_element_of_type;
@@ -52,7 +51,7 @@ fn draw_basic_shape(
     cascaded: &CascadedValues<'_>,
     viewport: &Viewport,
     session: &Session,
-) -> Result<Option<Layer>, InternalRenderingError> {
+) -> Result<Option<Layer>, Box<InternalRenderingError>> {
     let values = cascaded.get();
     let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
@@ -169,7 +168,7 @@ macro_rules! impl_draw {
             viewport: &Viewport,
             draw_ctx: &mut DrawingCtx,
             _clipping: bool,
-        ) -> Result<Option<Layer>, InternalRenderingError> {
+        ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
             draw_basic_shape(
                 self,
                 node,
@@ -188,7 +187,7 @@ macro_rules! impl_draw {
             viewport: &Viewport,
             draw_ctx: &mut DrawingCtx,
             clipping: bool,
-        ) -> Result<BoundingBox, InternalRenderingError> {
+        ) -> DrawResult {
             self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
                 .and_then(|layer| {
                     if let Some(layer) = layer {

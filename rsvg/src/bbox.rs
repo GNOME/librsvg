@@ -33,11 +33,6 @@ impl BoundingBox {
         }
     }
 
-    pub fn clear(mut self) {
-        self.rect = None;
-        self.ink_rect = None;
-    }
-
     fn combine(&mut self, src: &BoundingBox, clip: bool) {
         if src.rect.is_none() && src.ink_rect.is_none() {
             return;

@@ -77,6 +77,13 @@ impl From<InternalRenderingError> for FilterError {
     }
 }
 
+impl From<Box<InternalRenderingError>> for FilterError {
+    #[inline]
+    fn from(e: Box<InternalRenderingError>) -> Self {
+        FilterError::Rendering(*e)
+    }
+}
+
 impl From<InvalidTransform> for FilterError {
     fn from(_: InvalidTransform) -> Self {
         FilterError::Rendering(InternalRenderingError::InvalidTransform)

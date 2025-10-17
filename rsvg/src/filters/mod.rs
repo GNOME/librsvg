@@ -117,7 +117,7 @@ impl FilterPlan {
         background_image: Option<SharedImageSurface>,
         stroke_paint_image: Option<SharedImageSurface>,
         fill_paint_image: Option<SharedImageSurface>,
-    ) -> Result<FilterPlan, InternalRenderingError> {
+    ) -> Result<FilterPlan, Box<InternalRenderingError>> {
         assert_eq!(
             requirements.needs_background_image || requirements.needs_background_alpha,
             background_image.is_some()
@@ -418,7 +418,7 @@ pub fn render(
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
     node_bbox: &BoundingBox,
-) -> Result<SharedImageSurface, InternalRenderingError> {
+) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
     let session = draw_ctx.session().clone();
 
     let surface_width = source_surface.width();
@@ -480,7 +480,7 @@ pub fn render(
         .or_else(|err| match err {
             FilterError::CairoError(status) => {
                 // Exit early on Cairo errors
-                Err(InternalRenderingError::from(status))
+                Err(Box::new(InternalRenderingError::from(status)))
             }
 
             _ => {

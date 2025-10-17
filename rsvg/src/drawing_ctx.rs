@@ -16,7 +16,7 @@ use crate::color::{color_to_rgba, Color};
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
 use crate::dpi::Dpi;
-use crate::element::{Element, ElementData};
+use crate::element::{DrawResult, Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, InternalRenderingError, InvalidTransform};
 use crate::filters::{self, FilterPlan, FilterSpec, InputRequirements};
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -77,7 +77,7 @@ impl<'a> PathHelper<'a> {
         }
     }
 
-    pub fn set(&mut self) -> Result<(), InternalRenderingError> {
+    pub fn set(&mut self) -> Result<(), Box<InternalRenderingError>> {
         match self.has_path {
             Some(false) | None => {
                 self.has_path = Some(true);
@@ -183,8 +183,8 @@ impl Viewport {
         })
     }
 
-    pub fn empty_bbox(&self) -> BoundingBox {
-        BoundingBox::new().with_transform(*self.transform)
+    pub fn empty_bbox(&self) -> Box<BoundingBox> {
+        Box::new(BoundingBox::new().with_transform(*self.transform))
     }
 }
 
@@ -216,6 +216,13 @@ pub struct DrawingCtx {
     /// We use this to set a hard limit on how many nested layers there can be, to avoid
     /// malicious SVGs that would cause unbounded stack consumption.
     recursion_depth: u16,
+
+    /// Cheap hack to monitor stack usage in recursive calls.
+    ///
+    /// We store the address of a local variable when first creating the DrawingCtx, and
+    /// then subtract it from another local variable at trace points.  See the print_stack_depth()
+    /// function.
+    stack_ptr: *const u8,
 }
 
 pub enum DrawingMode {
@@ -248,7 +255,7 @@ pub fn draw_tree(
     viewport_rect: Rect,
     config: RenderingConfiguration,
     acquired_nodes: &mut AcquiredNodes<'_>,
-) -> Result<BoundingBox, InternalRenderingError> {
+) -> DrawResult {
     let (drawsub_stack, node) = match mode {
         DrawingMode::LimitToStack { node, root } => (node.ancestors().collect(), root),
 
@@ -260,7 +267,7 @@ pub fn draw_tree(
     // Preserve the user's transform and use it for the outermost bounding box.  All bounds/extents
     // will be converted to this transform in the end.
     let user_transform = Transform::from(cr.matrix());
-    let mut user_bbox = BoundingBox::new().with_transform(user_transform);
+    let mut user_bbox = Box::new(BoundingBox::new().with_transform(user_transform));
 
     // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
     //
@@ -305,15 +312,15 @@ pub fn draw_tree(
     user_bbox.insert(&content_bbox);
 
     if draw_ctx.is_rendering_cancelled() {
-        Err(InternalRenderingError::Cancelled)
+        Err(InternalRenderingError::Cancelled)?
     } else {
         Ok(user_bbox)
     }
 }
 
-pub fn with_saved_cr<O, F>(cr: &cairo::Context, f: F) -> Result<O, InternalRenderingError>
+pub fn with_saved_cr<O, F>(cr: &cairo::Context, f: F) -> Result<O, Box<InternalRenderingError>>
 where
-    F: FnOnce() -> Result<O, InternalRenderingError>,
+    F: FnOnce() -> Result<O, Box<InternalRenderingError>>,
 {
     cr.save()?;
     match f() {
@@ -342,6 +349,8 @@ impl DrawingCtx {
         config: RenderingConfiguration,
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
+        let stack_variable: u8 = 42;
+
         DrawingCtx {
             session,
             initial_viewport: *initial_viewport,
@@ -350,6 +359,14 @@ impl DrawingCtx {
             drawsub_stack,
             config,
             recursion_depth: 0,
+
+            // We store this pointer to pinpoint the stack depth at this point in the program.
+            // Later, in the print_stack_depth() function, we'll use it to subtract from the
+            // current stack pointer.  This is a cheap hack to monitor how much stack space
+            // is consumed between recursive calls to the drawing machinery.
+            //
+            // The pointer is otherwise meaningless and should never be dereferenced.
+            stack_ptr: &stack_variable,
         }
     }
 
@@ -376,11 +393,25 @@ impl DrawingCtx {
             drawsub_stack: self.drawsub_stack.clone(),
             config: self.config.clone(),
             recursion_depth: self.recursion_depth,
+            stack_ptr: self.stack_ptr,
         })
     }
 
     pub fn session(&self) -> &Session {
         &self.session
+    }
+
+    pub fn print_stack_depth(&self, place_name: &str) {
+        let stack_variable: u8 = 42;
+
+        let current_stack_ptr = &stack_variable;
+
+        let stack_size = unsafe { self.stack_ptr.byte_offset_from(current_stack_ptr) };
+        rsvg_log!(
+            self.session,
+            "{place_name}: recursion_depth={}, stack_depth={stack_size}",
+            self.recursion_depth
+        );
     }
 
     /// Returns the `RenderingOptions` being used for rendering.
@@ -409,7 +440,7 @@ impl DrawingCtx {
         viewport: &Viewport,
         stacking_ctx: &StackingContext,
         clipping: bool,
-    ) -> Result<ValidTransform, InternalRenderingError> {
+    ) -> Result<ValidTransform, Box<InternalRenderingError>> {
         if stacking_ctx.should_isolate() && !clipping {
             let affines = CompositingAffines::new(
                 *viewport.transform,
@@ -452,7 +483,7 @@ impl DrawingCtx {
 
     pub fn create_surface_for_toplevel_viewport(
         &self,
-    ) -> Result<cairo::ImageSurface, InternalRenderingError> {
+    ) -> Result<cairo::ImageSurface, Box<InternalRenderingError>> {
         let (w, h) = self.size_for_temporary_surface();
 
         Ok(cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?)
@@ -461,7 +492,7 @@ impl DrawingCtx {
     fn create_similar_surface_for_toplevel_viewport(
         &self,
         surface: &cairo::Surface,
-    ) -> Result<cairo::Surface, InternalRenderingError> {
+    ) -> Result<cairo::Surface, Box<InternalRenderingError>> {
         let (w, h) = self.size_for_temporary_surface();
 
         Ok(cairo::Surface::create_similar(
@@ -531,7 +562,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
         bbox: &BoundingBox,
-    ) -> Result<(), InternalRenderingError> {
+    ) -> Result<(), Box<InternalRenderingError>> {
         if clip_node.is_none() {
             return Ok(());
         }
@@ -573,7 +604,7 @@ impl DrawingCtx {
         transform: Transform,
         bbox: &BoundingBox,
         acquired_nodes: &mut AcquiredNodes<'_>,
-    ) -> Result<Option<cairo::ImageSurface>, InternalRenderingError> {
+    ) -> Result<Option<cairo::ImageSurface>, Box<InternalRenderingError>> {
         if bbox.rect.is_none() {
             // The node being masked is empty / doesn't have a
             // bounding box, so there's nothing to mask!
@@ -689,19 +720,19 @@ impl DrawingCtx {
     ///
     /// If so, returns an Err.  This is used from [`DrawingCtx::with_discrete_layer`] to
     /// exit early instead of proceeding with rendering.
-    fn check_cancellation(&self) -> Result<(), InternalRenderingError> {
+    fn check_cancellation(&self) -> Result<(), Box<InternalRenderingError>> {
         if self.is_rendering_cancelled() {
-            return Err(InternalRenderingError::Cancelled);
+            return Err(Box::new(InternalRenderingError::Cancelled));
         }
 
         Ok(())
     }
 
-    fn check_layer_nesting_depth(&self) -> Result<(), InternalRenderingError> {
+    fn check_layer_nesting_depth(&self) -> Result<(), Box<InternalRenderingError>> {
         if self.recursion_depth > limits::MAX_LAYER_NESTING_DEPTH {
-            return Err(InternalRenderingError::LimitExceeded(
+            return Err(Box::new(InternalRenderingError::LimitExceeded(
                 ImplementationLimit::MaximumLayerNestingDepthExceeded,
-            ));
+            )));
         }
 
         Ok(())
@@ -714,7 +745,7 @@ impl DrawingCtx {
         viewport: &Viewport,
         element_name: &str,
         bbox: &BoundingBox,
-    ) -> Result<cairo::Surface, InternalRenderingError> {
+    ) -> Result<cairo::Surface, Box<InternalRenderingError>> {
         let surface_to_filter = SharedImageSurface::copy_from_surface(
             &cairo::ImageSurface::try_from(self.cr.target()).unwrap(),
         )?;
@@ -763,12 +794,8 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
         layout_viewport: &Option<LayoutViewport>,
-        draw_fn: &mut dyn FnMut(
-            &mut AcquiredNodes<'_>,
-            &mut DrawingCtx,
-            &Viewport,
-        ) -> Result<BoundingBox, InternalRenderingError>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_fn: &mut dyn FnMut(&mut AcquiredNodes<'_>, &mut DrawingCtx, &Viewport) -> DrawResult,
+    ) -> DrawResult {
         if let Some(layout_viewport) = layout_viewport.as_ref() {
             if let Some(new_viewport) = self.push_new_viewport(viewport, layout_viewport) {
                 draw_fn(acquired_nodes, self, &new_viewport)
@@ -787,12 +814,10 @@ impl DrawingCtx {
         viewport: &Viewport,
         layout_viewport: Option<LayoutViewport>,
         clipping: bool,
-        draw_fn: &mut dyn FnMut(
-            &mut AcquiredNodes<'_>,
-            &mut DrawingCtx,
-            &Viewport,
-        ) -> Result<BoundingBox, InternalRenderingError>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_fn: &mut dyn FnMut(&mut AcquiredNodes<'_>, &mut DrawingCtx, &Viewport) -> DrawResult,
+    ) -> DrawResult {
+        self.print_stack_depth("DrawingCtx::draw_layer_internal entry");
+
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
         let viewport = viewport.with_composed_transform(stacking_ctx_transform)?;
@@ -801,11 +826,7 @@ impl DrawingCtx {
             self.draw_in_optional_new_viewport(acquired_nodes, &viewport, &layout_viewport, draw_fn)
         } else {
             with_saved_cr(&self.cr.clone(), || {
-                if let Some(ref link_target) = stacking_ctx.link_target {
-                    self.link_tag_begin(link_target);
-                }
-
-                let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
+                self.link_tag_begin(&stacking_ctx.link_target);
 
                 if let Some(rect) = stacking_ctx.clip_rect.as_ref() {
                     clip_to_rectangle(&self.cr, &viewport.transform, rect);
@@ -819,9 +840,9 @@ impl DrawingCtx {
                     &viewport.empty_bbox(),
                 )?;
 
-                let should_isolate = stacking_ctx.should_isolate();
+                let res = if stacking_ctx.should_isolate() {
+                    self.print_stack_depth("DrawingCtx::draw_layer_internal should_isolate=true");
 
-                let res = if should_isolate {
                     // Compute our assortment of affines
 
                     let affines = Box::new(CompositingAffines::new(
@@ -863,9 +884,11 @@ impl DrawingCtx {
                         );
 
                         let bbox = if let Ok(ref bbox) = res {
-                            *bbox
+                            bbox.clone()
                         } else {
-                            BoundingBox::new().with_transform(*transform_for_temporary_surface)
+                            Box::new(
+                                BoundingBox::new().with_transform(*transform_for_temporary_surface),
+                            )
                         };
 
                         if let Some(ref filter) = stacking_ctx.filter {
@@ -911,6 +934,8 @@ impl DrawingCtx {
                     // Mask
 
                     if let Some(ref mask_node) = stacking_ctx.mask {
+                        self.print_stack_depth("DrawingCtx::draw_layer_internal creating mask");
+
                         res = res.and_then(|bbox| {
                             self.generate_cairo_mask(
                                 mask_node,
@@ -944,6 +969,8 @@ impl DrawingCtx {
                             .set_matrix(ValidTransform::try_from(affines.compositing)?.into());
                         self.cr.set_operator(stacking_ctx.mix_blend_mode.into());
 
+                        let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
+
                         if opacity < 1.0 {
                             self.cr.paint_with_alpha(opacity)?;
                         } else {
@@ -961,9 +988,7 @@ impl DrawingCtx {
                     )
                 };
 
-                if stacking_ctx.link_target.is_some() {
-                    self.link_tag_end();
-                }
+                self.link_tag_end(&stacking_ctx.link_target);
 
                 res
             })
@@ -979,15 +1004,12 @@ impl DrawingCtx {
         viewport: &Viewport,
         layout_viewport: Option<LayoutViewport>,
         clipping: bool,
-        draw_fn: &mut dyn FnMut(
-            &mut AcquiredNodes<'_>,
-            &mut DrawingCtx,
-            &Viewport,
-        ) -> Result<BoundingBox, InternalRenderingError>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_fn: &mut dyn FnMut(&mut AcquiredNodes<'_>, &mut DrawingCtx, &Viewport) -> DrawResult,
+    ) -> DrawResult {
         self.check_cancellation()?;
 
         self.recursion_depth += 1;
+        self.print_stack_depth("DrawingCtx::with_discrete_layer");
 
         match self.check_layer_nesting_depth() {
             Ok(()) => {
@@ -1012,8 +1034,8 @@ impl DrawingCtx {
     fn with_alpha(
         &mut self,
         opacity: UnitInterval,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, InternalRenderingError>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> DrawResult,
+    ) -> DrawResult {
         let res;
         let UnitInterval(o) = opacity;
         if o < 1.0 {
@@ -1029,16 +1051,20 @@ impl DrawingCtx {
     }
 
     /// Start a Cairo tag for PDF links
-    fn link_tag_begin(&mut self, link_target: &str) {
-        let attributes = format!("uri='{}'", escape_link_target(link_target));
+    fn link_tag_begin(&mut self, link_target: &Option<String>) {
+        if let Some(ref link_target) = *link_target {
+            let attributes = format!("uri='{}'", escape_link_target(link_target));
 
-        let cr = self.cr.clone();
-        cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+            let cr = self.cr.clone();
+            cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+        }
     }
 
     /// End a Cairo tag for PDF links
-    fn link_tag_end(&mut self) {
-        self.cr.tag_end(CAIRO_TAG_LINK);
+    fn link_tag_end(&mut self, link_target: &Option<String>) {
+        if link_target.is_some() {
+            self.cr.tag_end(CAIRO_TAG_LINK);
+        }
     }
 
     fn make_filter_plan(
@@ -1050,7 +1076,7 @@ impl DrawingCtx {
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
         viewport: &Viewport,
-    ) -> Result<Rc<FilterPlan>, InternalRenderingError> {
+    ) -> Result<Rc<FilterPlan>, Box<InternalRenderingError>> {
         let requirements = InputRequirements::new_from_filter_specs(specs);
 
         let background_image =
@@ -1105,7 +1131,7 @@ impl DrawingCtx {
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
         node_bbox: &BoundingBox,
-    ) -> Result<SharedImageSurface, InternalRenderingError> {
+    ) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
         let session = self.session();
 
         // We try to convert each item in the filter_list to a FilterSpec.
@@ -1168,7 +1194,7 @@ impl DrawingCtx {
         pattern: &UserSpacePattern,
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
-    ) -> Result<bool, InternalRenderingError> {
+    ) -> Result<bool, Box<InternalRenderingError>> {
         // Bail out early if the pattern has zero size, per the spec
         if approx_eq!(f64, pattern.width, 0.0) || approx_eq!(f64, pattern.height, 0.0) {
             return Ok(false);
@@ -1291,7 +1317,7 @@ impl DrawingCtx {
         paint_source: &UserSpacePaintSource,
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
-    ) -> Result<bool, InternalRenderingError> {
+    ) -> Result<bool, Box<InternalRenderingError>> {
         match *paint_source {
             UserSpacePaintSource::Gradient(ref gradient, _c) => {
                 set_gradient_on_cairo(&self.cr, gradient)?;
@@ -1323,7 +1349,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
         viewport: &Viewport,
-    ) -> Result<SharedImageSurface, InternalRenderingError> {
+    ) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
@@ -1349,7 +1375,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         match &layer.kind {
             LayerKind::Shape(shape) => self.draw_shape(
                 shape,
@@ -1389,7 +1415,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
@@ -1511,7 +1537,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let image_width = image.surface.width();
         let image_height = image.surface.height();
         if clipping || image.rect.is_empty() || image_width == 0 || image_height == 0 {
@@ -1524,7 +1550,7 @@ impl DrawingCtx {
 
         // The bounding box for <image> is decided by the values of the image's x, y, w, h
         // and not by the final computed image bounds.
-        let bounds = viewport.empty_bbox().with_rect(image.rect);
+        let bounds = Box::new(viewport.empty_bbox().with_rect(image.rect));
 
         let layout_viewport = LayoutViewport {
             vbox: Some(vbox),
@@ -1549,7 +1575,7 @@ impl DrawingCtx {
                         new_viewport,
                     )?;
 
-                    Ok(bounds)
+                    Ok(bounds.clone())
                 },
             )
         } else {
@@ -1564,7 +1590,7 @@ impl DrawingCtx {
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _clipping: bool,
         _viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         unimplemented!();
         /*
         self.with_discrete_layer(
@@ -1588,7 +1614,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let path = pango_layout_to_cairo_path(span.x, span.y, &span.layout, span.gravity)?;
         if path.is_empty() {
             // Empty strings, or only-whitespace text, get turned into empty paths.
@@ -1624,9 +1650,7 @@ impl DrawingCtx {
         self.cr.new_path();
 
         if span.is_visible {
-            if let Some(ref link_target) = span.link_target {
-                self.link_tag_begin(link_target);
-            }
+            self.link_tag_begin(&span.link_target);
 
             for &target in &span.paint_order.targets {
                 match target {
@@ -1672,9 +1696,7 @@ impl DrawingCtx {
                 }
             }
 
-            if span.link_target.is_some() {
-                self.link_tag_end();
-            }
+            self.link_tag_end(&span.link_target);
         }
 
         Ok(bbox)
@@ -1687,7 +1709,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
         viewport: &Viewport,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
@@ -1711,7 +1733,7 @@ impl DrawingCtx {
         &self,
         width: i32,
         height: i32,
-    ) -> Result<SharedImageSurface, InternalRenderingError> {
+    ) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.
@@ -1760,7 +1782,7 @@ impl DrawingCtx {
         transform: ValidTransform,
         width: i32,
         height: i32,
-    ) -> Result<SharedImageSurface, InternalRenderingError> {
+    ) -> Result<SharedImageSurface, Box<InternalRenderingError>> {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         let save_cr = self.cr.clone();
@@ -1792,7 +1814,9 @@ impl DrawingCtx {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
+        self.print_stack_depth("DrawingCtx::draw_node_from_stack");
+
         let stack_top = self.drawsub_stack.pop();
 
         let draw = if let Some(ref top) = stack_top {
@@ -1825,7 +1849,7 @@ impl DrawingCtx {
         viewport: &Viewport,
         fill_paint: Rc<PaintSource>,
         stroke_paint: Rc<PaintSource>,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         // <use> is an element that is used directly, unlike
         // <pattern>, which is used through a fill="url(#...)"
         // reference.  However, <use> will always reference another
@@ -1838,7 +1862,9 @@ impl DrawingCtx {
 
             Err(AcquireError::CircularReference(circular)) => {
                 rsvg_log!(self.session, "circular reference in element {}", circular);
-                return Err(InternalRenderingError::CircularReference(circular));
+                return Err(Box::new(InternalRenderingError::CircularReference(
+                    circular,
+                )));
             }
 
             _ => unreachable!(),
@@ -1854,13 +1880,15 @@ impl DrawingCtx {
                     node,
                     circular
                 );
-                return Err(InternalRenderingError::CircularReference(circular));
+                return Err(Box::new(InternalRenderingError::CircularReference(
+                    circular,
+                )));
             }
 
             Err(AcquireError::MaxReferencesExceeded) => {
-                return Err(InternalRenderingError::LimitExceeded(
+                return Err(Box::new(InternalRenderingError::LimitExceeded(
                     ImplementationLimit::TooManyReferencedElements,
-                ));
+                )));
             }
 
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
@@ -1985,7 +2013,7 @@ impl DrawingCtx {
         };
 
         if let Ok(bbox) = res {
-            let mut res_bbox = BoundingBox::new().with_transform(*viewport.transform);
+            let mut res_bbox = Box::new(BoundingBox::new().with_transform(*viewport.transform));
             res_bbox.insert(&bbox);
             Ok(res_bbox)
         } else {
@@ -2068,7 +2096,7 @@ pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &Color) {
 fn set_gradient_on_cairo(
     cr: &cairo::Context,
     gradient: &UserSpaceGradient,
-) -> Result<(), InternalRenderingError> {
+) -> Result<(), Box<InternalRenderingError>> {
     let g = match gradient.variant {
         GradientVariant::Linear { x1, y1, x2, y2 } => {
             cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
@@ -2138,7 +2166,7 @@ fn pango_layout_to_cairo_path(
     y: f64,
     layout: &pango::Layout,
     gravity: pango::Gravity,
-) -> Result<CairoPath, InternalRenderingError> {
+) -> Result<CairoPath, Box<InternalRenderingError>> {
     let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
     let cr = cairo::Context::new(&surface)?;
 
@@ -2231,7 +2259,7 @@ fn compute_stroke_and_fill_extents(
     stroke: &Stroke,
     stroke_paint_source: &UserSpacePaintSource,
     initial_viewport: &Viewport,
-) -> Result<PathExtents, InternalRenderingError> {
+) -> Result<PathExtents, Box<InternalRenderingError>> {
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
     // really needed here? */
@@ -2304,7 +2332,7 @@ fn compute_stroke_and_fill_box(
     stroke: &Stroke,
     stroke_paint_source: &UserSpacePaintSource,
     initial_viewport: &Viewport,
-) -> Result<BoundingBox, InternalRenderingError> {
+) -> DrawResult {
     let extents =
         compute_stroke_and_fill_extents(cr, stroke, stroke_paint_source, initial_viewport)?;
 
@@ -2325,7 +2353,7 @@ fn compute_stroke_and_fill_box(
         bbox = bbox.with_ink_rect(ink_rect);
     }
 
-    Ok(bbox)
+    Ok(Box::new(bbox))
 }
 
 fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {

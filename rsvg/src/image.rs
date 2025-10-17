@@ -3,10 +3,9 @@
 use markup5ever::{expanded_name, local_name, ns};
 
 use crate::aspect_ratio::AspectRatio;
-use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, Document, Resource};
 use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{set_attribute, DrawResult, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::{self, Layer, LayerKind, StackingContext};
@@ -55,7 +54,7 @@ impl ElementTrait for Image {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         if let Some(ref url) = self.href {
             self.layout_from_url(url, node, acquired_nodes, cascaded, viewport, draw_ctx)
         } else {
@@ -71,7 +70,7 @@ impl ElementTrait for Image {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> DrawResult {
         let layer = self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)?;
 
         if let Some(layer) = layer {
@@ -91,7 +90,7 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         match acquired_nodes.lookup_resource(url) {
             Ok(Resource::Image(surface)) => self.layout_from_surface(
                 &surface,
@@ -132,7 +131,7 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
 
         let params = NormalizeParams::new(values, viewport);
@@ -194,7 +193,7 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<Option<Layer>, InternalRenderingError> {
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let dimensions = document.get_intrinsic_dimensions();
 
         let values = cascaded.get();
