@@ -854,9 +854,7 @@ impl DrawingCtx {
                     &viewport.empty_bbox(),
                 )?;
 
-                let should_isolate = stacking_ctx.should_isolate();
-
-                let res = if should_isolate {
+                let res = if stacking_ctx.should_isolate() {
                     self.print_stack_depth("DrawingCtx::draw_layer_internal should_isolate=true");
 
                     // Compute our assortment of affines
