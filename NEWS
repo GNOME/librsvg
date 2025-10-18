@@ -3,6 +3,8 @@ Version 2.61.2
 
 librsvg crate version 2.61.2
 
+librsvg-rebind crate version 0.2.1
+
 - #1186 - Disable compilation of the gdk-pixbuf loader module by
   default.  It used to be that if meson detected that
   gdk-pixbuf-query-loaders(1) is available, then it would build the
@@ -10,6 +12,24 @@ librsvg crate version 2.61.2
   loaders for images, which are sandboxed, gdk-pixbuf loaders are
   deprecated.  You can still compile the gdk-pixbuf loader in librsvg
   by using the "-Dpixbuf-loader=enabled" option when invoking meson.
+
+- #1205 - Reduce stack usage with deeply nested layers.  This should
+  be of interest especially for users of Alpine or musl-libc.  Librsvg
+  should hopefully no longer require users of musl-libc to increase
+  the stack size for it; please tell the maintainer if that is the
+  case!
+
+- #1187 - "rsvg-convert --version" now also outputs the versions of
+  the C library dependencies being used at runtime.
+
+- #1190 - The build process now checks the version of cargo-cbuild, as
+  it needs to be coordinated with the minimum supported Rust version.
+  The minimum cargo-cbuild for this release is 0.10.10.
+
+- Compiling rsvg-convert is now optional, via the
+  "-Drsvg-convert=disabled" option for Meson (Thomas Devoogdt).
+
+- Update Rust dependencies.
 
 Version 2.61.1
 ==============
