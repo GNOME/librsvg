@@ -69,6 +69,19 @@ produce any non-ASCII when decoded
 
 |CVE-2023-38633|
 
+2.52.12
+~~~~~~~
+
+:rustsec:`2024-0421` - idna accepts Punycode labels that do not
+produce any non-ASCII when decoded
+
+:rustsec:`2024-0404` - Unsoundness in anstream
+
+`GHSA-c827-hfw6-qwvm
+<https://github.com/advisories/GHSA-c827-hfw6-qwvm>`__
+(CVE-2024-43806) - memory explosion in rustix.
+
+
 2.52.11
 ~~~~~~~
 
