@@ -5,7 +5,6 @@ use cairo;
 use gio;
 use glib;
 use std::env;
-use std::path::PathBuf;
 use std::sync::Once;
 
 use crate::{
@@ -56,6 +55,7 @@ mod pango_ft2 {
     use libc;
     use pangocairo::FontMap;
     use std::ffi::CString;
+    use std::path::PathBuf;
 
     extern "C" {
         // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,

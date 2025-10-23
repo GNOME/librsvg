@@ -369,8 +369,14 @@ pub enum AllowedUrlError {
     /// URLs may not have fragment identifiers at this stage
     NoFragmentIdentifierAllowed,
 
-    /// Error when obtaining the file path or the base file path
-    InvalidPath,
+    /// `file:` URLs may not have a hostname
+    NoHostAllowed,
+
+    /// Error when obtaining the file path that corresponds to the URL
+    InvalidPathInUrl,
+
+    /// Error when obtaining the file path that corresponds to the base URL
+    InvalidPathInBaseUrl,
 
     /// The base file cannot be the root of the file system
     BaseIsRoot,
@@ -390,7 +396,9 @@ impl fmt::Display for AllowedUrlError {
             NotSiblingOrChildOfBaseFile => write!(f, "not sibling or child of base file"),
             NoQueriesAllowed => write!(f, "no queries allowed"),
             NoFragmentIdentifierAllowed => write!(f, "no fragment identifier allowed"),
-            InvalidPath => write!(f, "invalid path"),
+            NoHostAllowed => write!(f, "no hostnames allowed"),
+            InvalidPathInUrl => write!(f, "invalid path in file URL"),
+            InvalidPathInBaseUrl => write!(f, "invalid path in base URL"),
             BaseIsRoot => write!(f, "base is root"),
             CanonicalizationError => write!(f, "canonicalization error"),
         }
