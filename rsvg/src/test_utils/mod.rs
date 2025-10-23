@@ -50,12 +50,12 @@ pub fn render_document<F: FnOnce(&cairo::Context)>(
 ))]
 mod pango_ft2 {
     use super::*;
-    use std::path::PathBuf;
     use glib::prelude::*;
     use glib::translate::*;
     use libc;
     use pangocairo::FontMap;
     use std::ffi::CString;
+    use std::path::PathBuf;
 
     extern "C" {
         // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,
