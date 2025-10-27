@@ -17,7 +17,7 @@
     languages can be created for it in an automated fashion.
   </description>
 
-  <homepage rdf:resource="https://wiki.gnome.org/Projects/LibRsvg" />
+  <homepage rdf:resource="https://gnome.pages.gitlab.gnome.org/librsvg/" />
   <support-forum rdf:resource="https://discourse.gnome.org/c/platform/5" />
   <download-page rdf:resource="https://download.gnome.org/sources/librsvg/" />
   <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/librsvg/issues" />
