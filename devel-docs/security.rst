@@ -345,6 +345,10 @@ Security considerations for librsvg
   This is set in the file ``rsvg/src/limits.rs`` in the
   ``MAX_XINCLUDE_DEPTH`` constant.
 
+- Limit on the depth of nested groups and layers, to avoid unbounded
+  recursion.  This is set in the file ``rsvg/src/limits.rs`` in the
+  ``MAX_LAYER_NESTING_DEPTH`` constant.
+
 Librsvg has no built-in limits on the total amount of memory or CPU time
 consumed to process a document. Your application may want to place
 limits on this, especially if it processes untrusted SVG documents.
