@@ -152,7 +152,12 @@ GType rsvg_error_get_type (void);
  *    example, librsvg will not load `http` resources, to keep
  *    malicious SVG data from "phoning home".
  *
- * 7. A relative URL must resolve to the same directory as the base URL, or to
+ * 7. URLs with a `file` scheme are rejected if they contain a hostname, as in
+ *    `file://hostname/some/directory/foo.svg`.  Windows UNC paths with a hostname are
+ *    also rejected.  This is to prevent documents from trying to access resources on
+ *    other machines.
+ *
+ * 8. A relative URL must resolve to the same directory as the base URL, or to
  *    one of its subdirectories.  Librsvg will canonicalize filenames, by
  *    removing ".." path components and resolving symbolic links, to decide whether
  *    files meet these conditions.
