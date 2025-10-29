@@ -17,7 +17,7 @@ FONTCONFIG_TAG="2.15.0"
 CAIRO_TAG="1.18.2"
 HARFBUZZ_TAG="9.0.0"
 PANGO_TAG="1.54.0"
-LIBXML2_TAG="v2.13.3"
+LIBXML2_TAG="v2.15.1"
 GDK_PIXBUF_TAG="2.42.12"
 
 PARSED=$(getopt --options '' --longoptions 'prefix:,meson-flags:' --name "$0" -- "$@")
