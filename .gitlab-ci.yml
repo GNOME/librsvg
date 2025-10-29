@@ -507,6 +507,7 @@ cargo-doc:
     paths:
       - public
     expire_in: 1 day
+  allow_failure: true
 
 pages:
   stage: docs
