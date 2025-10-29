@@ -639,10 +639,10 @@ MORE INFORMATION
 
 Librsvg source repository and bug tracker: https://gitlab.gnome.org/GNOME/librsvg
 
-Wiki project page: https://wiki.gnome.org/Projects/LibRsvg
+Wiki project page: https://gnome.pages.gitlab.gnome.org/librsvg/
 
-SVG1.1 specification: http://www.w3.org/TR/SVG11/
+SVG1.1 specification: https://www.w3.org/TR/SVG11/
 
-SVG2 specification: http://www.w3.org/TR/SVG2
+SVG2 specification: https://www.w3.org/TR/SVG2
 
-GNOME project page: http://www.gnome.org/
+GNOME project page: https://www.gnome.org/
