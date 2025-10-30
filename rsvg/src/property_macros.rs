@@ -13,8 +13,7 @@ pub trait Property {
     fn inherits_automatically() -> bool;
 
     /// Derive the CSS computed value from the parent element's
-    /// [`ComputedValues`][crate::properties::ComputedValues] and the
-    /// `self` value.
+    /// [`ComputedValues`] and the `self` value.
     ///
     /// The CSS or SVG specs say how to derive this for each property.
     fn compute(&self, _: &ComputedValues) -> Self;

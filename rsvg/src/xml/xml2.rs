@@ -15,6 +15,8 @@ pub const XML_PARSE_BIG_LINES: libc::c_int = 1 << 22;
 
 pub const XML_SAX2_MAGIC: libc::c_uint = 0xDEEDBEAF;
 
+pub const XML_ERR_USER_STOP: libc::c_int = 111; /* xmlerror.h */
+
 pub type xmlDocPtr = gpointer;
 
 pub type xmlEntityPtr = gpointer;

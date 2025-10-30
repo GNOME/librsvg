@@ -77,7 +77,7 @@ pub struct FilterSpec {
 
 /// Parameters using while rendering a whole `filter` property.
 ///
-/// The `filter` property may contain a single primitive, like `filter="blur(2px)", or a
+/// The `filter` property may contain a single primitive, like `filter="blur(2px)"`, or a
 /// list of filter specs like `filter="blur(2px) url(#filter_id) drop_shadow(5 5)"`.  Each
 /// of those specs may produce more than one primitive; for example, the `url(#filter_id)`
 /// there may refer to a `<filter>` element that has several primitives inside it.  Also,
@@ -152,7 +152,7 @@ impl FilterPlan {
 ///
 /// This struct holds the requirements for which such surfaces are needed.  The caller is
 /// expected to construct it from an array of [`FilterSpec`], and then to create the
-/// corresponding [`Inputs`] to create a [`FilterPlan`].
+/// corresponding [`Input`] to create a [`FilterPlan`].
 #[derive(Debug, Default, PartialEq)]
 pub struct InputRequirements {
     pub needs_source_alpha: bool,

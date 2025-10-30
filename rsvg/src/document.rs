@@ -129,8 +129,8 @@ impl LoadOptions {
 
 /// Document-level rendering options.
 ///
-/// This gets then converted to a [`drawing_ctx::RenderingConfiguration`] when all the
-/// parameters are known.
+/// This gets then converted to a [`RenderingConfiguration`] when all the parameters are
+/// known.
 pub struct RenderingOptions {
     pub dpi: Dpi,
     pub cancellable: Option<gio::Cancellable>,
@@ -470,7 +470,7 @@ impl Document {
         .map_err(|err| *err)
     }
 
-    /// Wrapper for [`drawing_ctx::draw_tree`].  This just ensures that the document
+    /// Wrapper for [`draw_tree`].  This just ensures that the document
     /// is cascaded before rendering.
     fn draw_tree(
         &self,
@@ -730,7 +730,7 @@ fn load_svg_resource_from_bytes(
 /// To know which decoder to use (or to even decide if this is a supported image format),
 /// this function uses the `mime_type` field in the [`BinaryData`].
 ///
-/// The [`AllowdUrl`] is not used for decoding; it is just to construct an error message
+/// The [`AllowedUrl`] is not used for decoding; it is just to construct an error message
 /// for the return value.
 fn load_image_resource_from_bytes(
     load_options: &LoadOptions,

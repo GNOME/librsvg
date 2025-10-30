@@ -38,8 +38,9 @@ use cairo::PathSegment;
 pub enum ValidatedPath {
     /// Path that has been checked for being suitable for Cairo.
     ///
-    /// Note that this also keeps a reference to the original [SvgPath], in addition to
-    /// the lowered [CairoPath].  This is because the markers code still needs the former.
+    /// Note that this also keeps a reference to the original [crate::path_builder::Path],
+    /// in addition to the lowered [CairoPath].  This is because the markers code still
+    /// needs the former.
     Validated(layout::Path),
 
     /// Reason why the path was determined to be not suitable for Cairo.  This
@@ -128,9 +129,9 @@ impl CairoPath {
 
     /// Sees if any of the coordinates in the path is not representable in Cairo's fixed-point numbers.
     ///
-    /// See https://gitlab.gnome.org/GNOME/librsvg/-/issues/1088 and
+    /// See <https://gitlab.gnome.org/GNOME/librsvg/-/issues/1088> and
     /// for the root cause
-    /// https://gitlab.freedesktop.org/cairo/cairo/-/issues/852.
+    /// <https://gitlab.freedesktop.org/cairo/cairo/-/issues/852>.
     ///
     /// This function does a poor job, but a hopefully serviceable one, of seeing if a path's coordinates
     /// are prone to causing trouble when passed to Cairo.  The caller of this function takes note of
