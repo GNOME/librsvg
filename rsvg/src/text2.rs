@@ -18,13 +18,13 @@ use crate::{parse_identifiers, rsvg_log};
 
 /// Type for the `x/y/dx/dy` attributes of the `<text>` and `<tspan>` elements
 ///
-/// https://svgwg.org/svg2-draft/text.html#TSpanAttributes
+/// <https://svgwg.org/svg2-draft/text.html#TSpanAttributes>
 ///
 /// Explanation of this type:
 ///
 /// * Option - the attribute can be specified or not, so make it optional
 ///
-///  CommaSeparatedList<Length<Horizontal>> - This type knows how to parse a list of values
+///  `CommaSeparatedList<Length<Horizontal>>` - This type knows how to parse a list of values
 ///  that are separated by commas and/or spaces; the values are eventually available as a Vec.
 ///
 /// * 1 is the minimum number of elements in the list, so one can have x="42" for example.
@@ -35,14 +35,14 @@ type OptionalLengthList<N> = Option<CommaSeparatedList<Length<N>, 1, 4096>>;
 
 /// Type for the `rotate` attribute of the `<text>` and `<tspan>` elements
 ///
-/// https://svgwg.org/svg2-draft/text.html#TSpanAttributes
+/// <https://svgwg.org/svg2-draft/text.html#TSpanAttributes>
 ///
 /// See [`OptionalLengthList`] for a description of the structure of the type.
 type OptionalRotateList = Option<CommaSeparatedList<f64, 1, 4096>>;
 
 /// Enum for the `lengthAdjust` attribute
 ///
-/// https://svgwg.org/svg2-draft/text.html#LengthAdjustProperty
+/// <https://svgwg.org/svg2-draft/text.html#LengthAdjustProperty>
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 enum LengthAdjust {
     #[default]
@@ -77,7 +77,7 @@ pub struct Text2 {
 // see text.rs and how it implements set_attributes() for the Text element.
 // The attributes are described here:
 //
-// https://svgwg.org/svg2-draft/text.html#TSpanAttributes
+// <https://svgwg.org/svg2-draft/text.html#TSpanAttributes>
 //
 // Attributes to parse:
 //   "x"

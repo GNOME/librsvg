@@ -576,7 +576,7 @@ impl<'a> CairoRenderer<'a> {
     /// The rendering functions like [`render_document`] will normally render the whole
     /// SVG document tree.  However, they can be interrupted if you set a `cancellable`
     /// object with this method.  To interrupt rendering, you can call
-    /// [`gio::CancellableExt::cancel()`] from a different thread than where the rendering
+    /// [`gio::prelude::CancellableExt::cancel()`] from a different thread than where the rendering
     /// is happening.
     ///
     /// Since rendering happens as a side-effect on the Cairo context (`cr`) that is

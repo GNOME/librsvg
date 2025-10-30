@@ -43,9 +43,9 @@ pub enum FilterInput {
     PrimitiveOutput(FilterOutput),
 }
 
-/// Context for rendering a single [`filters::FilterSpec`].
+/// Context for rendering a single [`crate::filters::FilterSpec`].
 ///
-/// Rendering a [`filters::FilterSpec`] involves keeping track of possibly-named results
+/// Rendering a [`crate::filters::FilterSpec`] involves keeping track of possibly-named results
 /// for each filter primitive (e.g. those that have an `output` attribute).  This struct
 /// maintains that information, plus all the extra data used during filtering.
 pub struct FilterContext {

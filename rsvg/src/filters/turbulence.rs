@@ -27,7 +27,7 @@ use super::{
 
 /// Limit the `numOctaves` parameter to avoid unbounded CPU consumption.
 ///
-/// https://drafts.fxtf.org/filter-effects/#element-attrdef-feturbulence-numoctaves
+/// <https://drafts.fxtf.org/filter-effects/#element-attrdef-feturbulence-numoctaves>
 const MAX_OCTAVES: i32 = 9;
 
 /// Enumeration of the tile stitching modes.

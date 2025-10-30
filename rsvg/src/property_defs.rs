@@ -1397,7 +1397,7 @@ make_property!(
 make_property!(
     /// `whitespace` properties
     ///
-    /// https://www.w3.org/TR/css-text-3/#white-space-property
+    /// <https://www.w3.org/TR/css-text-3/#white-space-property>
     WhiteSpace,
 
     default: Normal,
