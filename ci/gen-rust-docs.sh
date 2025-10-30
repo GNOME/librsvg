@@ -6,6 +6,9 @@
 
 set -eu
 
+# turn warnings into errors
+export RUSTDOCFLAGS='-D warnings'
+
 cargo doc --document-private-items --no-deps --package librsvg
 mkdir -p public/internals
 mv target/doc/* public/internals
