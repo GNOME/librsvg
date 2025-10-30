@@ -498,16 +498,15 @@ cargo-doc:
       artifacts: false
   variables:
     PREFIX: "/usr/local/librsvg"
-    RUSTFLAGS: "--cfg docsrs"
+    # RUSTFLAGS: "--cfg docsrs"
   script:
     - source ./ci/setup-dependencies-env.sh
-    - rustup default ${RUST_NIGHTLY}
+    # - rustup default ${RUST_NIGHTLY}
     - bash -x ./ci/gen-rust-docs.sh
   artifacts:
     paths:
       - public
     expire_in: 1 day
-  allow_failure: true
 
 pages:
   stage: docs
