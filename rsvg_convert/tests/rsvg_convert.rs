@@ -3,6 +3,7 @@ mod internal_predicates;
 use internal_predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
+use assert_cmd::cargo::cargo_bin_cmd;
 use assert_cmd::Command;
 #[cfg(system_deps_have_cairo_pdf)]
 use chrono::{TimeZone, Utc};
@@ -49,7 +50,7 @@ impl RsvgConvert {
         let path_str = config_file_path.to_str().unwrap();
         eprintln!("FONTCONFIG_FILE={path_str}");
 
-        let mut command = Command::cargo_bin("rsvg-convert").unwrap();
+        let mut command = cargo_bin_cmd!("rsvg-convert");
         command.env("FONTCONFIG_FILE", config_file_path);
 
         RsvgConvert {
