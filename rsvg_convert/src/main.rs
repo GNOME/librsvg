@@ -294,7 +294,11 @@ impl Surface {
     }
 
     #[cfg(not(system_deps_have_cairo_pdf))]
-    fn new_for_pdf(_size: Size, _stream: OutputStream) -> Result<Self, Error> {
+    fn new_for_pdf(
+        _size: Size,
+        _stream: OutputStream,
+        _version: Option<cairo::PdfVersion>,
+    ) -> Result<Self, Error> {
         Err(Error("unsupported format".to_string()))
     }
 
