@@ -1,3 +1,22 @@
+Version 2.61.3
+==============
+
+librsvg crate version 2.61.3
+
+librsvg-rebind crate version 0.2.1
+
+- #1196 - Reject file: URIs or UNC paths with hostnames in href
+  references, to avoid NTLM hash leaks on Windows.
+
+- #1201 - Make loading limits work with libxml2 2.15.0 and later.
+
+- #1191 - Make the rsvg-convert test suite not depend on having fonts
+  installed in the system.  This helps build systems which otherwise
+  had to disable some of the PDF tests.
+
+- rsvg-convert: Fix build when PDF support is disabled in Cairo
+  (Kleis Auke Wolthuizen).
+
 Version 2.61.2
 ==============
 
