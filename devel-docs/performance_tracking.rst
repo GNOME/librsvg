@@ -87,6 +87,10 @@ Inspiration, but beware of overkill
 
 - `WebKit Performance Dashboard <https://perf.webkit.org/>`_.
 
+- `Rust performance page <https://perf.rust-lang.org/>`_.  See the
+  README in `this repository
+  <https://github.com/rust-timer/rustc-timing>`_ for the scripts and
+  data that drive this.
 
 Sample documents
 ----------------
