@@ -28,7 +28,7 @@ call_grcov() {
           --branch                               \
           --ignore 'cargo_cache/*'               \
           --ignore 'target/*'                    \
-          --excl-line 'unreachable!'             \
+          --excl-line 'unreachable!|panic!'      \
           --output-type "$output_type"           \
           --output-path "$output_path"
 }
