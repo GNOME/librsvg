@@ -1,7 +1,6 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, ns};
 use nalgebra::{DMatrix, Dyn, VecStorage};
-use xml5ever::QualName;
 
 use crate::bench_only::{
     EdgeMode, ExclusiveImageSurface, ImageSurfaceDataExt, Pixel, PixelRectangle, Pixels,
@@ -52,21 +51,18 @@ pub struct ConvolveMatrix {
 #[derive(Clone, Default)]
 pub struct KernelUnitLength(pub Option<(f64, f64)>);
 
-impl KernelUnitLength {
-    pub fn from_attribute(attr: &QualName, value: &str, session: &Session) -> Result<Self, ()> {
-        let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
+impl Parse for KernelUnitLength {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let v: Result<NumberOptionalNumber<f64>, _> = NumberOptionalNumber::parse(parser);
         match v {
             Ok(NumberOptionalNumber(x, y)) if x > 0.0 && y > 0.0 => {
                 Ok(KernelUnitLength(Some((x, y))))
             } // Only accept positive values
             Ok(_) => {
-                rsvg_log!(session, "ignoring attribute with non-positive values");
-                Err(())
+                Err(loc.new_custom_error(ValueErrorKind::value_error("expected positive values")))
             }
-            Err(e) => {
-                rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
-                Err(())
-            }
+            Err(e) => Err(e),
         }
     }
 }
@@ -120,10 +116,11 @@ impl ElementTrait for FeConvolveMatrix {
                 expanded_name!("", "edgeMode") => {
                     set_attribute(&mut self.params.edge_mode, attr.parse(value), session)
                 }
-                expanded_name!("", "kernelUnitLength") => {
-                    self.params.kernel_unit_length =
-                        KernelUnitLength::from_attribute(&attr, value, session).unwrap_or_default();
-                }
+                expanded_name!("", "kernelUnitLength") => set_attribute(
+                    &mut self.params.kernel_unit_length,
+                    attr.parse(value),
+                    session,
+                ),
                 expanded_name!("", "preserveAlpha") => {
                     set_attribute(&mut self.params.preserve_alpha, attr.parse(value), session);
                 }
@@ -346,5 +343,22 @@ impl Parse for bool {
             "false" => false,
             "true" => true,
         )?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn kernel_unit_length_expects_positive_numbers() {
+        assert!(KernelUnitLength::parse_str("-1").is_err());
+        assert!(KernelUnitLength::parse_str("1 -1").is_err());
+        assert!(KernelUnitLength::parse_str("-1 -1").is_err());
+    }
+
+    #[test]
+    fn kernel_unit_length_catches_errors() {
+        assert!(KernelUnitLength::parse_str("foo").is_err());
     }
 }

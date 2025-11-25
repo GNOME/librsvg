@@ -1208,3 +1208,15 @@ test_svg_reference!(
     "tests/fixtures/reftests/bugs-reftests/bug1121-feimage-embedded-svg.svg",
     "tests/fixtures/reftests/bugs-reftests/bug1121-feimage-embedded-svg-ref.svg"
 );
+
+test_svg_reference!(
+    conv_kernel_matrix_length,
+    "tests/fixtures/reftests/filter-conv-kernel-matrix-length.svg",
+    "tests/fixtures/reftests/filter-conv-kernel-matrix-length-ref.svg"
+);
+
+test_svg_reference!(
+    conv_target,
+    "tests/fixtures/reftests/filter-conv-target.svg",
+    "tests/fixtures/reftests/filter-conv-target-ref.svg"
+);

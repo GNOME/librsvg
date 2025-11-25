@@ -1,0 +1,20 @@
+<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"> <!-- -*- mode: nxml -*- -->
+
+  <!-- Tests for the targetX and targetY attributes; these should be less than the order attribute -->
+
+  <filter id="conv1">
+    <!-- too few -->
+    <feConvolveMatrix order="3 1" targetX="3" kernelMatrix="0 1 2"/>
+  </filter>
+
+  <filter id="conv2">
+    <!-- too few -->
+    <feConvolveMatrix order="1 3" targetY="3" kernelMatrix="0 1 2"/>
+  </filter>
+
+  <rect width="100%" height="100%" fill="white"/>
+
+  <rect x="0" y="0" width="10" height="10" fill="limegreen" filter="url(#conv1)"/>
+  <rect x="0" y="20" width="10" height="10" fill="limegreen" filter="url(#conv2)"/>
+
+</svg>

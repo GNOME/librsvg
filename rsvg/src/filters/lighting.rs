@@ -355,8 +355,11 @@ impl ElementTrait for FeDiffuseLighting {
                     set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    self.params.kernel_unit_length =
-                        KernelUnitLength::from_attribute(&attr, value, session).unwrap_or_default();
+                    set_attribute(
+                        &mut self.params.kernel_unit_length,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 expanded_name!("", "diffuseConstant") => {
                     set_attribute(
@@ -401,8 +404,11 @@ impl ElementTrait for FeSpecularLighting {
                     set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    self.params.kernel_unit_length =
-                        KernelUnitLength::from_attribute(&attr, value, session).unwrap_or_default();
+                    set_attribute(
+                        &mut self.params.kernel_unit_length,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 expanded_name!("", "specularConstant") => {
                     set_attribute(
