@@ -345,3 +345,20 @@ impl Parse for bool {
         )?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn kernel_unit_length_expects_positive_numbers() {
+        assert!(KernelUnitLength::parse_str("-1").is_err());
+        assert!(KernelUnitLength::parse_str("1 -1").is_err());
+        assert!(KernelUnitLength::parse_str("-1 -1").is_err());
+    }
+
+    #[test]
+    fn kernel_unit_length_catches_errors() {
+        assert!(KernelUnitLength::parse_str("foo").is_err());
+    }
+}
