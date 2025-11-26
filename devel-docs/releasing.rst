@@ -5,7 +5,7 @@ Feel free to print this document or copy it to a text editor to check
 off items while making a release.
 
 - ☐ Refresh your memory with
-  https://wiki.gnome.org/MaintainersCorner/Releasing
+  https://handbook.gnome.org/maintainers/making-a-release.html
 
 **Versions:**
 
@@ -99,7 +99,7 @@ Librsvg follows `GNOME's release versioning as of 2022/September
 (Note that it used an even/odd numbering scheme before librsvg 2.55.x)
 
 Librsvg follows `GNOME's six-month release schedule
-<https://wiki.gnome.org/ReleasePlanning>`_.
+<https://release.gnome.org/calendar/index.html>`_.
 
 The `release-team <https://gitlab.gnome.org/GNOME/releng/-/issues>`__
 needs to be notified when a new series comes about, so they can adjust
