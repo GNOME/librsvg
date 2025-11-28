@@ -1102,6 +1102,13 @@ mod tests {
             &[],
             Some(ErrorKind::LexError(LexError::ParseFloatError)),
         );
+
+        test_parser(
+            "M 10 ;",
+            "     ^",
+            &[],
+            Some(ErrorKind::LexError(LexError::UnexpectedByte(b';'))),
+        );
     }
 
     #[test]
