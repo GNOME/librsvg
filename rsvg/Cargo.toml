@@ -63,6 +63,7 @@ language-tags.workspace = true
 libc.workspace = true
 locale_config.workspace = true
 markup5ever.workspace = true
+mutants.workspace = true
 nalgebra.workspace = true
 num-traits.workspace = true
 pango = { workspace = true, features = ["v1_46"] }
