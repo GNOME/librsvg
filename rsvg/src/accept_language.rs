@@ -480,4 +480,14 @@ mod tests {
 
         assert!(iter.next().is_none());
     }
+
+    #[test]
+    fn matches() {
+        let accept_language = AcceptLanguage::parse_internal("es-MX, en; q=0.5").unwrap();
+
+        assert!(accept_language.any_matches(&LanguageTag::parse("es-MX").unwrap()));
+        assert!(accept_language.any_matches(&LanguageTag::parse("en").unwrap()));
+
+        assert!(!accept_language.any_matches(&LanguageTag::parse("fr").unwrap()));
+    }
 }
