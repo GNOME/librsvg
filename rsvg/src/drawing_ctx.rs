@@ -1423,79 +1423,89 @@ impl DrawingCtx {
             None,
             clipping,
             &mut |an, dc, new_viewport| {
-                let cr = dc.cr.clone();
-
-                let transform =
-                    dc.get_transform_for_stacking_ctx(new_viewport, stacking_ctx, clipping)?;
-                let mut path_helper = PathHelper::new(&cr, transform, &shape.path.cairo_path);
-
-                if clipping {
-                    if stacking_ctx.is_visible {
-                        cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
-                        path_helper.set()?;
-                    }
-                    return Ok(new_viewport.empty_bbox());
-                }
-
-                cr.set_antialias(cairo::Antialias::from(shape.shape_rendering));
-
-                setup_cr_for_stroke(&cr, &shape.stroke);
-
-                cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
-
-                path_helper.set()?;
-                let bbox = compute_stroke_and_fill_box(
-                    &cr,
-                    &shape.stroke,
-                    &shape.stroke_paint,
-                    &dc.initial_viewport,
-                )?;
-
-                if stacking_ctx.is_visible {
-                    for &target in &shape.paint_order.targets {
-                        // fill and stroke operations will preserve the path.
-                        // markers operation will clear the path.
-                        match target {
-                            PaintTarget::Fill => {
-                                path_helper.set()?;
-                                let had_paint_server =
-                                    dc.set_paint_source(&shape.fill_paint, an, viewport)?;
-                                if had_paint_server {
-                                    cr.fill_preserve()?;
-                                }
-                            }
-
-                            PaintTarget::Stroke => {
-                                path_helper.set()?;
-                                if shape.stroke.non_scaling {
-                                    cr.set_matrix(dc.initial_viewport.transform.into());
-                                }
-
-                                let had_paint_server =
-                                    dc.set_paint_source(&shape.stroke_paint, an, viewport)?;
-                                if had_paint_server {
-                                    cr.stroke_preserve()?;
-                                }
-                            }
-
-                            PaintTarget::Markers => {
-                                path_helper.unset();
-                                marker::render_markers_for_shape(
-                                    shape,
-                                    new_viewport,
-                                    dc,
-                                    an,
-                                    clipping,
-                                )?;
-                            }
-                        }
-                    }
-                }
-
-                path_helper.unset();
-                Ok(bbox)
+                dc.paint_shape(shape, stacking_ctx, an, clipping, new_viewport)
             },
         )
+    }
+
+    fn paint_shape(
+        &mut self,
+        shape: &Shape,
+        stacking_ctx: &StackingContext,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        clipping: bool,
+        viewport: &Viewport,
+    ) -> DrawResult {
+        let cr = self.cr.clone();
+
+        let transform = self.get_transform_for_stacking_ctx(viewport, stacking_ctx, clipping)?;
+        let mut path_helper = PathHelper::new(&cr, transform, &shape.path.cairo_path);
+
+        if clipping {
+            if stacking_ctx.is_visible {
+                cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
+                path_helper.set()?;
+            }
+            return Ok(viewport.empty_bbox());
+        }
+
+        cr.set_antialias(cairo::Antialias::from(shape.shape_rendering));
+
+        setup_cr_for_stroke(&cr, &shape.stroke);
+
+        cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
+
+        path_helper.set()?;
+        let bbox = compute_stroke_and_fill_box(
+            &cr,
+            &shape.stroke,
+            &shape.stroke_paint,
+            &self.initial_viewport,
+        )?;
+
+        if stacking_ctx.is_visible {
+            for &target in &shape.paint_order.targets {
+                // fill and stroke operations will preserve the path.
+                // markers operation will clear the path.
+                match target {
+                    PaintTarget::Fill => {
+                        path_helper.set()?;
+                        let had_paint_server =
+                            self.set_paint_source(&shape.fill_paint, acquired_nodes, viewport)?;
+                        if had_paint_server {
+                            cr.fill_preserve()?;
+                        }
+                    }
+
+                    PaintTarget::Stroke => {
+                        path_helper.set()?;
+                        if shape.stroke.non_scaling {
+                            cr.set_matrix(self.initial_viewport.transform.into());
+                        }
+
+                        let had_paint_server =
+                            self.set_paint_source(&shape.stroke_paint, acquired_nodes, viewport)?;
+                        if had_paint_server {
+                            cr.stroke_preserve()?;
+                        }
+                    }
+
+                    PaintTarget::Markers => {
+                        path_helper.unset();
+                        marker::render_markers_for_shape(
+                            shape,
+                            viewport,
+                            self,
+                            acquired_nodes,
+                            clipping,
+                        )?;
+                    }
+                }
+            }
+        }
+
+        path_helper.unset();
+        Ok(bbox)
     }
 
     fn paint_surface_from_image(
