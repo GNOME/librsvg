@@ -172,27 +172,29 @@ impl ElementTrait for Switch {
     ) -> DrawResult {
         let values = cascaded.get();
 
-        let elt = node.borrow_element();
-        let stacking_ctx = Box::new(StackingContext::new(
-            draw_ctx.session(),
-            acquired_nodes,
-            &elt,
-            values.transform(),
-            None,
-            values,
-        ));
+        let switch_elt = node.borrow_element();
+        let child_that_matches = node.children().filter(|c| c.is_element()).find(|c| {
+            let elt = c.borrow_element();
+            elt.get_cond(draw_ctx.user_language())
+        });
 
-        draw_ctx.with_discrete_layer(
-            &stacking_ctx,
-            acquired_nodes,
-            viewport,
-            None,
-            clipping,
-            &mut |an, dc, new_viewport| {
-                if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
-                    let elt = c.borrow_element();
-                    elt.get_cond(dc.user_language())
-                }) {
+        if let Some(child) = child_that_matches {
+            let stacking_ctx = Box::new(StackingContext::new(
+                draw_ctx.session(),
+                acquired_nodes,
+                &switch_elt,
+                values.transform(),
+                None,
+                values,
+            ));
+
+            draw_ctx.with_discrete_layer(
+                &stacking_ctx,
+                acquired_nodes,
+                viewport,
+                None,
+                clipping,
+                &mut |an, dc, new_viewport| {
                     child.draw(
                         an,
                         &CascadedValues::clone_with_node(cascaded, &child),
@@ -200,11 +202,11 @@ impl ElementTrait for Switch {
                         dc,
                         clipping,
                     )
-                } else {
-                    Ok(new_viewport.empty_bbox())
-                }
-            },
-        )
+                },
+            )
+        } else {
+            Ok(viewport.empty_bbox())
+        }
     }
 }
 
