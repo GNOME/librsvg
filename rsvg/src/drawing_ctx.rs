@@ -1712,17 +1712,25 @@ impl DrawingCtx {
             viewport,
             None,
             clipping,
-            &mut |an, dc, new_viewport| {
-                let mut bbox = new_viewport.empty_bbox();
-
-                for span in &text.spans {
-                    let span_bbox = dc.draw_text_span(span, an, clipping, new_viewport)?;
-                    bbox.insert(&span_bbox);
-                }
-
-                Ok(bbox)
-            },
+            &mut |an, dc, new_viewport| dc.paint_text_spans(text, an, clipping, new_viewport),
         )
+    }
+
+    fn paint_text_spans(
+        &mut self,
+        text: &Text,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        clipping: bool,
+        viewport: &Viewport,
+    ) -> DrawResult {
+        let mut bbox = viewport.empty_bbox();
+
+        for span in &text.spans {
+            let span_bbox = self.draw_text_span(span, acquired_nodes, clipping, viewport)?;
+            bbox.insert(&span_bbox);
+        }
+
+        Ok(bbox)
     }
 
     pub fn get_snapshot(
