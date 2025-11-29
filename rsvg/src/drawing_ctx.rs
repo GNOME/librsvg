@@ -1503,7 +1503,7 @@ impl DrawingCtx {
         image: &Image,
         viewport: &Viewport,
     ) -> Result<(), cairo::Error> {
-        let cr = self.cr.clone();
+        let cr = &self.cr;
 
         // We need to set extend appropriately, so can't use cr.set_source_surface().
         //
