@@ -1501,8 +1501,6 @@ impl DrawingCtx {
     fn paint_surface(
         &mut self,
         surface: &SharedImageSurface,
-        width: f64,
-        height: f64,
         image_rendering: ImageRendering,
         viewport: &Viewport,
     ) -> Result<(), cairo::Error> {
@@ -1524,8 +1522,11 @@ impl DrawingCtx {
         cr.set_matrix(viewport.transform.into());
         cr.set_source(&ptn)?;
 
+        let image_size_rect =
+            Rect::from_size(f64::from(surface.width()), f64::from(surface.height()));
+
         // Clip is needed due to extend being set to pad.
-        clip_to_rectangle(&cr, &viewport.transform, &Rect::from_size(width, height));
+        clip_to_rectangle(&cr, &viewport.transform, &image_size_rect);
 
         cr.paint()
     }
@@ -1544,9 +1545,9 @@ impl DrawingCtx {
             return Ok(viewport.empty_bbox());
         }
 
-        let image_width = f64::from(image_width);
-        let image_height = f64::from(image_height);
-        let vbox = ViewBox::from(Rect::from_size(image_width, image_height));
+        let image_size_rect = Rect::from_size(f64::from(image_width), f64::from(image_height));
+
+        let vbox = ViewBox::from(image_size_rect);
 
         // The bounding box for <image> is decided by the values of the image's x, y, w, h
         // and not by the final computed image bounds.
@@ -1567,13 +1568,7 @@ impl DrawingCtx {
                 Some(layout_viewport),
                 clipping,
                 &mut |_an, dc, new_viewport| {
-                    dc.paint_surface(
-                        &image.surface,
-                        image_width,
-                        image_height,
-                        image.image_rendering,
-                        new_viewport,
-                    )?;
+                    dc.paint_surface(&image.surface, image.image_rendering, new_viewport)?;
 
                     Ok(bounds.clone())
                 },
