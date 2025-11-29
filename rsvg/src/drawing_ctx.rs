@@ -1498,10 +1498,9 @@ impl DrawingCtx {
         )
     }
 
-    fn paint_surface(
+    fn paint_surface_from_image(
         &mut self,
-        surface: &SharedImageSurface,
-        image_rendering: ImageRendering,
+        image: &Image,
         viewport: &Viewport,
     ) -> Result<(), cairo::Error> {
         let cr = self.cr.clone();
@@ -1513,17 +1512,19 @@ impl DrawingCtx {
         // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
         // opaque 100×1 image of a gradient scaled to 100×98 which ends up
         // transparent almost everywhere without this fix (which it shouldn't).
-        let ptn = surface.to_cairo_pattern();
+        let ptn = image.surface.to_cairo_pattern();
         ptn.set_extend(cairo::Extend::Pad);
 
-        let interpolation = Interpolation::from(image_rendering);
+        let interpolation = Interpolation::from(image.image_rendering);
 
         ptn.set_filter(cairo::Filter::from(interpolation));
         cr.set_matrix(viewport.transform.into());
         cr.set_source(&ptn)?;
 
-        let image_size_rect =
-            Rect::from_size(f64::from(surface.width()), f64::from(surface.height()));
+        let image_size_rect = Rect::from_size(
+            f64::from(image.surface.width()),
+            f64::from(image.surface.height()),
+        );
 
         // Clip is needed due to extend being set to pad.
         clip_to_rectangle(&cr, &viewport.transform, &image_size_rect);
@@ -1568,7 +1569,7 @@ impl DrawingCtx {
                 Some(layout_viewport),
                 clipping,
                 &mut |_an, dc, new_viewport| {
-                    dc.paint_surface(&image.surface, image.image_rendering, new_viewport)?;
+                    dc.paint_surface_from_image(image, new_viewport)?;
 
                     Ok(bounds.clone())
                 },
