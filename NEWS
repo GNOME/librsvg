@@ -1,3 +1,29 @@
+Version 2.60.1
+==============
+
+librsvg crate version 2.60.1
+
+librsvg-rebind crate version 0.1.0
+
+This is a security release for RUSTSEC-2024-0421, RUSTSEC-2024-0404,
+and GHSA-c827-hfw6-qwvm (CVE-2024-43806).
+
+Note that even in unpatched releases, librsvg disallows references to
+external URLs that do not have a file:// method, so http/https URLs
+are rejected.
+
+The Minimum Supported Rust Version has unfortunately had to be raised
+to Rust 1.85.0, to accomodate the updated chains of dependencies.
+
+* #1193 - RUSTSEC-2024-0421 - idna accepts Punycode labels that do
+  not produce any non-ASCII when decoded.
+
+* RUSTSEC-2024-0404 - Unsoundness in anstream.
+
+* GHSA-c827-hfw6-qwvm - Memory explosion in rustix.  Note that librsvg
+  does not use rustix except in the test suite.
+
+
 Version 2.60.0
 ==============
 
