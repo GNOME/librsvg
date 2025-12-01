@@ -502,7 +502,7 @@ impl Parse for FontFamily {
 
         let fonts = parser.parse_comma_separated(|parser| {
             if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {
-                if cow == "" {
+                if cow.is_empty() {
                     return Err(loc.new_custom_error(ValueErrorKind::value_error(
                         "empty string is not a valid font family name",
                     )));

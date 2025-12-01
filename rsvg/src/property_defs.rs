@@ -1185,6 +1185,7 @@ make_property!(
     /// `transform` property.
     ///
     /// CSS Transforms 1: <https://www.w3.org/TR/css-transforms-1/#transform-property>
+    #[allow(unused)]
     Transform,
     default: TransformProperty::None,
     inherits_automatically: false,

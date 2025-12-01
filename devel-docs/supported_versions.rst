@@ -3,7 +3,6 @@ Supported versions
 
 Only these versions are supported:
 
-* 2.59.x
 * 2.60.x
 
 Older versions are not supported.  Please try a newer version before

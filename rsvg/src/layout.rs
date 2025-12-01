@@ -125,6 +125,7 @@ pub struct Stroke {
 /// While Cairo gets better in these respects, librsvg will try to do
 /// some mitigations, mainly about catching problematic coordinates
 /// early and not passing them on to Cairo.
+#[allow(clippy::large_enum_variant)]
 pub enum Path {
     /// Path that has been checked for being suitable for Cairo.
     ///

@@ -3,6 +3,7 @@ mod internal_predicates;
 use internal_predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
+use assert_cmd::cargo::cargo_bin_cmd;
 use assert_cmd::Command;
 #[cfg(system_deps_have_cairo_pdf)]
 use chrono::{TimeZone, Utc};
@@ -35,7 +36,7 @@ struct RsvgConvert {}
 impl RsvgConvert {
     #[allow(clippy::new_ret_no_self)]
     fn new() -> Command {
-        Command::cargo_bin("rsvg-convert").unwrap()
+        cargo_bin_cmd!("rsvg-convert")
     }
 
     fn new_with_input<P>(file: P) -> Command
