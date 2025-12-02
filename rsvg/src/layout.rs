@@ -277,10 +277,7 @@ fn acquire_clip_path(
     let clip_path_prop = values.clip_path();
 
     if let Some(node_id) = clip_path_prop.0.get() {
-        let acquired = match acquired_nodes.acquire(node_id) {
-            Ok(acquired_node) => acquired_node,
-            Err(e) => return Err(e),
-        };
+        let acquired = acquired_nodes.acquire(node_id)?;
 
         let candidate_clip_path_node = acquired.get().clone();
 
@@ -314,7 +311,24 @@ fn layout_clip_path(
     acquired_nodes: &mut AcquiredNodes<'_>,
 ) -> Option<ClipPath> {
     if let Some(acquired) = acquire_clip_path_and_log_error(session, source_node, acquired_nodes) {
-        unimplemented!()
+        let clip_path_node = acquired.get();
+        let clip_path_elt = clip_path_node.borrow_element();
+        let clip_path_data = borrow_element_as!(clip_path_node, ClipPath);
+
+        let values = clip_path_elt.get_computed_values();
+
+        let clip_units = clip_path_data.get_units();
+        let transform = values.transform();
+        let paths = Vec::new(); // FIXME
+        let recursive_clip_path =
+            layout_clip_path(session, clip_path_node, acquired_nodes).map(Box::new);
+
+        Some(ClipPath {
+            clip_units,
+            transform,
+            paths,
+            clip_path: recursive_clip_path,
+        })
     } else {
         None
     }
@@ -540,7 +554,6 @@ mod tests {
         let node = document
             .lookup_internal_node(element_with_clip_path)
             .unwrap();
-        let elt = node.borrow_element();
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
@@ -585,6 +598,33 @@ mod tests {
 </svg>
 "#,
             "foo",
+        );
+    }
+
+    #[test]
+    fn decodes_basic_clip_path() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="clip1" clipPathUnits="objectBoundingBox" transform="matrix(1.0 2.0 3.0 4.0 5.0 6.0)"/>
+  </defs>
+  <rect id="foo" clip-path="url(#clip1)"/>
+</svg>
+"#,
+        );
+
+        let node = document.lookup_internal_node("foo").unwrap();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let clip_path =
+            layout_clip_path(&session, &node, &mut acquired).expect("find a clipPath node");
+
+        assert_eq!(clip_path.clip_units, CoordUnits::ObjectBoundingBox);
+        assert_eq!(
+            clip_path.transform,
+            Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
         );
     }
 }
