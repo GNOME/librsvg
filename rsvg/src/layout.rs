@@ -247,6 +247,35 @@ fn get_filter_from_filter_list(
     }
 }
 
+/// Returns (clip_in_user_space, clip_in_object_space)
+fn resolve_clip_path(
+    values: &ComputedValues,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+) -> (Option<Node>, Option<Node>) {
+    let clip_path = values.clip_path();
+    let clip_uri = clip_path.0.get();
+    let (clip_in_user_space, clip_in_object_space) = clip_uri
+        .and_then(|node_id| {
+            acquired_nodes
+                .acquire(node_id)
+                .ok()
+                .filter(|a| is_element_of_type!(*a.get(), ClipPath))
+        })
+        .map(|acquired| {
+            let clip_node = acquired.get().clone();
+
+            let units = borrow_element_as!(clip_node, ClipPath).get_units();
+
+            match units {
+                CoordUnits::UserSpaceOnUse => (Some(clip_node), None),
+                CoordUnits::ObjectBoundingBox => (None, Some(clip_node)),
+            }
+        })
+        .unwrap_or((None, None));
+
+    (clip_in_user_space, clip_in_object_space)
+}
+
 impl StackingContext {
     pub fn new(
         session: &Session,
@@ -277,26 +306,7 @@ impl StackingContext {
             }
         }
 
-        let clip_path = values.clip_path();
-        let clip_uri = clip_path.0.get();
-        let (clip_in_user_space, clip_in_object_space) = clip_uri
-            .and_then(|node_id| {
-                acquired_nodes
-                    .acquire(node_id)
-                    .ok()
-                    .filter(|a| is_element_of_type!(*a.get(), ClipPath))
-            })
-            .map(|acquired| {
-                let clip_node = acquired.get().clone();
-
-                let units = borrow_element_as!(clip_node, ClipPath).get_units();
-
-                match units {
-                    CoordUnits::UserSpaceOnUse => (Some(clip_node), None),
-                    CoordUnits::ObjectBoundingBox => (None, Some(clip_node)),
-                }
-            })
-            .unwrap_or((None, None));
+        let (clip_in_user_space, clip_in_object_space) = resolve_clip_path(values, acquired_nodes);
 
         let mask = values.mask().0.get().and_then(|mask_id| {
             if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
