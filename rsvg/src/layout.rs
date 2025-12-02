@@ -72,14 +72,14 @@ pub struct ClipPath {
     pub clip_units: CoordUnits,
     pub transform: Transform,
     pub paths: Vec<ClipPathItem>,
-    pub clip_path: Option<Box<ClipPath>>
+    pub clip_path: Option<Box<ClipPath>>,
 }
 
 /// One item in a [`ClipPath`].
 pub struct ClipPathItem {
     pub transform: Transform,
     pub path: CairoPath,
-    pub clip_path: Option<Box<ClipPath>>
+    pub clip_path: Option<Box<ClipPath>>,
 }
 
 /// The item being rendered inside a stacking context.
@@ -267,13 +267,41 @@ fn get_filter_from_filter_list(
 }
 
 fn layout_clip_path(
+    session: &Session,
+    source_node: &Node,
     values: &ComputedValues,
     acquired_nodes: &mut AcquiredNodes<'_>,
 ) -> Option<ClipPath> {
     let clip_path_prop = values.clip_path();
 
     if let Some(node_id) = clip_path_prop.0.get() {
-        unimplemented!()
+        let acquired = match acquired_nodes.acquire(node_id) {
+            Ok(acquired_node) => acquired_node,
+            Err(e) => {
+                rsvg_log!(session, "ignoring clip-path for {}: {}", source_node, e);
+                return None;
+            }
+        };
+
+        let candidate_clip_path_node = acquired.get().clone();
+
+        let element_data = candidate_clip_path_node.borrow_element_data();
+
+        match *element_data {
+            ElementData::ClipPath(ref clip_path_node) => {
+                unimplemented!()
+            }
+
+            _ => {
+                rsvg_log!(
+                    session,
+                    "ignoring clip-path for {}: {} is not a clipPath element",
+                    source_node,
+                    candidate_clip_path_node
+                );
+                None
+            }
+        }
     } else {
         None
     }
@@ -508,7 +536,53 @@ mod tests {
         let values = rect_elt.get_computed_values();
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
-        let clip_path = layout_clip_path(&values, &mut acquired);
+        let session = Session::default();
+        let clip_path = layout_clip_path(&session, &rect, &values, &mut acquired);
+
+        assert!(clip_path.is_none());
+    }
+
+    #[test]
+    fn detects_invalid_reference_to_clip_path() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <rect id="foo" clip-path="url(#bar)"/>
+</svg>
+"#,
+        );
+
+        let rect = document.lookup_internal_node("foo").unwrap();
+        let rect_elt = rect.borrow_element();
+        let values = rect_elt.get_computed_values();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let clip_path = layout_clip_path(&session, &rect, &values, &mut acquired);
+
+        assert!(clip_path.is_none());
+    }
+
+    #[test]
+    fn detects_reference_that_is_not_a_clip_path() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <rect id="bar"/> <!-- not a clipPath -->
+  </defs>
+  <rect id="foo" clip-path="url(#bar)"/>
+</svg>
+"#,
+        );
+
+        let rect = document.lookup_internal_node("foo").unwrap();
+        let rect_elt = rect.borrow_element();
+        let values = rect_elt.get_computed_values();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let clip_path = layout_clip_path(&session, &rect, &values, &mut acquired);
 
         assert!(clip_path.is_none());
     }
