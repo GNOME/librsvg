@@ -1423,90 +1423,97 @@ impl DrawingCtx {
             None,
             clipping,
             &mut |an, dc, new_viewport| {
-                let cr = dc.cr.clone();
-
-                let transform =
-                    dc.get_transform_for_stacking_ctx(new_viewport, stacking_ctx, clipping)?;
-                let mut path_helper = PathHelper::new(&cr, transform, &shape.path.cairo_path);
-
-                if clipping {
-                    if stacking_ctx.is_visible {
-                        cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
-                        path_helper.set()?;
-                    }
-                    return Ok(new_viewport.empty_bbox());
-                }
-
-                cr.set_antialias(cairo::Antialias::from(shape.shape_rendering));
-
-                setup_cr_for_stroke(&cr, &shape.stroke);
-
-                cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
-
-                path_helper.set()?;
-                let bbox = compute_stroke_and_fill_box(
-                    &cr,
-                    &shape.stroke,
-                    &shape.stroke_paint,
-                    &dc.initial_viewport,
-                )?;
-
-                if stacking_ctx.is_visible {
-                    for &target in &shape.paint_order.targets {
-                        // fill and stroke operations will preserve the path.
-                        // markers operation will clear the path.
-                        match target {
-                            PaintTarget::Fill => {
-                                path_helper.set()?;
-                                let had_paint_server =
-                                    dc.set_paint_source(&shape.fill_paint, an, viewport)?;
-                                if had_paint_server {
-                                    cr.fill_preserve()?;
-                                }
-                            }
-
-                            PaintTarget::Stroke => {
-                                path_helper.set()?;
-                                if shape.stroke.non_scaling {
-                                    cr.set_matrix(dc.initial_viewport.transform.into());
-                                }
-
-                                let had_paint_server =
-                                    dc.set_paint_source(&shape.stroke_paint, an, viewport)?;
-                                if had_paint_server {
-                                    cr.stroke_preserve()?;
-                                }
-                            }
-
-                            PaintTarget::Markers => {
-                                path_helper.unset();
-                                marker::render_markers_for_shape(
-                                    shape,
-                                    new_viewport,
-                                    dc,
-                                    an,
-                                    clipping,
-                                )?;
-                            }
-                        }
-                    }
-                }
-
-                path_helper.unset();
-                Ok(bbox)
+                dc.paint_shape(shape, stacking_ctx, an, clipping, new_viewport)
             },
         )
     }
 
-    fn paint_surface(
+    fn paint_shape(
         &mut self,
-        surface: &SharedImageSurface,
-        width: f64,
-        height: f64,
-        image_rendering: ImageRendering,
+        shape: &Shape,
+        stacking_ctx: &StackingContext,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        clipping: bool,
+        viewport: &Viewport,
+    ) -> DrawResult {
+        let cr = self.cr.clone();
+
+        let transform = self.get_transform_for_stacking_ctx(viewport, stacking_ctx, clipping)?;
+        let mut path_helper = PathHelper::new(&cr, transform, &shape.path.cairo_path);
+
+        if clipping {
+            if stacking_ctx.is_visible {
+                cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
+                path_helper.set()?;
+            }
+            return Ok(viewport.empty_bbox());
+        }
+
+        cr.set_antialias(cairo::Antialias::from(shape.shape_rendering));
+
+        setup_cr_for_stroke(&cr, &shape.stroke);
+
+        cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
+
+        path_helper.set()?;
+        let bbox = compute_stroke_and_fill_box(
+            &cr,
+            &shape.stroke,
+            &shape.stroke_paint,
+            &self.initial_viewport,
+        )?;
+
+        if stacking_ctx.is_visible {
+            for &target in &shape.paint_order.targets {
+                // fill and stroke operations will preserve the path.
+                // markers operation will clear the path.
+                match target {
+                    PaintTarget::Fill => {
+                        path_helper.set()?;
+                        let had_paint_server =
+                            self.set_paint_source(&shape.fill_paint, acquired_nodes, viewport)?;
+                        if had_paint_server {
+                            cr.fill_preserve()?;
+                        }
+                    }
+
+                    PaintTarget::Stroke => {
+                        path_helper.set()?;
+                        if shape.stroke.non_scaling {
+                            cr.set_matrix(self.initial_viewport.transform.into());
+                        }
+
+                        let had_paint_server =
+                            self.set_paint_source(&shape.stroke_paint, acquired_nodes, viewport)?;
+                        if had_paint_server {
+                            cr.stroke_preserve()?;
+                        }
+                    }
+
+                    PaintTarget::Markers => {
+                        path_helper.unset();
+                        marker::render_markers_for_shape(
+                            shape,
+                            viewport,
+                            self,
+                            acquired_nodes,
+                            clipping,
+                        )?;
+                    }
+                }
+            }
+        }
+
+        path_helper.unset();
+        Ok(bbox)
+    }
+
+    fn paint_surface_from_image(
+        &mut self,
+        image: &Image,
         viewport: &Viewport,
     ) -> Result<(), cairo::Error> {
-        let cr = self.cr.clone();
+        let cr = &self.cr;
 
         // We need to set extend appropriately, so can't use cr.set_source_surface().
         //
@@ -1515,17 +1522,22 @@ impl DrawingCtx {
         // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
         // opaque 100×1 image of a gradient scaled to 100×98 which ends up
         // transparent almost everywhere without this fix (which it shouldn't).
-        let ptn = surface.to_cairo_pattern();
+        let ptn = image.surface.to_cairo_pattern();
         ptn.set_extend(cairo::Extend::Pad);
 
-        let interpolation = Interpolation::from(image_rendering);
+        let interpolation = Interpolation::from(image.image_rendering);
 
         ptn.set_filter(cairo::Filter::from(interpolation));
         cr.set_matrix(viewport.transform.into());
         cr.set_source(&ptn)?;
 
+        let image_size_rect = Rect::from_size(
+            f64::from(image.surface.width()),
+            f64::from(image.surface.height()),
+        );
+
         // Clip is needed due to extend being set to pad.
-        clip_to_rectangle(&cr, &viewport.transform, &Rect::from_size(width, height));
+        clip_to_rectangle(cr, &viewport.transform, &image_size_rect);
 
         cr.paint()
     }
@@ -1544,9 +1556,9 @@ impl DrawingCtx {
             return Ok(viewport.empty_bbox());
         }
 
-        let image_width = f64::from(image_width);
-        let image_height = f64::from(image_height);
-        let vbox = ViewBox::from(Rect::from_size(image_width, image_height));
+        let image_size_rect = Rect::from_size(f64::from(image_width), f64::from(image_height));
+
+        let vbox = ViewBox::from(image_size_rect);
 
         // The bounding box for <image> is decided by the values of the image's x, y, w, h
         // and not by the final computed image bounds.
@@ -1567,13 +1579,7 @@ impl DrawingCtx {
                 Some(layout_viewport),
                 clipping,
                 &mut |_an, dc, new_viewport| {
-                    dc.paint_surface(
-                        &image.surface,
-                        image_width,
-                        image_height,
-                        image.image_rendering,
-                        new_viewport,
-                    )?;
+                    dc.paint_surface_from_image(image, new_viewport)?;
 
                     Ok(bounds.clone())
                 },
@@ -1716,17 +1722,25 @@ impl DrawingCtx {
             viewport,
             None,
             clipping,
-            &mut |an, dc, new_viewport| {
-                let mut bbox = new_viewport.empty_bbox();
-
-                for span in &text.spans {
-                    let span_bbox = dc.draw_text_span(span, an, clipping, new_viewport)?;
-                    bbox.insert(&span_bbox);
-                }
-
-                Ok(bbox)
-            },
+            &mut |an, dc, new_viewport| dc.paint_text_spans(text, an, clipping, new_viewport),
         )
+    }
+
+    fn paint_text_spans(
+        &mut self,
+        text: &Text,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        clipping: bool,
+        viewport: &Viewport,
+    ) -> DrawResult {
+        let mut bbox = viewport.empty_bbox();
+
+        for span in &text.spans {
+            let span_bbox = self.draw_text_span(span, acquired_nodes, clipping, viewport)?;
+            bbox.insert(&span_bbox);
+        }
+
+        Ok(bbox)
     }
 
     pub fn get_snapshot(

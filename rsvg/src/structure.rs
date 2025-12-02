@@ -172,27 +172,29 @@ impl ElementTrait for Switch {
     ) -> DrawResult {
         let values = cascaded.get();
 
-        let elt = node.borrow_element();
-        let stacking_ctx = Box::new(StackingContext::new(
-            draw_ctx.session(),
-            acquired_nodes,
-            &elt,
-            values.transform(),
-            None,
-            values,
-        ));
+        let switch_elt = node.borrow_element();
+        let child_that_matches = node.children().filter(|c| c.is_element()).find(|c| {
+            let elt = c.borrow_element();
+            elt.get_cond(draw_ctx.user_language())
+        });
 
-        draw_ctx.with_discrete_layer(
-            &stacking_ctx,
-            acquired_nodes,
-            viewport,
-            None,
-            clipping,
-            &mut |an, dc, new_viewport| {
-                if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
-                    let elt = c.borrow_element();
-                    elt.get_cond(dc.user_language())
-                }) {
+        if let Some(child) = child_that_matches {
+            let stacking_ctx = Box::new(StackingContext::new(
+                draw_ctx.session(),
+                acquired_nodes,
+                &switch_elt,
+                values.transform(),
+                None,
+                values,
+            ));
+
+            draw_ctx.with_discrete_layer(
+                &stacking_ctx,
+                acquired_nodes,
+                viewport,
+                None,
+                clipping,
+                &mut |an, dc, new_viewport| {
                     child.draw(
                         an,
                         &CascadedValues::clone_with_node(cascaded, &child),
@@ -200,11 +202,11 @@ impl ElementTrait for Switch {
                         dc,
                         clipping,
                     )
-                } else {
-                    Ok(new_viewport.empty_bbox())
-                }
-            },
-        )
+                },
+            )
+        } else {
+            Ok(viewport.empty_bbox())
+        }
     }
 }
 
@@ -427,6 +429,61 @@ impl ElementTrait for Svg {
                 node.draw_children(an, cascaded, new_viewport, dc, clipping)
             },
         )
+    }
+
+    fn layout(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
+        let mut child_layers = Vec::new();
+
+        for child in node.children().filter(|c| c.is_element()) {
+            let elt = child.borrow_element();
+
+            let layer = elt.layout(
+                &child,
+                acquired_nodes,
+                &CascadedValues::clone_with_node(cascaded, &child),
+                viewport,
+                draw_ctx,
+                clipping,
+            )?;
+
+            if let Some(layer) = layer {
+                child_layers.push(layer);
+            }
+        }
+
+        let values = cascaded.get();
+        let extents = extents_of_transformed_children(&child_layers);
+
+        let layout_viewport = self.make_svg_viewport(node, cascaded, viewport, draw_ctx);
+
+        let group = Box::new(layout::Group {
+            children: child_layers,
+            establish_viewport: Some(layout_viewport),
+            extents,
+        });
+
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(
+            draw_ctx.session(),
+            acquired_nodes,
+            &elt,
+            values.transform(),
+            None,
+            values,
+        );
+
+        Ok(Some(Layer {
+            kind: LayerKind::Group(group),
+            stacking_ctx,
+        }))
     }
 }
 
