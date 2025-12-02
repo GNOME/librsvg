@@ -266,6 +266,19 @@ fn get_filter_from_filter_list(
     }
 }
 
+fn layout_clip_path(
+    values: &ComputedValues,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+) -> Option<ClipPath> {
+    let clip_path_prop = values.clip_path();
+
+    if let Some(node_id) = clip_path_prop.0.get() {
+        unimplemented!()
+    } else {
+        None
+    }
+}
+
 /// Returns (clip_in_user_space, clip_in_object_space)
 fn resolve_clip_path(
     values: &ComputedValues,
@@ -471,5 +484,32 @@ impl FontProperties {
             letter_spacing: values.letter_spacing().to_user(params),
             text_decoration: values.text_decoration(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::document::Document;
+
+    #[test]
+    fn detects_no_clip_path() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <rect id="foo"/>
+</svg>
+"#,
+        );
+
+        let rect = document.lookup_internal_node("foo").unwrap();
+        let rect_elt = rect.borrow_element();
+        let values = rect_elt.get_computed_values();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let clip_path = layout_clip_path(&values, &mut acquired);
+
+        assert!(clip_path.is_none());
     }
 }
