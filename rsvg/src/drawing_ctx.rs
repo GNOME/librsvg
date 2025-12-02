@@ -1537,7 +1537,7 @@ impl DrawingCtx {
         );
 
         // Clip is needed due to extend being set to pad.
-        clip_to_rectangle(&cr, &viewport.transform, &image_size_rect);
+        clip_to_rectangle(cr, &viewport.transform, &image_size_rect);
 
         cr.paint()
     }
