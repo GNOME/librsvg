@@ -63,6 +63,25 @@ pub struct StackingContext {
     pub link_target: Option<String>,
 }
 
+/// Recursive representation of the `clipPath` element, a union of clipping paths.
+///
+/// The `clipPath` element supports having a list of child elements that define paths; the
+/// final clipping path is the union of them.  In turn, every path can have its own
+/// clipPath.
+pub struct ClipPath {
+    pub clip_units: CoordUnits,
+    pub transform: Transform,
+    pub paths: Vec<ClipPathItem>,
+    pub clip_path: Option<Box<ClipPath>>
+}
+
+/// One item in a [`ClipPath`].
+pub struct ClipPathItem {
+    pub transform: Transform,
+    pub path: CairoPath,
+    pub clip_path: Option<Box<ClipPath>>
+}
+
 /// The item being rendered inside a stacking context.
 pub struct Layer {
     pub kind: LayerKind,
