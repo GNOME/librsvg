@@ -12,6 +12,7 @@ use crate::color::Color;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNode, AcquiredNodes};
+use crate::drawing_ctx::Viewport;
 use crate::element::{Element, ElementData};
 use crate::error::AcquireError;
 use crate::filter::FilterValueList;
@@ -28,6 +29,7 @@ use crate::properties::{
 use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
+use crate::shapes::BasicShape;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
@@ -268,7 +270,6 @@ fn get_filter_from_filter_list(
 }
 
 fn acquire_clip_path(
-    session: &Session,
     source_node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
 ) -> Result<Option<AcquiredNode>, AcquireError> {
@@ -296,7 +297,7 @@ fn acquire_clip_path_and_log_error(
     source_node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
 ) -> Option<AcquiredNode> {
-    match acquire_clip_path(session, source_node, acquired_nodes) {
+    match acquire_clip_path(source_node, acquired_nodes) {
         Ok(node) => node,
         Err(e) => {
             rsvg_log!(session, "ignoring clip-path for {source_node}: {e}");
@@ -309,6 +310,7 @@ fn layout_clip_path(
     session: &Session,
     source_node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
+    params: &NormalizeParams,
 ) -> Option<ClipPath> {
     if let Some(acquired) = acquire_clip_path_and_log_error(session, source_node, acquired_nodes) {
         let clip_path_node = acquired.get();
@@ -319,9 +321,10 @@ fn layout_clip_path(
 
         let clip_units = clip_path_data.get_units();
         let transform = values.transform();
-        let paths = Vec::new(); // FIXME
+
+        let paths = layout_paths_for_clip_path(clip_path_node, params);
         let recursive_clip_path =
-            layout_clip_path(session, clip_path_node, acquired_nodes).map(Box::new);
+            layout_clip_path(session, clip_path_node, acquired_nodes, params).map(Box::new);
 
         Some(ClipPath {
             clip_units,
@@ -332,6 +335,38 @@ fn layout_clip_path(
     } else {
         None
     }
+}
+
+fn clip_path_item_from_node(node: &Node, params: &NormalizeParams) -> Option<ClipPathItem> {
+    let elt = node.borrow_element();
+    let data = node.borrow_element_data();
+    let values = elt.get_computed_values();
+
+    let path = match *data {
+        ElementData::Path(ref e) => e.make_path(params, values).to_cairo_path(false),
+        ElementData::Polygon(ref e) => e.make_path(params, values).to_cairo_path(false),
+        ElementData::Polyline(ref e) => e.make_path(params, values).to_cairo_path(false),
+        ElementData::Line(ref e) => e.make_path(params, values).to_cairo_path(false),
+        ElementData::Rect(ref e) => e.make_path(params, values).to_cairo_path(false),
+        ElementData::Circle(ref e) => e.make_path(params, values).to_cairo_path(false),
+        ElementData::Ellipse(ref e) => e.make_path(params, values).to_cairo_path(false),
+        ElementData::Text(ref e) => unimplemented!(),
+        ElementData::Use(ref e) => unimplemented!(),
+        _ => return None,
+    };
+
+    todo!()
+}
+
+fn layout_paths_for_clip_path(
+    clip_path_node: &Node,
+    params: &NormalizeParams,
+) -> Vec<ClipPathItem> {
+    clip_path_node
+        .children()
+        .filter(|c| c.is_element())
+        .filter_map(|child| clip_path_item_from_node(&child, params))
+        .collect()
 }
 
 /// Returns (clip_in_user_space, clip_in_object_space)
@@ -371,6 +406,7 @@ impl StackingContext {
         transform: Transform,
         clip_rect: Option<Rect>,
         values: &ComputedValues,
+        viewport: &Viewport,
     ) -> StackingContext {
         let element_name = format!("{element}");
 
@@ -392,6 +428,10 @@ impl StackingContext {
                 filter = get_filter(values, acquired_nodes, session);
             }
         }
+
+        // These are the params "outside" the stacking context, and they are used to normalize
+        // lengths inside a clipPath's children (e.g. <clipPath> <rect x="10%"/> </clipPath>).
+        let _params = NormalizeParams::new(values, viewport);
 
         let (clip_in_user_space, clip_in_object_space) = resolve_clip_path(values, acquired_nodes);
 
@@ -449,11 +489,20 @@ impl StackingContext {
         element: &Element,
         transform: Transform,
         values: &ComputedValues,
+        viewport: &Viewport,
         link_target: Option<String>,
     ) -> StackingContext {
         // Note that the clip_rect=Some(...) argument is only used by the markers code,
         // hence it is None here.  Something to refactor later.
-        let mut ctx = Self::new(session, acquired_nodes, element, transform, None, values);
+        let mut ctx = Self::new(
+            session,
+            acquired_nodes,
+            element,
+            transform,
+            None,
+            values,
+            viewport,
+        );
         ctx.link_target = link_target;
         ctx
     }
@@ -547,6 +596,7 @@ mod tests {
     use super::*;
 
     use crate::document::Document;
+    use crate::dpi::Dpi;
 
     fn assert_no_clip_path(svg: &'static [u8], element_with_clip_path: &str) {
         let document = Document::load_from_bytes(svg);
@@ -557,7 +607,8 @@ mod tests {
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
-        let clip_path = layout_clip_path(&session, &node, &mut acquired);
+        let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
+        let clip_path = layout_clip_path(&session, &node, &mut acquired, &params);
 
         assert!(clip_path.is_none());
     }
@@ -618,8 +669,9 @@ mod tests {
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
-        let clip_path =
-            layout_clip_path(&session, &node, &mut acquired).expect("find a clipPath node");
+        let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
+        let clip_path = layout_clip_path(&session, &node, &mut acquired, &params)
+            .expect("find a clipPath node");
 
         assert_eq!(clip_path.clip_units, CoordUnits::ObjectBoundingBox);
         assert_eq!(

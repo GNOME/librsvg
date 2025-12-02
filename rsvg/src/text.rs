@@ -869,6 +869,7 @@ impl ElementTrait for Text {
             values.transform(),
             None,
             values,
+            viewport,
         );
 
         let layout_text = {

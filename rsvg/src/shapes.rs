@@ -40,7 +40,7 @@ impl ShapeDef {
     }
 }
 
-trait BasicShape {
+pub trait BasicShape {
     /// Creates a path for the shape.
     fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath>;
 
@@ -158,6 +158,7 @@ fn draw_basic_shape(
         values.transform(),
         None,
         values,
+        viewport,
     );
 
     Ok(Some(Layer {

@@ -218,6 +218,7 @@ impl Marker {
             transform,
             clip_rect,
             values,
+            &content_viewport,
         ));
 
         draw_ctx.with_discrete_layer(

@@ -677,6 +677,7 @@ impl DrawingCtx {
                 Transform::identity(),
                 None,
                 values,
+                viewport,
             ));
 
             rsvg_log!(self.session, "(mask {}", mask_element);
@@ -1273,6 +1274,7 @@ impl DrawingCtx {
                 Transform::identity(),
                 None,
                 pattern_values,
+                viewport,
             ));
 
             pattern_draw_ctx
@@ -1959,6 +1961,7 @@ impl DrawingCtx {
                 Transform::identity(),
                 None,
                 values,
+                viewport,
             ));
 
             let layout_viewport = LayoutViewport {
@@ -1999,6 +2002,7 @@ impl DrawingCtx {
                 Transform::new_translate(use_rect.x0, use_rect.y0),
                 None,
                 values,
+                viewport,
             ));
 
             self.with_discrete_layer(

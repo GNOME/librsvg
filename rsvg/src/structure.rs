@@ -44,6 +44,7 @@ impl ElementTrait for Group {
             values.transform(),
             None,
             values,
+            viewport,
         ));
 
         draw_ctx.with_discrete_layer(
@@ -92,6 +93,7 @@ impl ElementTrait for Group {
             acquired_nodes,
             cascaded,
             child_layers,
+            viewport,
         )
     }
 }
@@ -119,6 +121,7 @@ impl Group {
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         child_layers: Vec<Layer>,
+        viewport: &Viewport,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
 
@@ -138,6 +141,7 @@ impl Group {
             values.transform(),
             None,
             values,
+            viewport,
         );
 
         Ok(Some(Layer {
@@ -186,6 +190,7 @@ impl ElementTrait for Switch {
                 values.transform(),
                 None,
                 values,
+                viewport,
             ));
 
             draw_ctx.with_discrete_layer(
@@ -415,6 +420,7 @@ impl ElementTrait for Svg {
             values.transform(),
             None,
             values,
+            viewport,
         ));
 
         let layout_viewport = self.make_svg_viewport(node, cascaded, viewport, draw_ctx);
@@ -478,6 +484,7 @@ impl ElementTrait for Svg {
             values.transform(),
             None,
             values,
+            viewport,
         );
 
         Ok(Some(Layer {
@@ -775,6 +782,7 @@ impl ElementTrait for Link {
             &elt,
             values.transform(),
             values,
+            viewport,
             link_target,
         ));
 

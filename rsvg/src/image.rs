@@ -168,6 +168,7 @@ impl Image {
             values.transform(),
             None,
             values,
+            viewport,
         );
 
         let layer = Layer {
@@ -258,6 +259,7 @@ impl Image {
             values.transform(),
             None,
             values,
+            viewport,
         );
 
         let layer = Layer {
