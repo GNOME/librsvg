@@ -521,51 +521,49 @@ mod tests {
 
     use crate::document::Document;
 
+    fn assert_no_clip_path(svg: &'static [u8], element_with_clip_path: &str) {
+        let document = Document::load_from_bytes(svg);
+
+        let node = document
+            .lookup_internal_node(element_with_clip_path)
+            .unwrap();
+        let elt = node.borrow_element();
+        let values = elt.get_computed_values();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let clip_path = layout_clip_path(&session, &node, &values, &mut acquired);
+
+        assert!(clip_path.is_none());
+    }
+
     #[test]
     fn detects_no_clip_path() {
-        let document = Document::load_from_bytes(
+        assert_no_clip_path(
             br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg">
   <rect id="foo"/>
 </svg>
 "#,
+            "foo",
         );
-
-        let rect = document.lookup_internal_node("foo").unwrap();
-        let rect_elt = rect.borrow_element();
-        let values = rect_elt.get_computed_values();
-
-        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
-        let session = Session::default();
-        let clip_path = layout_clip_path(&session, &rect, &values, &mut acquired);
-
-        assert!(clip_path.is_none());
     }
 
     #[test]
     fn detects_invalid_reference_to_clip_path() {
-        let document = Document::load_from_bytes(
+        assert_no_clip_path(
             br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg">
   <rect id="foo" clip-path="url(#bar)"/>
 </svg>
 "#,
+            "foo",
         );
-
-        let rect = document.lookup_internal_node("foo").unwrap();
-        let rect_elt = rect.borrow_element();
-        let values = rect_elt.get_computed_values();
-
-        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
-        let session = Session::default();
-        let clip_path = layout_clip_path(&session, &rect, &values, &mut acquired);
-
-        assert!(clip_path.is_none());
     }
 
     #[test]
     fn detects_reference_that_is_not_a_clip_path() {
-        let document = Document::load_from_bytes(
+        assert_no_clip_path(
             br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -574,16 +572,7 @@ mod tests {
   <rect id="foo" clip-path="url(#bar)"/>
 </svg>
 "#,
+            "foo",
         );
-
-        let rect = document.lookup_internal_node("foo").unwrap();
-        let rect_elt = rect.borrow_element();
-        let values = rect_elt.get_computed_values();
-
-        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
-        let session = Session::default();
-        let clip_path = layout_clip_path(&session, &rect, &values, &mut acquired);
-
-        assert!(clip_path.is_none());
     }
 }
