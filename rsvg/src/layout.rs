@@ -11,8 +11,9 @@ use crate::cairo_path::CairoPath;
 use crate::color::Color;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNode, AcquiredNodes};
 use crate::element::{Element, ElementData};
+use crate::error::AcquireError;
 use crate::filter::FilterValueList;
 use crate::length::*;
 use crate::node::*;
@@ -266,42 +267,54 @@ fn get_filter_from_filter_list(
     }
 }
 
-fn layout_clip_path(
+fn acquire_clip_path(
     session: &Session,
     source_node: &Node,
-    values: &ComputedValues,
     acquired_nodes: &mut AcquiredNodes<'_>,
-) -> Option<ClipPath> {
+) -> Result<Option<AcquiredNode>, AcquireError> {
+    let elt = source_node.borrow_element();
+    let values = elt.get_computed_values();
     let clip_path_prop = values.clip_path();
 
     if let Some(node_id) = clip_path_prop.0.get() {
         let acquired = match acquired_nodes.acquire(node_id) {
             Ok(acquired_node) => acquired_node,
-            Err(e) => {
-                rsvg_log!(session, "ignoring clip-path for {}: {}", source_node, e);
-                return None;
-            }
+            Err(e) => return Err(e),
         };
 
         let candidate_clip_path_node = acquired.get().clone();
 
-        let element_data = candidate_clip_path_node.borrow_element_data();
-
-        match *element_data {
-            ElementData::ClipPath(ref clip_path_node) => {
-                unimplemented!()
-            }
-
-            _ => {
-                rsvg_log!(
-                    session,
-                    "ignoring clip-path for {}: {} is not a clipPath element",
-                    source_node,
-                    candidate_clip_path_node
-                );
-                None
-            }
+        if is_element_of_type!(candidate_clip_path_node, ClipPath) {
+            Ok(Some(acquired))
+        } else {
+            Err(AcquireError::InvalidLinkType(node_id.clone()))
         }
+    } else {
+        Ok(None)
+    }
+}
+
+fn acquire_clip_path_and_log_error(
+    session: &Session,
+    source_node: &Node,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+) -> Option<AcquiredNode> {
+    match acquire_clip_path(session, source_node, acquired_nodes) {
+        Ok(node) => node,
+        Err(e) => {
+            rsvg_log!(session, "ignoring clip-path for {source_node}: {e}");
+            None
+        }
+    }
+}
+
+fn layout_clip_path(
+    session: &Session,
+    source_node: &Node,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+) -> Option<ClipPath> {
+    if let Some(acquired) = acquire_clip_path_and_log_error(session, source_node, acquired_nodes) {
+        unimplemented!()
     } else {
         None
     }
@@ -528,11 +541,10 @@ mod tests {
             .lookup_internal_node(element_with_clip_path)
             .unwrap();
         let elt = node.borrow_element();
-        let values = elt.get_computed_values();
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
-        let clip_path = layout_clip_path(&session, &node, &values, &mut acquired);
+        let clip_path = layout_clip_path(&session, &node, &mut acquired);
 
         assert!(clip_path.is_none());
     }
