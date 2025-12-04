@@ -321,7 +321,7 @@ fn layout_clip_path(
         let clip_units = clip_path_data.get_units();
         let transform = values.transform();
 
-        let paths = layout_paths_for_clip_path(clip_path_node, params);
+        let paths = layout_paths_for_clip_path(session, clip_path_node, acquired_nodes, params);
         let recursive_clip_path =
             layout_clip_path(session, clip_path_node, acquired_nodes, params).map(Box::new);
 
@@ -336,7 +336,12 @@ fn layout_clip_path(
     }
 }
 
-fn clip_path_item_from_node(node: &Node, params: &NormalizeParams) -> Option<ClipPathItem> {
+fn clip_path_item_from_node(
+    session: &Session,
+    node: &Node,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    params: &NormalizeParams,
+) -> Option<ClipPathItem> {
     let elt = node.borrow_element();
     let data = node.borrow_element_data();
     let values = elt.get_computed_values();
@@ -354,17 +359,23 @@ fn clip_path_item_from_node(node: &Node, params: &NormalizeParams) -> Option<Cli
         _ => return None,
     };
 
-    todo!()
+    Some(ClipPathItem {
+        transform: values.transform(),
+        path,
+        clip_path: layout_clip_path(session, node, acquired_nodes, params).map(Box::new),
+    })
 }
 
 fn layout_paths_for_clip_path(
+    session: &Session,
     clip_path_node: &Node,
+    acquired_nodes: &mut AcquiredNodes<'_>,
     params: &NormalizeParams,
 ) -> Vec<ClipPathItem> {
     clip_path_node
         .children()
         .filter(|c| c.is_element())
-        .filter_map(|child| clip_path_item_from_node(&child, params))
+        .filter_map(|child| clip_path_item_from_node(session, &child, acquired_nodes, params))
         .collect()
 }
 
@@ -657,7 +668,13 @@ mod tests {
             br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <clipPath id="clip1" clipPathUnits="objectBoundingBox" transform="matrix(1.0 2.0 3.0 4.0 5.0 6.0)"/>
+    <clipPath id="clip1" clipPathUnits="objectBoundingBox" transform="matrix(1.0 2.0 3.0 4.0 5.0 6.0)">
+      <rect x="5" y="5" width="10" height="20" transform="matrix(2.0 3.0 4.0 5.0 6.0 7.0)"/>
+      <rect x="1" y="2" width="30" height="40" clip-path="url(#clip2)"/>
+    </clipPath>
+    <clipPath id="clip2">
+      <rect x="6" y="6" width="5" height="6"/>
+    </clipPath>
   </defs>
   <rect id="foo" clip-path="url(#clip1)"/>
 </svg>
@@ -677,5 +694,17 @@ mod tests {
             clip_path.transform,
             Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
         );
+        assert_eq!(clip_path.paths.len(), 2);
+        assert_eq!(
+            clip_path.paths[0].transform,
+            Transform::new_unchecked(2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
+        );
+        assert!(clip_path.paths[0].clip_path.is_none());
+
+        if let Some(ref sub_clip_path) = clip_path.paths[1].clip_path {
+            assert_eq!(sub_clip_path.paths.len(), 1);
+        } else {
+            panic!("clip2 not found");
+        }
     }
 }

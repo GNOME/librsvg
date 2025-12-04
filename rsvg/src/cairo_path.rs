@@ -164,10 +164,7 @@ fn compute_path_extents(path: &Path) -> Result<Option<Rect>, Box<InternalRenderi
 }
 
 impl Path {
-    pub fn to_cairo_path(
-        &self,
-        is_square_linecap: bool,
-    ) -> Result<CairoPath, Box<InternalRenderingError>> {
+    pub fn to_cairo_path(&self, is_square_linecap: bool) -> CairoPath {
         let mut segments = Vec::new();
 
         for subpath in self.iter_subpath() {
@@ -188,7 +185,7 @@ impl Path {
             }
         }
 
-        Ok(CairoPath(segments))
+        CairoPath(segments)
     }
 
     pub fn to_cairo(
@@ -196,7 +193,7 @@ impl Path {
         cr: &cairo::Context,
         is_square_linecap: bool,
     ) -> Result<(), Box<InternalRenderingError>> {
-        let cairo_path = self.to_cairo_path(is_square_linecap)?;
+        let cairo_path = self.to_cairo_path(is_square_linecap);
         cairo_path.to_cairo_context(cr)
     }
 }
@@ -263,7 +260,7 @@ pub fn validate_path(
     viewport: &Viewport,
 ) -> Result<ValidatedPath, Box<InternalRenderingError>> {
     let is_square_linecap = stroke.line_cap == StrokeLinecap::Square;
-    let cairo_path = path.to_cairo_path(is_square_linecap)?;
+    let cairo_path = path.to_cairo_path(is_square_linecap);
 
     if cairo_path.has_unsuitable_coordinates(&viewport.transform) {
         return Ok(ValidatedPath::Invalid(String::from(
@@ -317,7 +314,7 @@ mod tests {
         builder.line_to(-900000.0, 3.0);
 
         let path = builder.into_path();
-        let cairo_path = path.to_cairo_path(false).map_err(|_| ()).unwrap();
+        let cairo_path = path.to_cairo_path(false);
         assert!(!cairo_path.has_unsuitable_coordinates(&Transform::identity()));
     }
 
@@ -328,7 +325,7 @@ mod tests {
         builder.line_to(-9000000.0, 3.0);
 
         let path = builder.into_path();
-        let cairo_path = path.to_cairo_path(false).map_err(|_| ()).unwrap();
+        let cairo_path = path.to_cairo_path(false);
         assert!(cairo_path.has_unsuitable_coordinates(&Transform::identity()));
     }
 }
