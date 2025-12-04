@@ -29,7 +29,6 @@ use crate::properties::{
 use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
-use crate::shapes::BasicShape;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;

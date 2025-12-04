@@ -40,10 +40,7 @@ impl ShapeDef {
     }
 }
 
-pub trait BasicShape {
-    /// Creates a path for the shape.
-    fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath>;
-
+trait BasicShape {
     /// Creates a complete shape definition.
     ///
     /// This function can simply call `ShapeDef::new(self.make_path(params, values), Markers::*)`
@@ -315,12 +312,14 @@ impl ElementTrait for Path {
 }
 
 impl BasicShape for Path {
-    fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
-        self.path.clone()
-    }
-
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
         ShapeDef::new(self.make_path(params, values), Markers::Yes)
+    }
+}
+
+impl Path {
+    pub fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
+        self.path.clone()
     }
 }
 
@@ -401,12 +400,14 @@ impl ElementTrait for Polygon {
 }
 
 impl BasicShape for Polygon {
-    fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
-        Rc::new(make_poly(&self.points, true))
-    }
-
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
         ShapeDef::new(self.make_path(params, values), Markers::Yes)
+    }
+}
+
+impl Polygon {
+    pub fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
+        Rc::new(make_poly(&self.points, true))
     }
 }
 
@@ -428,12 +429,14 @@ impl ElementTrait for Polyline {
 }
 
 impl BasicShape for Polyline {
-    fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
-        Rc::new(make_poly(&self.points, false))
-    }
-
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
         ShapeDef::new(self.make_path(params, values), Markers::Yes)
+    }
+}
+
+impl Polyline {
+    pub fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
+        Rc::new(make_poly(&self.points, false))
     }
 }
 
@@ -462,7 +465,13 @@ impl ElementTrait for Line {
 }
 
 impl BasicShape for Line {
-    fn make_path(&self, params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::Yes)
+    }
+}
+
+impl Line {
+    pub fn make_path(&self, params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
         let mut builder = PathBuilder::default();
 
         let x1 = self.x1.to_user(params);
@@ -474,10 +483,6 @@ impl BasicShape for Line {
         builder.line_to(x2, y2);
 
         Rc::new(builder.into_path())
-    }
-
-    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
-        ShapeDef::new(self.make_path(params, values), Markers::Yes)
     }
 }
 
@@ -493,8 +498,14 @@ impl ElementTrait for Rect {
 }
 
 impl BasicShape for Rect {
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::No)
+    }
+}
+
+impl Rect {
     #[allow(clippy::many_single_char_names)]
-    fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
+    pub fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
         let x = values.x().0.to_user(params);
         let y = values.y().0.to_user(params);
 
@@ -672,10 +683,6 @@ impl BasicShape for Rect {
 
         Rc::new(builder.into_path())
     }
-
-    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
-        ShapeDef::new(self.make_path(params, values), Markers::No)
-    }
 }
 
 /// The `<circle>` element.
@@ -690,16 +697,18 @@ impl ElementTrait for Circle {
 }
 
 impl BasicShape for Circle {
-    fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::No)
+    }
+}
+
+impl Circle {
+    pub fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
         let cx = values.cx().0.to_user(params);
         let cy = values.cy().0.to_user(params);
         let r = values.r().0.to_user(params);
 
         Rc::new(make_ellipse(cx, cy, r, r))
-    }
-
-    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
-        ShapeDef::new(self.make_path(params, values), Markers::No)
     }
 }
 
@@ -715,7 +724,13 @@ impl ElementTrait for Ellipse {
 }
 
 impl BasicShape for Ellipse {
-    fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::No)
+    }
+}
+
+impl Ellipse {
+    pub fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
         let cx = values.cx().0.to_user(params);
         let cy = values.cy().0.to_user(params);
         let norm_rx = match values.rx().0 {
@@ -753,10 +768,6 @@ impl BasicShape for Ellipse {
         }
 
         Rc::new(make_ellipse(cx, cy, rx, ry))
-    }
-
-    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
-        ShapeDef::new(self.make_path(params, values), Markers::No)
     }
 }
 
