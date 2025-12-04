@@ -707,4 +707,39 @@ mod tests {
             panic!("clip2 not found");
         }
     }
+
+    #[test]
+    fn decodes_nested_clip_path() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="clip1" clip-path="url(#clip2)">
+      <rect x="1" y="2" width="30" height="40"/>
+    </clipPath>
+    <clipPath id="clip2">
+      <rect x="6" y="6" width="5" height="6"/>
+    </clipPath>
+  </defs>
+  <rect id="foo" clip-path="url(#clip1)"/>
+</svg>
+"#,
+        );
+
+        let node = document.lookup_internal_node("foo").unwrap();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
+        let clip_path = layout_clip_path(&session, &node, &mut acquired, &params)
+            .expect("find a clipPath node");
+
+        assert_eq!(clip_path.paths.len(), 1);
+
+        if let Some(ref nested_clip_path) = clip_path.clip_path {
+            assert_eq!(nested_clip_path.paths.len(), 1);
+        } else {
+            panic!("clip2 not found");
+        }
+    }
 }
