@@ -1060,7 +1060,7 @@ gboolean rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  * operation was cancelled, the error `G_IO_ERROR_CANCELLED` will be
  * returned in @error.
  *
- * Returns: (transfer full) (nullable): a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
+ * Returns: (transfer full): a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
  *
  * Since: 2.32
  */
@@ -1089,7 +1089,7 @@ RsvgHandle *rsvg_handle_new_from_gfile_sync (GFile          *file,
  * operation was cancelled, the error `G_IO_ERROR_CANCELLED` will be
  * returned in @error.
  *
- * Returns: (transfer full) (nullable): a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
+ * Returns: (transfer full): a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
  *
  * Since: 2.32
  */
@@ -1111,7 +1111,7 @@ RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
  * need these, use [ctor@Rsvg.Handle.new_from_stream_sync] instead by creating
  * a [class@Gio.MemoryInputStream] from your data.
  *
- * Returns: (transfer full) (nullable): A [class@Rsvg.Handle] or `NULL` if an error occurs.
+ * Returns: (transfer full): A [class@Rsvg.Handle] or `NULL` if an error occurs.
  * Since: 2.14
  */
 RSVG_API
@@ -1127,7 +1127,7 @@ RsvgHandle *rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GErro
  * handle.  If you require the use of [flags@Rsvg.HandleFlags], use
  * [ctor@Rsvg.Handle.new_from_gfile_sync].
  *
- * Returns: (transfer full) (nullable): A [class@Rsvg.Handle] or `NULL` if an error occurs.
+ * Returns: (transfer full): A [class@Rsvg.Handle] or `NULL` if an error occurs.
  * Since: 2.14
  */
 RSVG_API

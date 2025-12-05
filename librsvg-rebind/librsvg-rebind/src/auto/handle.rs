@@ -32,7 +32,7 @@ impl Handle {
 
     #[doc(alias = "rsvg_handle_new_from_data")]
     #[doc(alias = "new_from_data")]
-    pub fn from_data(data: &[u8]) -> Result<Option<Handle>, glib::Error> {
+    pub fn from_data(data: &[u8]) -> Result<Handle, glib::Error> {
         assert_initialized_main_thread!();
         let data_len = data.len() as _;
         unsafe {
@@ -48,7 +48,7 @@ impl Handle {
 
     #[doc(alias = "rsvg_handle_new_from_file")]
     #[doc(alias = "new_from_file")]
-    pub fn from_file(filename: &str) -> Result<Option<Handle>, glib::Error> {
+    pub fn from_file(filename: &str) -> Result<Handle, glib::Error> {
         assert_initialized_main_thread!();
         unsafe {
             let mut error = std::ptr::null_mut();
@@ -67,7 +67,7 @@ impl Handle {
         file: &impl IsA<gio::File>,
         flags: HandleFlags,
         cancellable: Option<&impl IsA<gio::Cancellable>>,
-    ) -> Result<Option<Handle>, glib::Error> {
+    ) -> Result<Handle, glib::Error> {
         assert_initialized_main_thread!();
         unsafe {
             let mut error = std::ptr::null_mut();
@@ -92,7 +92,7 @@ impl Handle {
         base_file: Option<&impl IsA<gio::File>>,
         flags: HandleFlags,
         cancellable: Option<&impl IsA<gio::Cancellable>>,
-    ) -> Result<Option<Handle>, glib::Error> {
+    ) -> Result<Handle, glib::Error> {
         assert_initialized_main_thread!();
         unsafe {
             let mut error = std::ptr::null_mut();
