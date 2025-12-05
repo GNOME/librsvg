@@ -22,8 +22,8 @@ use crate::filters::{self, FilterPlan, FilterSpec, InputRequirements};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
-    Filter, Group, Image, Layer, LayerKind, LayoutViewport, Shape, StackingContext, Stroke, Text,
-    TextSpan,
+    ClipPath, Filter, Group, Image, Layer, LayerKind, LayoutViewport, Shape, StackingContext,
+    Stroke, Text, TextSpan,
 };
 use crate::length::*;
 use crate::limits;
@@ -597,6 +597,39 @@ impl DrawingCtx {
         Ok(())
     }
 
+    fn apply_clip_path(&mut self, clip_path: &ClipPath) -> Result<(), Box<InternalRenderingError>> {
+        // For every path in the ClipPath, we:
+        //   - apply the path's transform
+        //   - recursively clip the path against its own ClipPath
+        //   - apply the path
+        //
+        // At the end, we cr.clip().  Cairo cannot take the untion of clip-paths, just their
+        // intersections, so the following is not completely correct.  We'll unify clip paths
+        // and masks at some point by doing everything with alpha masks.
+
+        let clip_path_transform = ValidTransform::try_from(clip_path.transform)?;
+        self.cr.transform(clip_path_transform.into());
+
+        if let Some(ref recursive_clip_path) = clip_path.clip_path {
+            self.apply_clip_path(recursive_clip_path)?;
+        }
+
+        for path_item in clip_path.paths.iter() {
+            let item_transform = ValidTransform::try_from(path_item.transform)?;
+            self.cr.transform(item_transform.into());
+
+            if let Some(ref recursive_clip_path) = path_item.clip_path {
+                self.apply_clip_path(recursive_clip_path)?;
+            }
+
+            path_item.path.to_cairo_context(&self.cr)?;
+        }
+
+        self.cr.clip();
+
+        Ok(())
+    }
+
     fn generate_cairo_mask(
         &mut self,
         mask_node: &Node,
@@ -833,13 +866,21 @@ impl DrawingCtx {
                     clip_to_rectangle(&self.cr, &viewport.transform, rect);
                 }
 
+                if let Some(ref clip_path) = stacking_ctx.clip_path {
+                    if clip_path.clip_units == CoordUnits::UserSpaceOnUse {
+                        self.apply_clip_path(clip_path)?;
+                    }
+                }
+
                 // Here we are clipping in user space, so the bbox doesn't matter
-                self.clip_to_node(
-                    &stacking_ctx.clip_in_user_space,
-                    acquired_nodes,
-                    &viewport,
-                    &viewport.empty_bbox(),
+                /*
+                    self.clip_to_node(
+                        &stacking_ctx.clip_in_user_space,
+                        acquired_nodes,
+                        &viewport,
+                        &viewport.empty_bbox(),
                 )?;
+                    */
 
                 let res = if stacking_ctx.should_isolate() {
                     self.print_stack_depth("DrawingCtx::draw_layer_internal should_isolate=true");
@@ -918,19 +959,26 @@ impl DrawingCtx {
                     self.cr.set_source_surface(&source_surface, 0.0, 0.0)?;
 
                     // Clip
+                    if let Some(ref clip_path) = stacking_ctx.clip_path {
+                        if clip_path.clip_units == CoordUnits::ObjectBoundingBox {
+                            self.apply_clip_path(clip_path)?;
+                        }
+                    }
 
-                    let transform_for_clip =
-                        ValidTransform::try_from(affines.outside_temporary_surface)?;
+                    /*
+                        let transform_for_clip =
+                            ValidTransform::try_from(affines.outside_temporary_surface)?;
 
-                    let viewport_for_clip = viewport.with_explicit_transform(transform_for_clip);
-                    self.cr.set_matrix(transform_for_clip.into());
+                        let viewport_for_clip = viewport.with_explicit_transform(transform_for_clip);
+                        self.cr.set_matrix(transform_for_clip.into());
 
-                    self.clip_to_node(
-                        &stacking_ctx.clip_in_object_space,
-                        acquired_nodes,
-                        &viewport_for_clip,
-                        &bbox,
+                        self.clip_to_node(
+                            &stacking_ctx.clip_in_object_space,
+                            acquired_nodes,
+                            &viewport_for_clip,
+                            &bbox,
                     )?;
+                        */
 
                     // Mask
 
