@@ -57,6 +57,7 @@ pub struct StackingContext {
     pub clip_rect: Option<Rect>,
     pub clip_in_user_space: Option<Node>,
     pub clip_in_object_space: Option<Node>,
+    pub clip_path: Option<ClipPath>,
     pub mask: Option<Node>,
     pub mix_blend_mode: MixBlendMode,
     pub isolation: Isolation,
@@ -354,8 +355,8 @@ fn clip_path_item_from_node(
         ElementData::Rect(ref e) => e.make_path(params, values).to_cairo_path(false),
         ElementData::Circle(ref e) => e.make_path(params, values).to_cairo_path(false),
         ElementData::Ellipse(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Text(ref e) => unimplemented!(),
-        ElementData::Use(ref e) => unimplemented!(),
+        ElementData::Text(ref e) => return None, // FIXME
+        ElementData::Use(ref e) => return None,  // FIXME
         _ => return None,
     };
 
@@ -441,7 +442,8 @@ impl StackingContext {
 
         // These are the params "outside" the stacking context, and they are used to normalize
         // lengths inside a clipPath's children (e.g. <clipPath> <rect x="10%"/> </clipPath>).
-        let _params = NormalizeParams::new(values, viewport);
+        let params = NormalizeParams::new(values, viewport);
+        let clip_path = layout_clip_path(&session, element, acquired_nodes, &params);
 
         let (clip_in_user_space, clip_in_object_space) = resolve_clip_path(values, acquired_nodes);
 
@@ -486,6 +488,7 @@ impl StackingContext {
             clip_rect,
             clip_in_user_space,
             clip_in_object_space,
+            clip_path,
             mask,
             mix_blend_mode,
             isolation,
