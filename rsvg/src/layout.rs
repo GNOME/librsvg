@@ -269,11 +269,10 @@ fn get_filter_from_filter_list(
 }
 
 fn acquire_clip_path(
-    source_node: &Node,
+    source_element: &Element,
     acquired_nodes: &mut AcquiredNodes<'_>,
 ) -> Result<Option<AcquiredNode>, AcquireError> {
-    let elt = source_node.borrow_element();
-    let values = elt.get_computed_values();
+    let values = source_element.get_computed_values();
     let clip_path_prop = values.clip_path();
 
     if let Some(node_id) = clip_path_prop.0.get() {
@@ -293,13 +292,13 @@ fn acquire_clip_path(
 
 fn acquire_clip_path_and_log_error(
     session: &Session,
-    source_node: &Node,
+    source_element: &Element,
     acquired_nodes: &mut AcquiredNodes<'_>,
 ) -> Option<AcquiredNode> {
-    match acquire_clip_path(source_node, acquired_nodes) {
+    match acquire_clip_path(source_element, acquired_nodes) {
         Ok(node) => node,
         Err(e) => {
-            rsvg_log!(session, "ignoring clip-path for {source_node}: {e}");
+            rsvg_log!(session, "ignoring clip-path for {source_element}: {e}");
             None
         }
     }
@@ -307,11 +306,12 @@ fn acquire_clip_path_and_log_error(
 
 fn layout_clip_path(
     session: &Session,
-    source_node: &Node,
+    source_element: &Element,
     acquired_nodes: &mut AcquiredNodes<'_>,
     params: &NormalizeParams,
 ) -> Option<ClipPath> {
-    if let Some(acquired) = acquire_clip_path_and_log_error(session, source_node, acquired_nodes) {
+    if let Some(acquired) = acquire_clip_path_and_log_error(session, source_element, acquired_nodes)
+    {
         let clip_path_node = acquired.get();
         let clip_path_elt = clip_path_node.borrow_element();
         let clip_path_data = borrow_element_as!(clip_path_node, ClipPath);
@@ -323,7 +323,7 @@ fn layout_clip_path(
 
         let paths = layout_paths_for_clip_path(session, clip_path_node, acquired_nodes, params);
         let recursive_clip_path =
-            layout_clip_path(session, clip_path_node, acquired_nodes, params).map(Box::new);
+            layout_clip_path(session, &clip_path_elt, acquired_nodes, params).map(Box::new);
 
         Some(ClipPath {
             clip_units,
@@ -362,7 +362,7 @@ fn clip_path_item_from_node(
     Some(ClipPathItem {
         transform: values.transform(),
         path,
-        clip_path: layout_clip_path(session, node, acquired_nodes, params).map(Box::new),
+        clip_path: layout_clip_path(session, &elt, acquired_nodes, params).map(Box::new),
     })
 }
 
@@ -614,11 +614,12 @@ mod tests {
         let node = document
             .lookup_internal_node(element_with_clip_path)
             .unwrap();
+        let elt = node.borrow_element();
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
-        let clip_path = layout_clip_path(&session, &node, &mut acquired, &params);
+        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params);
 
         assert!(clip_path.is_none());
     }
@@ -682,12 +683,13 @@ mod tests {
         );
 
         let node = document.lookup_internal_node("foo").unwrap();
+        let elt = node.borrow_element();
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
-        let clip_path = layout_clip_path(&session, &node, &mut acquired, &params)
-            .expect("find a clipPath node");
+        let clip_path =
+            layout_clip_path(&session, &elt, &mut acquired, &params).expect("find a clipPath node");
 
         assert_eq!(clip_path.clip_units, CoordUnits::ObjectBoundingBox);
         assert_eq!(
@@ -727,12 +729,13 @@ mod tests {
         );
 
         let node = document.lookup_internal_node("foo").unwrap();
+        let elt = node.borrow_element();
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
-        let clip_path = layout_clip_path(&session, &node, &mut acquired, &params)
-            .expect("find a clipPath node");
+        let clip_path =
+            layout_clip_path(&session, &elt, &mut acquired, &params).expect("find a clipPath node");
 
         assert_eq!(clip_path.paths.len(), 1);
 
