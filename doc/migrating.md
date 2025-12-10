@@ -12,7 +12,7 @@ cairo_t)`](method.Handle.render_cairo.html) and
 id)`](method.Handle.render_cairo_sub.html) — respectively, to
 render the whole document, and to render a single \"layer\" from it.
 Both functions assumed that the SVG document was to be rendered at its
-\"natural size\", or to the size overriden with
+\"natural size\", or to the size overridden with
 [method@Rsvg.Handle.set_size_callback]. Since the Cairo context can already
 have an affine transform applied to it, that transform can further
 change the size of the rendered image.
