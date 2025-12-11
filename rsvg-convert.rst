@@ -359,10 +359,10 @@ Then the PNG created by the command above will have these elements:
 
 - A blue square instead of a red one, because of the selector for the
   the ``recolorable`` class.  The ``fill: blue !important;``
-  declaration takes precendence over the ``fill="red"`` presentation
+  declaration takes precedence over the ``fill="red"`` presentation
   attribute.
 
-- Text in green, since its ``fill="red"`` gets overriden with `fill:
+- Text in green, since its ``fill="red"`` gets overridden with `fill:
   green !important`.
 
 
