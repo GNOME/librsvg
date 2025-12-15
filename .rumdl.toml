@@ -1,0 +1,17 @@
+# rumdl configuration file
+[global]
+respect_gitignore = true
+
+# False positives atm
+# doc/migrating.md:144:5: [MD057] Relative link 'method.Handle.render_layer.html' does not exist
+# doc/migrating.md:162:19: [MD034] Email address without angle brackets or link formatting: 'method@Rsvg.Handle.render' [*]
+# disable = [ "MD057", "MD034"]
+
+[MD013]
+# line-length = 100
+# Exclude code blocks from line length check
+code-blocks = false
+# Exclude tables from line length check
+tables = false
+# Enable automatic line wrapping (required for --fix)
+reflow = true

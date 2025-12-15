@@ -1,15 +1,16 @@
+---
 Title: Recommendations for Applications
+---
 
 # Recommendations for Applications
 
 Let's consider two common cases for rendering SVG documents:
 
-* Your application uses fixed-size assets, for example, "all icons at
-  16×16 pixels".
+* Your application uses fixed-size assets, for example, "all icons at 16×16
+  pixels".
 
-* Your application needs to accept arbitrarily-sized SVG documents, to
-  either render them at a fixed size, or to render them at a "natural"
-  size.
+* Your application needs to accept arbitrarily-sized SVG documents, to either
+  render them at a fixed size, or to render them at a "natural" size.
 
 In either case, librsvg assumes that for rendering you have already
 obtained a Cairo surface, and a Cairo context to draw on the surface.
@@ -58,8 +59,8 @@ if (!rsvg_handle_render_document (handle, cr, &viewport, &error))               
 
 2. Create an image surface of the size you want.
 
-3. Declare a viewport of that size.  If you want a non-zero `(x, y)`
-   offset you can set it right there.
+3. Declare a viewport of that size. If you want a non-zero `(x, y)` offset you
+   can set it right there.
 
 4. Render the document within that viewport.  Done!
 
@@ -202,16 +203,14 @@ effects in web browsers:
 That's right, no `width`, no `height`, no `viewBox`.  There is no easy
 way to figure out a suitable size for this.  You have two options:
 
-* Shrug your shoulders, and [method@Rsvg.Handle.render_document] with
-  a comfortable viewport size like in the last section.
+* Shrug your shoulders, and [method@Rsvg.Handle.render_document] with a
+  comfortable viewport size like in the last section.
 
-* Do a best-effort job of actually computing the geometries of all the
-  elements in the document.  You can use
-  [method@Rsvg.Handle.get_geometry_for_element] by passing `NULL` for
-  the target element's `id`; this will measure all the elements in the
-  document.  This is not expensive for typical SVGs, but it is not
-  "almost instantaneous" like just asking for intrinsic dimensions
-  would be.
+* Do a best-effort job of actually computing the geometries of all the elements
+  in the document. You can use [method@Rsvg.Handle.get_geometry_for_element] by
+  passing `NULL` for the target element's `id`; this will measure all the
+  elements in the document. This is not expensive for typical SVGs, but it is
+  not "almost instantaneous" like just asking for intrinsic dimensions would be.
 
 If this is starting to sound too complicated, please remember that
 **SVG documents are scalable**.  That's their whole reason for being!
