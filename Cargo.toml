@@ -66,6 +66,7 @@ locale_config = "0.3.0"                                   # not "*" as per the d
 lopdf = "0.38"
 markup5ever = "0.35.0"
 matches = "0.1"
+mutants = "0.0.3"
 nalgebra = "0.33.0"
 num-traits = "0.2"
 pango = "0.21"

@@ -853,6 +853,9 @@ impl ParseError {
 use crate::path_parser::ErrorKind::*;
 
 impl fmt::Display for ParseError {
+    // Skipped for mutation testing; this is just an error formatter.  These errors are just
+    // surfaced as log messages.
+    #[mutants::skip]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let description = match self.kind {
             UnexpectedToken(_t) => "unexpected token",
@@ -1101,6 +1104,13 @@ mod tests {
             " ^",
             &[],
             Some(ErrorKind::LexError(LexError::ParseFloatError)),
+        );
+
+        test_parser(
+            "M 10 ;",
+            "     ^",
+            &[],
+            Some(ErrorKind::LexError(LexError::UnexpectedByte(b';'))),
         );
     }
 

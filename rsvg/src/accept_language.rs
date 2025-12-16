@@ -74,6 +74,12 @@ enum AcceptLanguageError {
 impl error::Error for AcceptLanguageError {}
 
 impl fmt::Display for AcceptLanguageError {
+    // Skipped for mutation testing.  This is just an error formatter.  In the public API,
+    // `Language::AcceptLanguage(AcceptLanguage)` is constructible via
+    // `AcceptLanguage::parse()`, which returns `Result<Self, String>`.  These strings go
+    // there, but librsvg makes no promises about their contents.  Below, we do have tests
+    // for `AcceptLanguageError` being computed correctly.
+    #[mutants::skip]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::NoElements => write!(f, "no language tags in list"),
@@ -479,5 +485,15 @@ mod tests {
         assert_eq!(weight, 0.5);
 
         assert!(iter.next().is_none());
+    }
+
+    #[test]
+    fn matches() {
+        let accept_language = AcceptLanguage::parse_internal("es-MX, en; q=0.5").unwrap();
+
+        assert!(accept_language.any_matches(&LanguageTag::parse("es-MX").unwrap()));
+        assert!(accept_language.any_matches(&LanguageTag::parse("en").unwrap()));
+
+        assert!(!accept_language.any_matches(&LanguageTag::parse("fr").unwrap()));
     }
 }
