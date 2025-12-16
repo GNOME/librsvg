@@ -1220,3 +1220,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/filter-conv-target.svg",
     "tests/fixtures/reftests/filter-conv-target-ref.svg"
 );
+
+test_svg_reference!(
+    clip_path_simple,
+    "tests/fixtures/reftests/clip-path-simple.svg",
+    "tests/fixtures/reftests/clip-path-simple-ref.svg"
+);
