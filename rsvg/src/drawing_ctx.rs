@@ -597,7 +597,11 @@ impl DrawingCtx {
         Ok(())
     }
 
-    fn apply_clip_path(&mut self, clip_path: &ClipPath) -> Result<(), Box<InternalRenderingError>> {
+    fn apply_clip_path(
+        &mut self,
+        viewport: &Viewport,
+        clip_path: &ClipPath,
+    ) -> Result<(), Box<InternalRenderingError>> {
         // For every path in the ClipPath, we:
         //   - apply the path's transform
         //   - recursively clip the path against its own ClipPath
@@ -607,25 +611,30 @@ impl DrawingCtx {
         // intersections, so the following is not completely correct.  We'll unify clip paths
         // and masks at some point by doing everything with alpha masks.
 
+        let orig_transform = self.cr.matrix();
+
         let clip_path_transform = ValidTransform::try_from(clip_path.transform)?;
-        self.cr.transform(clip_path_transform.into());
+        let viewport_for_clip_path = viewport.with_composed_transform(clip_path_transform)?;
 
         if let Some(ref recursive_clip_path) = clip_path.clip_path {
-            self.apply_clip_path(recursive_clip_path)?;
+            self.apply_clip_path(&viewport_for_clip_path, recursive_clip_path)?;
         }
 
         for path_item in clip_path.paths.iter() {
             let item_transform = ValidTransform::try_from(path_item.transform)?;
-            self.cr.transform(item_transform.into());
+            let viewport_for_item =
+                viewport_for_clip_path.with_composed_transform(item_transform)?;
+            self.cr.set_matrix(viewport_for_item.transform.into());
 
             if let Some(ref recursive_clip_path) = path_item.clip_path {
-                self.apply_clip_path(recursive_clip_path)?;
+                self.apply_clip_path(&viewport_for_item, recursive_clip_path)?;
             }
 
             path_item.path.to_cairo_context(&self.cr)?;
         }
 
         self.cr.clip();
+        self.cr.set_matrix(orig_transform);
 
         Ok(())
     }
@@ -868,7 +877,7 @@ impl DrawingCtx {
 
                 if let Some(ref clip_path) = stacking_ctx.clip_path {
                     if clip_path.clip_units == CoordUnits::UserSpaceOnUse {
-                        self.apply_clip_path(clip_path)?;
+                        self.apply_clip_path(&viewport, clip_path)?;
                     }
                 }
 
@@ -961,7 +970,7 @@ impl DrawingCtx {
                     // Clip
                     if let Some(ref clip_path) = stacking_ctx.clip_path {
                         if clip_path.clip_units == CoordUnits::ObjectBoundingBox {
-                            self.apply_clip_path(clip_path)?;
+                            self.apply_clip_path(&viewport, clip_path)?;
                         }
                     }
 

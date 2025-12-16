@@ -1226,3 +1226,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/clip-path-simple.svg",
     "tests/fixtures/reftests/clip-path-simple-ref.svg"
 );
+
+test_svg_reference!(
+    clip_path_transformed_elt,
+    "tests/fixtures/reftests/clip-path-transformed-elt.svg",
+    "tests/fixtures/reftests/clip-path-transformed-elt-ref.svg"
+);
