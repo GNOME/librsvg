@@ -347,6 +347,15 @@ fn clip_path_item_from_node(
     let data = node.borrow_element_data();
     let values = elt.get_computed_values();
 
+    if !values.is_displayed() || !values.is_visible() {
+        // https://www.w3.org/TR/css-masking-1/#ClipPathElement
+        //
+        // "If a child element [of the clipPath element] is made invisible by display or
+        // visibility it does not contribute to the clipping path."
+
+        return None;
+    }
+
     let path = match *data {
         ElementData::Path(ref e) => e.make_path(params, values).to_cairo_path(false),
         ElementData::Polygon(ref e) => e.make_path(params, values).to_cairo_path(false),
@@ -747,5 +756,33 @@ mod tests {
         } else {
             panic!("clip2 not found");
         }
+    }
+
+    #[test]
+    fn clip_path_does_not_include_invisible_children() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="clip1">
+      <rect x="1" y="2" width="30" height="40" visibility="hidden"/>
+      <rect x="2" y="3" width="40" height="50" display="none"/>
+    </clipPath>
+  </defs>
+  <rect id="foo" clip-path="url(#clip1)"/>
+</svg>
+"#,
+        );
+
+        let node = document.lookup_internal_node("foo").unwrap();
+        let elt = node.borrow_element();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
+        let clip_path =
+            layout_clip_path(&session, &elt, &mut acquired, &params).expect("find a clipPath node");
+
+        assert_eq!(clip_path.paths.len(), 0);
     }
 }
