@@ -684,7 +684,7 @@ mod tests {
 <svg xmlns="http://www.w3.org/2000/svg">
   <defs>
     <clipPath id="clip1" clipPathUnits="objectBoundingBox" transform="matrix(1.0 2.0 3.0 4.0 5.0 6.0)">
-      <rect x="5" y="5" width="10" height="20" transform="matrix(2.0 3.0 4.0 5.0 6.0 7.0)"/>
+      <rect x="5" y="5" width="10" height="20" transform="matrix(2.0 3.0 4.0 5.0 6.0 7.0)" clip-rule="evenodd"/>
       <rect x="1" y="2" width="30" height="40" clip-path="url(#clip2)"/>
     </clipPath>
     <clipPath id="clip2">
@@ -715,7 +715,10 @@ mod tests {
             clip_path.paths[0].transform,
             Transform::new_unchecked(2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
         );
+        assert_eq!(clip_path.paths[0].clip_rule, ClipRule::EvenOdd);
         assert!(clip_path.paths[0].clip_path.is_none());
+
+        assert_eq!(clip_path.paths[1].clip_rule, ClipRule::NonZero);
 
         if let Some(ref sub_clip_path) = clip_path.paths[1].clip_path {
             assert_eq!(sub_clip_path.paths.len(), 1);
