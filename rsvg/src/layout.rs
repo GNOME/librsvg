@@ -82,6 +82,7 @@ pub struct ClipPath {
 pub struct ClipPathItem {
     pub transform: Transform,
     pub path: CairoPath,
+    pub clip_rule: ClipRule,
     pub clip_path: Option<Box<ClipPath>>,
 }
 
@@ -372,6 +373,7 @@ fn clip_path_item_from_node(
     Some(ClipPathItem {
         transform: values.transform(),
         path,
+        clip_rule: values.clip_rule(),
         clip_path: layout_clip_path(session, &elt, acquired_nodes, params).map(Box::new),
     })
 }

@@ -630,6 +630,8 @@ impl DrawingCtx {
                 self.apply_clip_path(&viewport_for_item, recursive_clip_path)?;
             }
 
+            self.cr
+                .set_fill_rule(cairo::FillRule::from(path_item.clip_rule));
             path_item.path.to_cairo_context(&self.cr)?;
         }
 
