@@ -7,7 +7,7 @@ minimum version is listed here; you may use a newer version instead.
 **Compilers and build tools:**
 
 * a C compiler
-* `rust <https://www.rust-lang.org/>`_ 1.85.1 or later
+* `rust <https://www.rust-lang.org/>`_ 1.92.0 or later
 * `cargo <https://www.rust-lang.org/>`_
 * ``cargo-cbuild`` from `cargo-c <https://github.com/lu-zero/cargo-c>`_
 * `meson <https://mesonbuild.com/>`_
