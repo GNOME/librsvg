@@ -597,6 +597,11 @@ impl DrawingCtx {
         Ok(())
     }
 
+    /// Sets up the `self.cr` with a clipping path.
+    ///
+    /// This composes all the clipping paths in a `clipPath` element and eventually calls
+    /// `self.cr.clip()`.  Note that this is not enough to represent SVG clip paths, which
+    /// can be added together; Cairo can only shrink clip paths, not take their union.
     fn apply_clip_path(
         &mut self,
         viewport: &Viewport,
