@@ -801,6 +801,106 @@ impl Text {
         );
         chunks
     }
+
+    fn layout_text_spans(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        font_options: FontOptions,
+        session: &Session,
+    ) -> layout::Text {
+        let values = cascaded.get();
+        let params = NormalizeParams::new(values, viewport);
+
+        let layout_context = LayoutContext {
+            writing_mode: values.writing_mode(),
+            font_options,
+            viewport: *viewport,
+            session: session.clone(),
+        };
+
+        let mut x = self.x.to_user(&params);
+        let mut y = self.y.to_user(&params);
+
+        let chunks = self.make_chunks(node, acquired_nodes, cascaded, &layout_context, x, y);
+
+        let mut measured_chunks = Vec::new();
+        for chunk in &chunks {
+            measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk));
+        }
+
+        let mut positioned_chunks = Vec::new();
+        for chunk in &measured_chunks {
+            let chunk_x = chunk.x.unwrap_or(x);
+            let chunk_y = chunk.y.unwrap_or(y);
+
+            let positioned =
+                PositionedChunk::from_measured(&layout_context, chunk, chunk_x, chunk_y);
+
+            x = positioned.next_chunk_x;
+            y = positioned.next_chunk_y;
+
+            positioned_chunks.push(positioned);
+        }
+
+        let mut layout_spans = Vec::new();
+        for chunk in &positioned_chunks {
+            for span in &chunk.spans {
+                layout_spans.push(span.layout(&layout_context, acquired_nodes));
+            }
+        }
+
+        let text_extents: Option<Rect> = layout_spans
+            .iter()
+            .map(|span| span.extents)
+            .reduce(|a, b| match (a, b) {
+                (None, None) => None,
+                (None, Some(b)) => Some(b),
+                (Some(a), None) => Some(a),
+                (Some(a), Some(b)) => Some(a.union(&b)),
+            })
+            .flatten();
+
+        let mut text_spans = Vec::new();
+        for span in layout_spans {
+            let normalize_values = NormalizeValues::new(&span.values);
+
+            let stroke_paint = span.stroke_paint.to_user_space(
+                &text_extents,
+                &layout_context.viewport,
+                &normalize_values,
+            );
+            let fill_paint = span.fill_paint.to_user_space(
+                &text_extents,
+                &layout_context.viewport,
+                &normalize_values,
+            );
+
+            let text_span = TextSpan {
+                layout: span.layout,
+                gravity: span.gravity,
+                extents: span.extents,
+                is_visible: span.is_visible,
+                x: span.x,
+                y: span.y,
+                paint_order: span.paint_order,
+                stroke: span.stroke,
+                stroke_paint,
+                fill_paint,
+                text_rendering: span.text_rendering,
+                link_target: span.link_target,
+            };
+
+            text_spans.push(text_span);
+        }
+
+        layout::Text {
+            spans: text_spans,
+            extents: text_extents,
+        }
+    }
 }
 
 // Parse an (optionally) comma-separated list and just return the first element.
@@ -856,7 +956,6 @@ impl ElementTrait for Text {
         _clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
-        let params = NormalizeParams::new(values, viewport);
 
         let elt = node.borrow_element();
 
@@ -872,94 +971,15 @@ impl ElementTrait for Text {
             viewport,
         );
 
-        let layout_text = {
-            let layout_context = LayoutContext {
-                writing_mode: values.writing_mode(),
-                font_options: draw_ctx.get_font_options(),
-                viewport: *viewport,
-                session: session.clone(),
-            };
-
-            let mut x = self.x.to_user(&params);
-            let mut y = self.y.to_user(&params);
-
-            let chunks = self.make_chunks(node, acquired_nodes, cascaded, &layout_context, x, y);
-
-            let mut measured_chunks = Vec::new();
-            for chunk in &chunks {
-                measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk));
-            }
-
-            let mut positioned_chunks = Vec::new();
-            for chunk in &measured_chunks {
-                let chunk_x = chunk.x.unwrap_or(x);
-                let chunk_y = chunk.y.unwrap_or(y);
-
-                let positioned =
-                    PositionedChunk::from_measured(&layout_context, chunk, chunk_x, chunk_y);
-
-                x = positioned.next_chunk_x;
-                y = positioned.next_chunk_y;
-
-                positioned_chunks.push(positioned);
-            }
-
-            let mut layout_spans = Vec::new();
-            for chunk in &positioned_chunks {
-                for span in &chunk.spans {
-                    layout_spans.push(span.layout(&layout_context, acquired_nodes));
-                }
-            }
-
-            let text_extents: Option<Rect> = layout_spans
-                .iter()
-                .map(|span| span.extents)
-                .reduce(|a, b| match (a, b) {
-                    (None, None) => None,
-                    (None, Some(b)) => Some(b),
-                    (Some(a), None) => Some(a),
-                    (Some(a), Some(b)) => Some(a.union(&b)),
-                })
-                .flatten();
-
-            let mut text_spans = Vec::new();
-            for span in layout_spans {
-                let normalize_values = NormalizeValues::new(&span.values);
-
-                let stroke_paint = span.stroke_paint.to_user_space(
-                    &text_extents,
-                    &layout_context.viewport,
-                    &normalize_values,
-                );
-                let fill_paint = span.fill_paint.to_user_space(
-                    &text_extents,
-                    &layout_context.viewport,
-                    &normalize_values,
-                );
-
-                let text_span = TextSpan {
-                    layout: span.layout,
-                    gravity: span.gravity,
-                    extents: span.extents,
-                    is_visible: span.is_visible,
-                    x: span.x,
-                    y: span.y,
-                    paint_order: span.paint_order,
-                    stroke: span.stroke,
-                    stroke_paint,
-                    fill_paint,
-                    text_rendering: span.text_rendering,
-                    link_target: span.link_target,
-                };
-
-                text_spans.push(text_span);
-            }
-
-            layout::Text {
-                spans: text_spans,
-                extents: text_extents,
-            }
-        };
+        let font_options = draw_ctx.get_font_options();
+        let layout_text = self.layout_text_spans(
+            node,
+            acquired_nodes,
+            cascaded,
+            viewport,
+            font_options,
+            &session,
+        );
 
         Ok(Some(Layer {
             kind: LayerKind::Text(Box::new(layout_text)),
