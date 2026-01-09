@@ -311,6 +311,7 @@ fn layout_clip_path(
     source_element: &Element,
     acquired_nodes: &mut AcquiredNodes<'_>,
     params: &NormalizeParams,
+    viewport: &Viewport,
 ) -> Option<ClipPath> {
     if let Some(acquired) = acquire_clip_path_and_log_error(session, source_element, acquired_nodes)
     {
@@ -323,9 +324,11 @@ fn layout_clip_path(
         let clip_units = clip_path_data.get_units();
         let transform = values.transform();
 
-        let paths = layout_paths_for_clip_path(session, clip_path_node, acquired_nodes, params);
+        let paths =
+            layout_paths_for_clip_path(session, clip_path_node, acquired_nodes, params, viewport);
         let recursive_clip_path =
-            layout_clip_path(session, &clip_path_elt, acquired_nodes, params).map(Box::new);
+            layout_clip_path(session, &clip_path_elt, acquired_nodes, params, viewport)
+                .map(Box::new);
 
         Some(ClipPath {
             clip_units,
@@ -343,6 +346,7 @@ fn clip_path_item_from_node(
     node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     params: &NormalizeParams,
+    viewport: &Viewport,
 ) -> Option<ClipPathItem> {
     let elt = node.borrow_element();
     let data = node.borrow_element_data();
@@ -374,7 +378,7 @@ fn clip_path_item_from_node(
         transform: values.transform(),
         path,
         clip_rule: values.clip_rule(),
-        clip_path: layout_clip_path(session, &elt, acquired_nodes, params).map(Box::new),
+        clip_path: layout_clip_path(session, &elt, acquired_nodes, params, viewport).map(Box::new),
     })
 }
 
@@ -383,11 +387,14 @@ fn layout_paths_for_clip_path(
     clip_path_node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     params: &NormalizeParams,
+    viewport: &Viewport,
 ) -> Vec<ClipPathItem> {
     clip_path_node
         .children()
         .filter(|c| c.is_element())
-        .filter_map(|child| clip_path_item_from_node(session, &child, acquired_nodes, params))
+        .filter_map(|child| {
+            clip_path_item_from_node(session, &child, acquired_nodes, params, viewport)
+        })
         .collect()
 }
 
@@ -462,7 +469,7 @@ impl StackingContext {
         // These are the params "outside" the stacking context, and they are used to normalize
         // lengths inside a clipPath's children (e.g. <clipPath> <rect x="10%"/> </clipPath>).
         let params = NormalizeParams::new(values, viewport);
-        let clip_path = layout_clip_path(&session, element, acquired_nodes, &params);
+        let clip_path = layout_clip_path(&session, element, acquired_nodes, &params, viewport);
 
         let (clip_in_user_space, clip_in_object_space) = resolve_clip_path(values, acquired_nodes);
 
@@ -641,7 +648,8 @@ mod tests {
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
-        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params);
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
+        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params, &viewport);
 
         assert!(clip_path.is_none());
     }
@@ -710,8 +718,9 @@ mod tests {
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
-        let clip_path =
-            layout_clip_path(&session, &elt, &mut acquired, &params).expect("find a clipPath node");
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
+        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params, &viewport)
+            .expect("find a clipPath node");
 
         assert_eq!(clip_path.clip_units, CoordUnits::ObjectBoundingBox);
         assert_eq!(
@@ -759,8 +768,9 @@ mod tests {
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
-        let clip_path =
-            layout_clip_path(&session, &elt, &mut acquired, &params).expect("find a clipPath node");
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
+        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params, &viewport)
+            .expect("find a clipPath node");
 
         assert_eq!(clip_path.paths.len(), 1);
 
@@ -793,8 +803,9 @@ mod tests {
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
-        let clip_path =
-            layout_clip_path(&session, &elt, &mut acquired, &params).expect("find a clipPath node");
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
+        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params, &viewport)
+            .expect("find a clipPath node");
 
         assert_eq!(clip_path.paths.len(), 0);
     }
