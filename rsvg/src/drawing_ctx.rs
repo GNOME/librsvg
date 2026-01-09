@@ -720,7 +720,7 @@ impl DrawingCtx {
             let mut mask_draw_ctx = self.nested(mask_cr);
 
             let stacking_ctx = Box::new(StackingContext::new(
-                self.session(),
+                self,
                 acquired_nodes,
                 &mask_element,
                 Transform::identity(),
@@ -1332,7 +1332,7 @@ impl DrawingCtx {
             let elt = pattern_node.borrow_element();
 
             let stacking_ctx = Box::new(StackingContext::new(
-                self.session(),
+                self,
                 acquired_nodes,
                 &elt,
                 Transform::identity(),
@@ -2019,7 +2019,7 @@ impl DrawingCtx {
             let child_values = elt.get_computed_values();
 
             let stacking_ctx = Box::new(StackingContext::new(
-                self.session(),
+                self,
                 acquired_nodes,
                 &use_element,
                 Transform::identity(),
@@ -2060,7 +2060,7 @@ impl DrawingCtx {
             // otherwise the referenced node is not a <symbol>; process it generically
 
             let stacking_ctx = Box::new(StackingContext::new(
-                self.session(),
+                self,
                 acquired_nodes,
                 &use_element,
                 Transform::new_translate(use_rect.x0, use_rect.y0),

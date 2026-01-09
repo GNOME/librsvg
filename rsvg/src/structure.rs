@@ -38,7 +38,7 @@ impl ElementTrait for Group {
 
         let elt = node.borrow_element();
         let stacking_ctx = Box::new(StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
@@ -88,7 +88,7 @@ impl ElementTrait for Group {
         }
 
         self.layout_with_children(
-            draw_ctx.session(),
+            draw_ctx,
             node,
             acquired_nodes,
             cascaded,
@@ -116,7 +116,7 @@ fn extents_of_transformed_children(layers: &[Layer]) -> Option<Rect> {
 impl Group {
     fn layout_with_children(
         &self,
-        session: &Session,
+        draw_ctx: &DrawingCtx,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
@@ -135,7 +135,7 @@ impl Group {
 
         let elt = node.borrow_element();
         let stacking_ctx = StackingContext::new(
-            session,
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
@@ -184,7 +184,7 @@ impl ElementTrait for Switch {
 
         if let Some(child) = child_that_matches {
             let stacking_ctx = Box::new(StackingContext::new(
-                draw_ctx.session(),
+                draw_ctx,
                 acquired_nodes,
                 &switch_elt,
                 values.transform(),
@@ -414,7 +414,7 @@ impl ElementTrait for Svg {
 
         let elt = node.borrow_element();
         let stacking_ctx = Box::new(StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
@@ -478,7 +478,7 @@ impl ElementTrait for Svg {
 
         let elt = node.borrow_element();
         let stacking_ctx = StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
@@ -777,7 +777,7 @@ impl ElementTrait for Link {
         };
 
         let stacking_ctx = Box::new(StackingContext::new_with_link(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),

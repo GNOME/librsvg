@@ -162,7 +162,7 @@ impl Image {
 
         let elt = node.borrow_element();
         let stacking_ctx = StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
@@ -253,7 +253,7 @@ impl Image {
 
         let elt = node.borrow_element();
         let stacking_ctx = StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),

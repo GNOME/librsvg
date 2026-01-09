@@ -955,14 +955,14 @@ impl ElementTrait for Text {
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
+        let session = draw_ctx.session();
+
         let values = cascaded.get();
 
         let elt = node.borrow_element();
 
-        let session = draw_ctx.session().clone();
-
         let stacking_ctx = StackingContext::new(
-            &session,
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
@@ -978,7 +978,7 @@ impl ElementTrait for Text {
             cascaded,
             viewport,
             font_options,
-            &session,
+            session,
         );
 
         Ok(Some(Layer {

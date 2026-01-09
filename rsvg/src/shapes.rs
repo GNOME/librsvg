@@ -55,8 +55,10 @@ fn draw_basic_shape(
     acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
     viewport: &Viewport,
-    session: &Session,
+    draw_ctx: &DrawingCtx,
 ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
+    let session = draw_ctx.session();
+
     let values = cascaded.get();
     let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
@@ -149,7 +151,7 @@ fn draw_basic_shape(
 
     let elt = node.borrow_element();
     let stacking_ctx = StackingContext::new(
-        session,
+        draw_ctx,
         acquired_nodes,
         &elt,
         values.transform(),
@@ -175,14 +177,7 @@ macro_rules! impl_draw {
             draw_ctx: &mut DrawingCtx,
             _clipping: bool,
         ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
-            draw_basic_shape(
-                self,
-                node,
-                acquired_nodes,
-                cascaded,
-                viewport,
-                &draw_ctx.session().clone(),
-            )
+            draw_basic_shape(self, node, acquired_nodes, cascaded, viewport, draw_ctx)
         }
 
         fn draw(

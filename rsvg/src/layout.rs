@@ -12,7 +12,7 @@ use crate::color::Color;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNode, AcquiredNodes};
-use crate::drawing_ctx::Viewport;
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{Element, ElementData};
 use crate::error::AcquireError;
 use crate::filter::FilterValueList;
@@ -422,7 +422,7 @@ fn resolve_clip_path(
 
 impl StackingContext {
     pub fn new(
-        session: &Session,
+        draw_ctx: &DrawingCtx,
         acquired_nodes: &mut AcquiredNodes<'_>,
         element: &Element,
         transform: Transform,
@@ -430,6 +430,14 @@ impl StackingContext {
         values: &ComputedValues,
         viewport: &Viewport,
     ) -> StackingContext {
+        // FIXME: practically the only reason we need the DrawingCtx as an argument is so that
+        // the call to layout_clip_path() below can extract the FontOptions from the DrawingCtx, and that
+        // is only so that if a referenced clipPath element has a <text> child, then we'll be able
+        // to layout the text element to use as a clipping path.  Could we carry the FontOptions
+        // somewhere else...?
+
+        let session = draw_ctx.session().clone();
+
         let element_name = format!("{element}");
 
         let is_visible = values.is_visible();
@@ -447,7 +455,7 @@ impl StackingContext {
 
             _ => {
                 opacity = values.opacity();
-                filter = get_filter(values, acquired_nodes, session);
+                filter = get_filter(values, acquired_nodes, &session);
             }
         }
 
@@ -508,7 +516,7 @@ impl StackingContext {
     }
 
     pub fn new_with_link(
-        session: &Session,
+        draw_ctx: &DrawingCtx,
         acquired_nodes: &mut AcquiredNodes<'_>,
         element: &Element,
         transform: Transform,
@@ -519,7 +527,7 @@ impl StackingContext {
         // Note that the clip_rect=Some(...) argument is only used by the markers code,
         // hence it is None here.  Something to refactor later.
         let mut ctx = Self::new(
-            session,
+            draw_ctx,
             acquired_nodes,
             element,
             transform,
