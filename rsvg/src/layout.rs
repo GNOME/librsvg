@@ -12,9 +12,9 @@ use crate::color::Color;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNode, AcquiredNodes};
-use crate::drawing_ctx::{DrawingCtx, Viewport};
+use crate::drawing_ctx::{pango_layout_to_cairo_path, DrawingCtx, FontOptions, Viewport};
 use crate::element::{Element, ElementData};
-use crate::error::AcquireError;
+use crate::error::{AcquireError, InternalRenderingError};
 use crate::filter::FilterValueList;
 use crate::length::*;
 use crate::node::*;
@@ -309,6 +309,7 @@ fn acquire_clip_path_and_log_error(
 fn layout_clip_path(
     session: &Session,
     source_element: &Element,
+    font_options: &FontOptions,
     acquired_nodes: &mut AcquiredNodes<'_>,
     params: &NormalizeParams,
     viewport: &Viewport,
@@ -324,11 +325,23 @@ fn layout_clip_path(
         let clip_units = clip_path_data.get_units();
         let transform = values.transform();
 
-        let paths =
-            layout_paths_for_clip_path(session, clip_path_node, acquired_nodes, params, viewport);
-        let recursive_clip_path =
-            layout_clip_path(session, &clip_path_elt, acquired_nodes, params, viewport)
-                .map(Box::new);
+        let paths = layout_paths_for_clip_path(
+            session,
+            clip_path_node,
+            font_options,
+            acquired_nodes,
+            params,
+            viewport,
+        );
+        let recursive_clip_path = layout_clip_path(
+            session,
+            &clip_path_elt,
+            font_options,
+            acquired_nodes,
+            params,
+            viewport,
+        )
+        .map(Box::new);
 
         Some(ClipPath {
             clip_units,
@@ -341,9 +354,43 @@ fn layout_clip_path(
     }
 }
 
+// FIXME: this will need to use Text2 when we implement it
+fn path_from_text(
+    text: &crate::text::Text,
+    node: &Node,
+    session: &Session,
+    font_options: &FontOptions,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    viewport: &Viewport,
+) -> Result<CairoPath, Box<InternalRenderingError>> {
+    let cascaded = CascadedValues::new_from_node(node);
+
+    let text_layout = text.layout_text_spans(
+        node,
+        acquired_nodes,
+        &cascaded,
+        viewport,
+        font_options.clone(),
+        session,
+    );
+
+    let mut result = CairoPath::empty();
+
+    for span in &text_layout.spans {
+        let path = pango_layout_to_cairo_path(span.x, span.y, &span.layout, span.gravity)?;
+
+        // FIXME: does the text-rendering property (for text antialiasing) apply to clipping paths?
+
+        result.append(path);
+    }
+
+    Ok(result)
+}
+
 fn clip_path_item_from_node(
     session: &Session,
     node: &Node,
+    font_options: &FontOptions,
     acquired_nodes: &mut AcquiredNodes<'_>,
     params: &NormalizeParams,
     viewport: &Viewport,
@@ -369,8 +416,10 @@ fn clip_path_item_from_node(
         ElementData::Rect(ref e) => e.make_path(params, values).to_cairo_path(false),
         ElementData::Circle(ref e) => e.make_path(params, values).to_cairo_path(false),
         ElementData::Ellipse(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Text(ref e) => return None, // FIXME
-        ElementData::Use(ref e) => return None,  // FIXME
+        ElementData::Text(ref e) => {
+            path_from_text(e, node, session, font_options, acquired_nodes, viewport).ok()?
+        }
+        ElementData::Use(ref e) => return None, // FIXME
         _ => return None,
     };
 
@@ -378,13 +427,22 @@ fn clip_path_item_from_node(
         transform: values.transform(),
         path,
         clip_rule: values.clip_rule(),
-        clip_path: layout_clip_path(session, &elt, acquired_nodes, params, viewport).map(Box::new),
+        clip_path: layout_clip_path(
+            session,
+            &elt,
+            font_options,
+            acquired_nodes,
+            params,
+            viewport,
+        )
+        .map(Box::new),
     })
 }
 
 fn layout_paths_for_clip_path(
     session: &Session,
     clip_path_node: &Node,
+    font_options: &FontOptions,
     acquired_nodes: &mut AcquiredNodes<'_>,
     params: &NormalizeParams,
     viewport: &Viewport,
@@ -393,7 +451,14 @@ fn layout_paths_for_clip_path(
         .children()
         .filter(|c| c.is_element())
         .filter_map(|child| {
-            clip_path_item_from_node(session, &child, acquired_nodes, params, viewport)
+            clip_path_item_from_node(
+                session,
+                &child,
+                font_options,
+                acquired_nodes,
+                params,
+                viewport,
+            )
         })
         .collect()
 }
@@ -444,6 +509,7 @@ impl StackingContext {
         // somewhere else...?
 
         let session = draw_ctx.session().clone();
+        let font_options = draw_ctx.get_font_options();
 
         let element_name = format!("{element}");
 
@@ -469,7 +535,14 @@ impl StackingContext {
         // These are the params "outside" the stacking context, and they are used to normalize
         // lengths inside a clipPath's children (e.g. <clipPath> <rect x="10%"/> </clipPath>).
         let params = NormalizeParams::new(values, viewport);
-        let clip_path = layout_clip_path(&session, element, acquired_nodes, &params, viewport);
+        let clip_path = layout_clip_path(
+            &session,
+            element,
+            &font_options,
+            acquired_nodes,
+            &params,
+            viewport,
+        );
 
         let (clip_in_user_space, clip_in_object_space) = resolve_clip_path(values, acquired_nodes);
 
@@ -647,9 +720,17 @@ mod tests {
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
+        let font_options = FontOptions::new(true);
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
         let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
-        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params, &viewport);
+        let clip_path = layout_clip_path(
+            &session,
+            &elt,
+            &font_options,
+            &mut acquired,
+            &params,
+            &viewport,
+        );
 
         assert!(clip_path.is_none());
     }
@@ -717,10 +798,18 @@ mod tests {
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
+        let font_options = FontOptions::new(true);
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
         let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
-        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params, &viewport)
-            .expect("find a clipPath node");
+        let clip_path = layout_clip_path(
+            &session,
+            &elt,
+            &font_options,
+            &mut acquired,
+            &params,
+            &viewport,
+        )
+        .expect("find a clipPath node");
 
         assert_eq!(clip_path.clip_units, CoordUnits::ObjectBoundingBox);
         assert_eq!(
@@ -767,10 +856,18 @@ mod tests {
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
+        let font_options = FontOptions::new(true);
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
         let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
-        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params, &viewport)
-            .expect("find a clipPath node");
+        let clip_path = layout_clip_path(
+            &session,
+            &elt,
+            &font_options,
+            &mut acquired,
+            &params,
+            &viewport,
+        )
+        .expect("find a clipPath node");
 
         assert_eq!(clip_path.paths.len(), 1);
 
@@ -802,10 +899,18 @@ mod tests {
 
         let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
         let session = Session::default();
+        let font_options = FontOptions::new(true);
         let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
         let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
-        let clip_path = layout_clip_path(&session, &elt, &mut acquired, &params, &viewport)
-            .expect("find a clipPath node");
+        let clip_path = layout_clip_path(
+            &session,
+            &elt,
+            &font_options,
+            &mut acquired,
+            &params,
+            &viewport,
+        )
+        .expect("find a clipPath node");
 
         assert_eq!(clip_path.paths.len(), 0);
     }

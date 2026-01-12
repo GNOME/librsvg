@@ -87,6 +87,10 @@ fn coordinates_are_unsuitable(x: f64, y: f64, transform: &Transform) -> bool {
 pub struct CairoPath(Vec<PathSegment>);
 
 impl CairoPath {
+    pub fn empty() -> CairoPath {
+        CairoPath(Vec::new())
+    }
+
     pub fn to_cairo_context(&self, cr: &cairo::Context) -> Result<(), Box<InternalRenderingError>> {
         for segment in &self.0 {
             match *segment {
@@ -146,6 +150,10 @@ impl CairoPath {
         self.0
             .iter()
             .any(|segment| segment_has_unsuitable_coordinates(segment, transform))
+    }
+
+    pub fn append(&mut self, mut other: CairoPath) {
+        self.0.append(&mut other.0)
     }
 }
 

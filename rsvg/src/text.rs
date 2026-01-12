@@ -802,7 +802,7 @@ impl Text {
         chunks
     }
 
-    fn layout_text_spans(
+    pub fn layout_text_spans(
         &self,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,

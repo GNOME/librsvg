@@ -49,8 +49,23 @@ use crate::{borrow_element_as, is_element_of_type};
 /// Opaque font options for a DrawingCtx.
 ///
 /// This is used for DrawingCtx::create_pango_context.
+#[derive(Clone)]
 pub struct FontOptions {
     options: cairo::FontOptions,
+}
+
+impl FontOptions {
+    pub fn new(testing: bool) -> FontOptions {
+        let mut options = cairo::FontOptions::new().unwrap();
+        if testing {
+            options.set_antialias(cairo::Antialias::Gray);
+        }
+
+        options.set_hint_style(cairo::HintStyle::None);
+        options.set_hint_metrics(cairo::HintMetrics::Off);
+
+        FontOptions { options }
+    }
 }
 
 /// Set path on the cairo context, or clear it.
@@ -2105,15 +2120,7 @@ impl DrawingCtx {
     ///
     /// You can use the font options later with create_pango_context().
     pub fn get_font_options(&self) -> FontOptions {
-        let mut options = cairo::FontOptions::new().unwrap();
-        if self.config.testing {
-            options.set_antialias(cairo::Antialias::Gray);
-        }
-
-        options.set_hint_style(cairo::HintStyle::None);
-        options.set_hint_metrics(cairo::HintMetrics::Off);
-
-        FontOptions { options }
+        FontOptions::new(self.config.testing)
     }
 }
 
@@ -2241,7 +2248,7 @@ fn pango_layout_to_cairo(
 }
 
 /// Converts a Pango layout to a CairoPath starting at (x, y).
-fn pango_layout_to_cairo_path(
+pub fn pango_layout_to_cairo_path(
     x: f64,
     y: f64,
     layout: &pango::Layout,
