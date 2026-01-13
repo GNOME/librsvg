@@ -8,9 +8,9 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-cairo-rs = { version = "0.21" }
-glib = "0.21"
-gio = "0.21"
+cairo-rs.workspace = true
+glib.workspace = true
+gio.workspace = true
 libfuzzer-sys = "0.4"
 librsvg = { path = "../rsvg" }
 

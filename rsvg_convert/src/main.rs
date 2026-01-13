@@ -5,13 +5,14 @@ use gio::prelude::*;
 use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
 
 #[cfg(unix)]
-use gio::{UnixInputStream, UnixOutputStream};
+use gio_unix::{InputStream as UnixInputStream, OutputStream as UnixOutputStream};
 
 use glib::translate::*;
 
 #[cfg(windows)]
 mod windows_imports {
-    pub use gio::{Win32InputStream, WriteOutputStream};
+    pub use gio::WriteOutputStream;
+    pub use gio_win32::InputStream as Win32InputStream;
 }
 #[cfg(windows)]
 use self::windows_imports::*;

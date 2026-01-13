@@ -149,8 +149,10 @@ unsafe impl InstanceStruct for RsvgHandle {
 /// handle is loaded (e.g. the SVG document is finished parsing), we make sure that no
 /// further loading operations can be done.
 #[allow(clippy::large_enum_variant)]
+#[derive(Default)]
 enum LoadState {
     /// Just created the CHandle; nothing loaded yet.
+    #[default]
     Start,
 
     /// Being loaded using the legacy write()/close() API.
@@ -182,12 +184,6 @@ impl LoadState {
                 Err(e)
             }
         }
-    }
-}
-
-impl Default for LoadState {
-    fn default() -> Self {
-        Self::Start
     }
 }
 

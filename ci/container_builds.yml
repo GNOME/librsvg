@@ -8,9 +8,9 @@ include:
 # IMPORTANT: See
 # https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
 variables:
-  BASE_TAG: "2025-10-29.0-main"
-  RUST_STABLE: "1.89.0"
-  RUST_MINIMUM: "1.85.1"
+  BASE_TAG: "2026-01-07.0-main"
+  RUST_STABLE: "1.92.0"
+  RUST_MINIMUM: "1.92.0"
   RUST_NIGHTLY: "nightly"
   RUSTUP_VERSION: "1.28.0"
   GNOMEOS_STABLE: "core-48"
