@@ -12,7 +12,7 @@ use crate::color::Color;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNode, AcquiredNodes};
-use crate::drawing_ctx::{pango_layout_to_cairo_path, DrawingCtx, FontOptions, Viewport};
+use crate::drawing_ctx::{DrawingCtx, FontOptions, Viewport, pango_layout_to_cairo_path};
 use crate::element::{Element, ElementData};
 use crate::error::{AcquireError, InternalRenderingError};
 use crate::filter::FilterValueList;

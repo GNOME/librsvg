@@ -989,27 +989,32 @@ impl DrawingCtx {
                         .set_matrix(ValidTransform::try_from(affines.compositing)?.into());
                     self.cr.set_source_surface(&source_surface, 0.0, 0.0)?;
 
-                    // Clip
-                    if let Some(ref clip_path) = stacking_ctx.clip_path {
-                        if clip_path.clip_units == CoordUnits::ObjectBoundingBox {
-                            self.apply_clip_path(&viewport, clip_path)?;
-                        }
-                    }
-
+                    // Clip in object space
                     /*
-                        let transform_for_clip =
-                            ValidTransform::try_from(affines.outside_temporary_surface)?;
+                        if let Some(ref clip_path) = stacking_ctx.clip_path {
+                            if clip_path.clip_units == CoordUnits::ObjectBoundingBox {
+                                let transform_for_clip =
+                                    ValidTransform::try_from(affines.outside_temporary_surface)?;
 
-                        let viewport_for_clip = viewport.with_explicit_transform(transform_for_clip);
-                        self.cr.set_matrix(transform_for_clip.into());
+                                let viewport_for_clip = viewport.with_explicit_transform(transform_for_clip);
 
-                        self.clip_to_node(
-                            &stacking_ctx.clip_in_object_space,
-                            acquired_nodes,
-                            &viewport_for_clip,
-                            &bbox,
-                    )?;
+                                self.apply_clip_path(&viewport_for_clip, clip_path)?;
+                            }
+                    }
                         */
+
+                    let transform_for_clip =
+                        ValidTransform::try_from(affines.outside_temporary_surface)?;
+
+                    let viewport_for_clip = viewport.with_explicit_transform(transform_for_clip);
+                    self.cr.set_matrix(transform_for_clip.into());
+
+                    self.clip_to_node(
+                        &stacking_ctx.clip_in_object_space,
+                        acquired_nodes,
+                        &viewport_for_clip,
+                        &bbox,
+                    )?;
 
                     // Mask
 
