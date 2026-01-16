@@ -4,7 +4,7 @@
 import re
 import sys
 
-PLACES_TO_CHECK = [
+PLACES_WITH_RUST_VERSION = [
     ['meson.build',                      r"msrv = '(.*)'"],
     ['Cargo.toml',                       r'rust-version\s*=\s*"(.*)"'],
     ['ci/container_builds.yml',          r'RUST_MINIMUM:\s*"(.*)"'],
@@ -48,7 +48,7 @@ def check_versions(places):
     print('Versions number match.  All good!', file=sys.stderr)
 
 def main():
-    check_versions(PLACES_TO_CHECK)
+    check_versions(PLACES_WITH_RUST_VERSION)
 
 if __name__ == "__main__":
     main()
