@@ -11,6 +11,11 @@ PLACES_WITH_RUST_VERSION = [
     ['devel-docs/_build_dependencies.rst', r'`rust .*`_ (.*) or later'],
 ]
 
+PLACES_WITH_CARGO_CBUILD_VERSION = [
+    ['meson.build',           r"cargo_cbuild_version = '(.*)'"],
+    ['librsvg-c/Cargo.toml',  r'min_version = "(.*)"'],
+]
+
 def check_versions(places):
     versions = []
 
@@ -49,6 +54,7 @@ def check_versions(places):
 
 def main():
     check_versions(PLACES_WITH_RUST_VERSION)
+    check_versions(PLACES_WITH_CARGO_CBUILD_VERSION)
 
 if __name__ == "__main__":
     main()
