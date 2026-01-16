@@ -30,7 +30,7 @@ capi = ["librsvg/capi"]
 pixbuf = ["dep:gdk-pixbuf"]
 
 [package.metadata.capi]
-min_version = "0.9.19"
+min_version = "0.10.10"
 
 [package.metadata.capi.library]
 name = "rsvg_2"
