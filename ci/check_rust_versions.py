@@ -11,10 +11,10 @@ PLACES_TO_CHECK = [
     ['devel-docs/_build_dependencies.rst', r'`rust .*`_ (.*) or later'],
 ]
 
-def main():
+def check_versions(places):
     versions = []
 
-    for filename, regex in PLACES_TO_CHECK:
+    for filename, regex in places:
         r = re.compile(regex)
 
         with open(filename) as f:
@@ -46,6 +46,9 @@ def main():
         sys.exit(1)
 
     print('Versions number match.  All good!', file=sys.stderr)
+
+def main():
+    check_versions(PLACES_TO_CHECK)
 
 if __name__ == "__main__":
     main()
