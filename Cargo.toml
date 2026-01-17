@@ -1,5 +1,5 @@
 [workspace.package]
-version = "2.61.3"
+version = "2.61.90"
 authors = ["Federico Mena Quintero <federico@gnome.org>", "Many others"]
 description = """
 A library to render SVG images to Cairo surfaces. GNOME uses this to
@@ -69,7 +69,7 @@ lopdf = "0.38"
 markup5ever = "0.35.0"
 matches = "0.1"
 mutants = "0.0.3"
-nalgebra = "0.33.0"
+nalgebra = "0.34.0"
 num-traits = "0.2"
 pango = "0.22.0-alpha"
 pangocairo = "0.22.0-alpha"

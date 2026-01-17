@@ -1,7 +1,7 @@
 [package]
 name = "librsvg"
 documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html"
-version = "2.61.3"
+version = "2.62.0-beta.0"
 authors.workspace = true
 description.workspace = true
 license.workspace = true

@@ -1,6 +1,6 @@
 project('librsvg',
         'c',
-        version: '2.61.3', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
+        version: '2.61.90', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
         meson_version: '>= 1.3.0',
         default_options: [
         ]
@@ -22,9 +22,10 @@ cc = meson.get_compiler('c')
 #   - the "Compilers and build tools" section of devel-docs/_build_dependencies.rst
 #   - the "RUST_MINIMUM" variable in ci/container_builds.yml
 msrv = '1.92.0'
+cargo_cbuild_version = '0.10.10'
 cargo = find_program('cargo', version:'>= @0@'.format(msrv))
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)
-cargo_c = find_program('cargo-cbuild', version:'>= 0.10.10') # https://github.com/lu-zero/cargo-c
+cargo_c = find_program('cargo-cbuild', version:'>= @0@'.format(cargo_cbuild_version)) # https://github.com/lu-zero/cargo-c
 rustc = find_program('rustc', version:'>= @0@'.format(msrv))
 makedef = find_program('meson/makedef.py', native: true)
 
