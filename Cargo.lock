@@ -1468,7 +1468,7 @@ dependencies = [
 
 [[package]]
 name = "librsvg"
-version = "2.61.3"
+version = "2.62.0-beta.0"
 dependencies = [
  "cairo-rs",
  "cast",
@@ -1517,7 +1517,7 @@ dependencies = [
 
 [[package]]
 name = "librsvg-c"
-version = "2.61.3"
+version = "2.61.90"
 dependencies = [
  "cairo-rs",
  "cast",
@@ -2410,7 +2410,7 @@ dependencies = [
 
 [[package]]
 name = "rsvg-bench"
-version = "2.61.3"
+version = "2.61.90"
 dependencies = [
  "cairo-rs",
  "clap",
@@ -2419,7 +2419,7 @@ dependencies = [
 
 [[package]]
 name = "rsvg_convert"
-version = "2.61.3"
+version = "2.61.90"
 dependencies = [
  "assert_cmd",
  "cairo-rs",
