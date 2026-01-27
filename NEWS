@@ -1,3 +1,15 @@
+Version 2.60.2
+==============
+
+librsvg crate version 2.60.2
+
+librsvg-rebind crate version 0.1.0
+
+There are no source changes in this release, just a build fix.
+
+- Fix the check for the cargo-cbuild version.
+
+
 Version 2.60.1
 ==============
 
