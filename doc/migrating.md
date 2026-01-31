@@ -131,7 +131,6 @@ gboolean rsvg_handle_render_element  (RsvgHandle           *handle,
                                       GError              **error);
 ```
 
-
 For brevity we will omit the `rsvg_handle` namespace prefix, and just talk about
 the actual function names. You can see that
 [`render_document`](method.Handle.render_document.html) is basically the same as
@@ -156,7 +155,6 @@ RsvgRectangle viewport = {
 rsvg_handle_render_document (handle, cr, &viewport, NULL);
 ```
 
-
 This is equivalent to first figuring out the scaling factor to make the SVG fit
 proportionally in 640×480 pixels, then translating the `cr` by (10, 20) pixels,
 and then calling [method@Rsvg.Handle.render_cairo]. If the SVG has different
@@ -164,6 +162,7 @@ proportions than the width and height of the rectangle, it will be rendered and
 centered to fit the rectangle.
 
 ---
+
 **Note:** [method@Rsvg.Handle.render_element] is new in librsvg 2.46. It
 extracts a single element from the SVG and renders it scaled to the viewport you
 specify. It is different from `render_layer` (or the old-style
@@ -247,12 +246,12 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                            RsvgRectangle *out_viewbox);
 ```
 
-
 [method@Rsvg.Handle.get_intrinsic_dimensions] will tell you precisely if the
 toplevel `<svg>` has `width/height` attributes and their values, and also
 whether it has a `viewBox` and its value.
 
 ---
+
 **Note:** Remember that SVGs are *scalable*. They are not like raster images
 which have an exact size in pixels, and which you must always take into account
 to scale them to a convenient size. For SVGs, you can just render them to a
