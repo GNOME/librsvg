@@ -356,6 +356,6 @@ is set up with a hardcoded mode for antialiasing, hinting, and hint
 metrics.
 
 [gtest]: https://docs.gtk.org/glib/testing.html
-[bug]: ../CONTRIBUTING.md#reporting-bugs
-[pull-requests]: ../CONTRIBUTING.md#pull-requests
+[bug]: ../../devel-docs/bugs.rst
+[pull-requests]: ../../devel-docs/contributing.rst
 [maintainer]: README.md#maintainers
