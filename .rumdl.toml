@@ -1,6 +1,9 @@
 # rumdl configuration file
 [global]
 respect_gitignore = true
+exclude = [
+  "tools/docker/**",     # Relatively old docs; will not be updated
+]
 
 # False positives atm
 # doc/migrating.md:144:5: [MD057] Relative link 'method.Handle.render_layer.html' does not exist
@@ -24,3 +27,4 @@ reflow = true
 # MD034 - URLs should be formatted as links; doesn't like [class@Rsvg.Handle]
 # MD057 - Relative links should exist; doesn't like (class.Handle.html#the-...)
 "doc/*.md" = [ "MD034", "MD057" ]
+
