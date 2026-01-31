@@ -103,7 +103,7 @@ C API, to ensure ABI compatibility across versions of the library.
 
 These tests are not meant to exhaustively test librsvg's features.
 For those, you should look at the [Rust integration
-tests][#rust-integration-tests].
+tests](#rust-integration-tests).
 
 This C API test suite is built upon [Glib's GTest utility
 functions][gtest], which let you define tests in the C language.
@@ -279,7 +279,7 @@ reference image so the test passes again.
 
 **You should not just use rsvg-convert to render test files!**  The
 test machinery sets up conditions for [reproducible font
-rendering][#reproducible-font-rendering], which are not available to
+rendering](#reproducible-font-rendering), which are not available to
 rsvg-convert.
 
 Run `cargo test`, and copy the resulting `foo-out.png` to the
