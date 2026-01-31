@@ -15,3 +15,12 @@ code-blocks = false
 tables = false
 # Enable automatic line wrapping (required for --fix)
 reflow = true
+
+[per-file-ignores]
+# rumdl doesn't understand the links that gi-docgen expects:
+# [class@Rsvg.Handle]
+# [base file](class.Handle.html#the-base-file-and-resolving-references-to-external-files)
+#
+# MD034 - URLs should be formatted as links; doesn't like [class@Rsvg.Handle]
+# MD057 - Relative links should exist; doesn't like (class.Handle.html#the-...)
+"doc/*.md" = [ "MD034", "MD057" ]
