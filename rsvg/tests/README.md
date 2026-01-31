@@ -277,7 +277,7 @@ and it just differs from the reference image due to antialiasing
 artifacts.  In this case, your next step is to regenerate the
 reference image so the test passes again.
 
-**You should not just use rsvg-convert to render test files!**  The
+**You should not just use rsvg-convert to render test files!** The
 test machinery sets up conditions for [reproducible font
 rendering](#reproducible-font-rendering), which are not available to
 rsvg-convert.

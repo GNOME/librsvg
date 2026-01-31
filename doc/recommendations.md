@@ -109,7 +109,7 @@ height is 5 times the font size.
 
 In general an application cannot figure this out easily, since it
 would need a CSS parser and cascading engine to even be able to know
-what the font size is for the toplevel `<svg>`.  Fortunately, librsvg
+what the font size is for the toplevel `<svg>`. Fortunately, librsvg
 already does that!
 
 In all those cases, the width and height are in physical units (px,
@@ -179,7 +179,7 @@ You'll cleverly note that I have not answered your question.  You have
 an SVG with only a `viewBox`, and you want to pick a reasonable size
 to render it.
 
-And here is where I want to say, SVG documents are **scalable**.  Pick
+And here is where I want to say, SVG documents are **scalable**. Pick
 a size, any size for a viewport!  Here are some suggestions:
 
 * The size of your window's visible area.
@@ -200,7 +200,7 @@ effects in web browsers:
 <svg xmlns="http://www.w3.org/2000/svg">
 ```
 
-That's right, no `width`, no `height`, no `viewBox`.  There is no easy
+That's right, no `width`, no `height`, no `viewBox`. There is no easy
 way to figure out a suitable size for this.  You have two options:
 
 * Shrug your shoulders, and [method@Rsvg.Handle.render_document] with a
@@ -213,7 +213,7 @@ way to figure out a suitable size for this.  You have two options:
   not "almost instantaneous" like just asking for intrinsic dimensions would be.
 
 If this is starting to sound too complicated, please remember that
-**SVG documents are scalable**.  That's their whole reason for being!
+**SVG documents are scalable**. That's their whole reason for being!
 Pick a size for a viewport, and ask librsvg to render the document
 within that viewport with [method@Rsvg.Handle.render_document].
 

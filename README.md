@@ -12,7 +12,7 @@ minimal API?  Librsvg may be adequate for you.
 **Supported SVG/CSS features:** Please see the chapter for [supported
 features][features] in the development guide.
 
-***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.***  We use
+***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.*** We use
 [`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
 Please see [Contributing to librsvg][contributing] for details.
 
@@ -71,7 +71,7 @@ also ask via chat in the Matrix room for [GNOME Rust][gnome-rust].
 
 **Programming languages:** Librsvg exports its API through [GObject
 Introspection][gi].  This way, it is available in many programming
-languages other than C.  Please see your language binding's
+languages other than C. Please see your language binding's
 documentation for information on how to load the `Rsvg` namespace.
 
 **Security:** For a list of releases with security issues,

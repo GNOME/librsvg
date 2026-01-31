@@ -19,6 +19,9 @@ tables = false
 # Enable automatic line wrapping (required for --fix)
 reflow = true
 
+[MD064]
+allow-sentence-double-space = true   # Allow "Hello.  Good bye." with two spaces after the period.
+
 [per-file-ignores]
 # rumdl doesn't understand the links that gi-docgen expects:
 # [class@Rsvg.Handle]
