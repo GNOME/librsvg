@@ -6,4 +6,4 @@ relevant tests][tests] for an explanation of how these files are
 used.
 
 [horizon]: https://github.com/horizon-eda/horizon/
-[tests]: ../../tests/geometries.rs
+[tests]: ../../geometries.rs
