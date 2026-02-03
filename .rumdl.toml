@@ -3,6 +3,7 @@
 respect_gitignore = true
 exclude = [
   "tools/docker/**",     # Relatively old docs; will not be updated
+  "doc/overview.md",     # FIXME: I can't get rid of MD057 with per-file-ignores below, so this is the big hammer.
 ]
 
 # False positives atm
