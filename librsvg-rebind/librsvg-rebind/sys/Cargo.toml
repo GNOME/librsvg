@@ -11,7 +11,6 @@ categories = ["api-bindings"]
 edition = "2021"
 build = "build.rs"
 keywords = ["svg"]
-links = "rsvg"
 exclude = ["Gir.toml", "tests/"]
 
 [package.metadata.docs.rs]

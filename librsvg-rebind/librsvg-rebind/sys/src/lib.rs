@@ -164,7 +164,6 @@ impl ::std::fmt::Debug for RsvgHandle {
     }
 }
 
-#[link(name = "rsvg-2")]
 unsafe extern "C" {
 
     //=========================================================================
