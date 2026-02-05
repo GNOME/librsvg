@@ -122,6 +122,24 @@ cargo_test:
       junit: _build/meson-logs/testlog.junit.xml
     expire_in: 1 day
 
+.meson build no docs:
+  stage: build
+  variables:
+    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
+    PREFIX: "/usr/local/librsvg"
+  script:
+    - meson setup _build --prefix=$PREFIX -Ddocs=disabled -Dintrospection=enabled -Dvala=enabled -Dwarning_level=3
+    - meson compile -C _build
+    - meson test -C _build --print-errorlogs
+  artifacts:
+    when: 'always'
+    paths:
+      - _build/meson-logs/*.*
+      - _build/tests/output
+    reports:
+      junit: _build/meson-logs/testlog.junit.xml
+    expire_in: 1 day
+
 meson build - opensuse@x86_64.stable: 
   stage: build
   extends:
@@ -212,7 +230,7 @@ meson build - gnomeos.stable@x86_64:
   extends:
     - ".container.gnomeos.stable@x86_64"
     - .fdo.distribution-image@gnomeos
-    - ".meson build"
+    - ".meson build no docs"
   needs:
     - job: gnomeos-container.stable@x86_64
       artifacts: false
