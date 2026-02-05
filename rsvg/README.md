@@ -17,25 +17,25 @@ the [main
 README.md](https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/README.md)
 for the whole project.
 
-# Using librsvg
+## Using librsvg
 
 * [Rust API documentation][rust-docs]
 * [Release notes][release-notes]
 
 **Non-Rust dependencies:**
 
-Librsvg depends on a number of non-Rust libraries that must be
-installed on your system.  They need to have a pkg-config `.pc` file
-installed so that librsvg's compilation can find them via [system-deps][system-deps]:
+Librsvg depends on a number of non-Rust libraries that must be installed on your
+system. They need to have a pkg-config `.pc` file installed so that librsvg's
+compilation can find them via [system-deps][system-deps]:
 
-  * Cairo - used for the main rendering
-  * FreeType2 - font renderer
-  * gio/glib - I/O primitives and streams
-  * Harfbuzz - text shaping
-  * libxml2 - XML parser
-  * Pangocairo - text rendering
-  * PangoFT2 - render text via Pango and FreeType2
-  * Fontconfig - system fonts and rules for using them
+* Cairo - used for the main rendering
+* FreeType2 - font renderer
+* gio/glib - I/O primitives and streams
+* Harfbuzz - text shaping
+* libxml2 - XML parser
+* Pangocairo - text rendering
+* PangoFT2 - render text via Pango and FreeType2
+* Fontconfig - system fonts and rules for using them
 
 There are some [security considerations][sec-libs] for these non-Rust
 libraries, which you may want to read.
@@ -64,7 +64,7 @@ chapter][security] in the development guide.
 [rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html
 [release-notes]: https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/NEWS
 
-# Contributing to librsvg's development
+## Contributing to librsvg's development
 
 There is a code of conduct for contributors to librsvg; please see the
 [GNOME Code of Conduct][coc].
@@ -73,7 +73,7 @@ Please see the [Development Guide for librsvg][devel-guide] on how to
 contribute to librsvg, how to report bugs, how set up your development
 environment, and for a description of librsvg's architecture.
 
-# Goals of librsvg
+## Goals of librsvg
 
 Librsvg aims to be a low-footprint library for rendering SVG1.1 and SVG2 images.
 It is used primarily in the [GNOME project](https://www.gnome.org) to
@@ -90,7 +90,7 @@ Feature additions will be considered on a case-by-case basis.
 You can read about librsvg's [supported SVG and CSS features][features] in the
 development guide.
 
-# Non-goals of librsvg
+## Non-goals of librsvg
 
 We don't aim to:
 
@@ -98,24 +98,23 @@ We don't aim to:
 
 * Implement scripting or external access to the SVG's DOM.
 
-* Implement support for CSS-based animations (but if you can think of
-  a nice API to do this, we would be glad to know!)
+* Implement support for CSS-based animations (but if you can think of a nice API
+  to do this, we would be glad to know!)
 
-* Replace the industrial-strength SVG rendering machinery in modern
-  web browsers.
+* Replace the industrial-strength SVG rendering machinery in modern web
+  browsers.
 
 Of course, [contributions are welcome][contributing].  In particular,
 if you find nice ways of doing the above while still maintaining the
 existing API of librsvg, we would love to know about it!
 
-# Who uses librsvg?
+## Who uses librsvg?
 
 Librsvg is part of the [GNOME platform][platform].  Inside GNOME,
 librsvg takes multiple roles:
 
 * Loads SVGs from the generic gdk-pixbuf loader infrastructure, so any
-  application which uses gdk-pixbuf can load SVGs as if they were
-  raster images.
+  application which uses gdk-pixbuf can load SVGs as if they were raster images.
 
 * Loads SVG icons for the desktop.
 
@@ -146,8 +145,7 @@ Outside of GNOME's core:
 * Wikipedia, to render SVGs as raster images for old browsers.
   *Special thanks to Wikimedia for providing excellent bug reports.*
 
-
-# Presentations on librsvg
+## Presentations on librsvg
 
 "[Replacing C library code with Rust: What I learned with
 librsvg][guadec-presentation-1]" was presented at GUADEC 2017.  It gives
@@ -159,28 +157,23 @@ librsvg][guadec-presentation-2]" was presented at GUADEC 2018.  It
 describes ways in which librsvg's C code was refactored to allow
 porting it to Rust.
 
-
-# Maintainers
+## Maintainers
 
 The maintainer of librsvg is [Federico Mena Quintero][federico].  Feel
 free to contact me for any questions you may have about librsvg, both
 its usage and its development.  You can contact me in the following
 ways:
 
-* [Mail me][mail] at federico@gnome.org.
+* [Mail me][mail] at <federico@gnome.org>.
 
 * Matrix: I am `@federico` on the [GNOME Hackers][gnome-hackers] and
-  [Rust ❤️ GNOME][gnome-rust] channels on gnome.org's Matrix.  I'm
-  there most weekdays (Mon-Fri) starting at about UTC 14:00 (that's
-  08:00 my time; I am in the UTC-6 timezone).  If this is not a
-  convenient time for you, feel free to [mail me][mail] and we can
-  arrange a time.
+  [Rust ❤️ GNOME][gnome-rust] channels on gnome.org's Matrix. I'm there most
+  weekdays (Mon-Fri) starting at about UTC 14:00 (that's 08:00 my time; I am in
+  the UTC-6 timezone). If this is not a convenient time for you, feel free to
+  [mail me][mail] and we can arrange a time.
 
-* I frequently [blog about librsvg][blog].  You may be interested in
-  the articles about porting librsvg from C to Rust, which happened
-  between 2016 and 2020.
-
-
+* I frequently [blog about librsvg][blog]. You may be interested in the articles
+  about porting librsvg from C to Rust, which happened between 2016 and 2020.
 
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
@@ -198,8 +191,9 @@ ways:
 [guadec-presentation-1]: https://viruta.org/docs/fmq-porting-c-to-rust.pdf
 [guadec-presentation-2]: https://viruta.org/docs/fmq-refactoring-c-to-rust.pdf
 [federico]: https://viruta.org/
+<!-- rumdl doesn't like mailto: -->
+<!-- rumdl-disable-next-line md034 -->
 [mail]: mailto:federico@gnome.org
 [gnome-hackers]: https://matrix.to/#/#gnome-hackers:gnome.org
-[gnome-rust]: https://matrix.to/#/#rust:gnome.org
 [blog]: https://viruta.org/tag/librsvg.html
 [image-rs]: https://github.com/image-rs/image

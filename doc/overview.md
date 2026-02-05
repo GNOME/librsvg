@@ -1,4 +1,6 @@
+---
 Title: Overview of Librsvg
+---
 
 # Overview of Librsvg
 
@@ -13,16 +15,16 @@ Librsvg supports many of the graphic features in the [SVG
 specifications. The main features of SVG that librsvg does not support
 are the following:
 
-* Scripting or animation: Librsvg reads SVG data and renders it to a
-  static image. There is no provision to execute scripts that may
-  control animation parameters.
+* Scripting or animation: Librsvg reads SVG data and renders it to a static
+  image. There is no provision to execute scripts that may control animation
+  parameters.
 
-* Access to the DOM: Librsvg creates an internal representation of
-  the SVG data, but it does not provide outside access to the
-  resulting Document Object Model (DOM).
+* Access to the DOM: Librsvg creates an internal representation of the SVG data,
+  but it does not provide outside access to the resulting Document Object Model
+  (DOM).
 
-* SVG fonts: Instead, librsvg relies on the system's fonts,
-  particularly those that are available through Cairo/Pango.
+* SVG fonts: Instead, librsvg relies on the system's fonts, particularly those
+  that are available through Cairo/Pango.
 
 Librsvg's API is divided into two main parts: one for loading SVG data
 and one for rendering it. In the *loading stage*, you create an
@@ -32,19 +34,19 @@ ask it to render itself to a Cairo context.
 
 ## Loading
 
-[class@Rsvg.Handle] is an object that represents SVG data in memory. Your program
-creates an [class@Rsvg.Handle] from an SVG file, or from a memory buffer that
-contains SVG data, or in the most general form, from a [class@Gio.InputStream] that
-will provide SVG data.  At this stage you can get either I/O errors or
-parsing errors. If loading completes successfully, the [class@Rsvg.Handle] will
-be ready for rendering.
+[class@Rsvg.Handle] is an object that represents SVG data in memory. Your
+program creates an [class@Rsvg.Handle] from an SVG file, or from a memory buffer
+that contains SVG data, or in the most general form, from a
+[class@Gio.InputStream] that will provide SVG data. At this stage you can get
+either I/O errors or parsing errors. If loading completes successfully, the
+[class@Rsvg.Handle] will be ready for rendering.
 
 Generally you should use [ctor@Rsvg.Handle.new_from_gfile_sync] or
-[ctor@Rsvg.Handle.new_from_stream_sync] to load an SVG document into
-an [class@Rsvg.Handle]. There are other convenience functions to load
-an SVG document, but these two functions let one set the "[base
-file](class.Handle.html#the-base-file-and-resolving-references-to-external-files)"
-and the [flags@Rsvg.HandleFlags] in a single call.
+[ctor@Rsvg.Handle.new_from_stream_sync] to load an SVG document into an
+[class@Rsvg.Handle]. There are other convenience functions to load an SVG
+document, but these two functions let one set the "
+[base file](class.Handle.html#the-base-file-and-resolving-references-to-external-files)
+" and the [flags@Rsvg.HandleFlags] in a single call.
 
 ## Rendering
 
@@ -64,14 +66,14 @@ The following program loads `hello.svg`, renders it scaled to fit within
 
 Note the following:
 
-* [method@Rsvg.Handle.render_document] will scale the document
-   proportionally to fit the viewport you specify, and it will center
-   the image within that viewport.
+* [method@Rsvg.Handle.render_document] will scale the document proportionally
+   to fit the viewport you specify, and it will center the image within that
+   viewport.
 
-* Librsvg does not paint a background color by default, so in the
-  following example all unfilled areas of the SVG will appear as fully
-  transparent. If you wish to have a specific background, fill the
-  viewport area yourself before rendering the SVG.
+* Librsvg does not paint a background color by default, so in the following
+  example all unfilled areas of the SVG will appear as fully transparent. If you
+  wish to have a specific background, fill the viewport area yourself before
+  rendering the SVG.
 
 ```c
 /* gcc -Wall -g -O2 -o load-and-render load-and-render.c `pkg-config --cflags --libs rsvg-2.0` */

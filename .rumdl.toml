@@ -1,0 +1,34 @@
+# rumdl configuration file
+[global]
+respect_gitignore = true
+exclude = [
+  "tools/docker/**",     # Relatively old docs; will not be updated
+  "doc/overview.md",     # FIXME: I can't get rid of MD057 with per-file-ignores below, so this is the big hammer.
+]
+
+# False positives atm
+# doc/migrating.md:144:5: [MD057] Relative link 'method.Handle.render_layer.html' does not exist
+# doc/migrating.md:162:19: [MD034] Email address without angle brackets or link formatting: 'method@Rsvg.Handle.render' [*]
+# disable = [ "MD057", "MD034"]
+
+[MD013]
+# line-length = 100
+# Exclude code blocks from line length check
+code-blocks = false
+# Exclude tables from line length check
+tables = false
+# Enable automatic line wrapping (required for --fix)
+reflow = true
+
+[MD064]
+allow-sentence-double-space = true   # Allow "Hello.  Good bye." with two spaces after the period.
+
+[per-file-ignores]
+# rumdl doesn't understand the links that gi-docgen expects:
+# [class@Rsvg.Handle]
+# [base file](class.Handle.html#the-base-file-and-resolving-references-to-external-files)
+#
+# MD034 - URLs should be formatted as links; doesn't like [class@Rsvg.Handle]
+# MD057 - Relative links should exist; doesn't like (class.Handle.html#the-...)
+"doc/*.md" = [ "MD034", "MD057" ]
+

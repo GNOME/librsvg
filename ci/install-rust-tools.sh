@@ -13,4 +13,5 @@ rustup component add rustfmt
 cargo install --force --locked cargo-c --version 0.10.10
 cargo install --version ^1.0 gitlab_clippy
 cargo install --force --locked cargo-deny
+cargo install --force --locked rumdl --version 0.1.11
 # cargo install --force cargo-outdated

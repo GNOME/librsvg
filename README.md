@@ -12,7 +12,7 @@ minimal API?  Librsvg may be adequate for you.
 **Supported SVG/CSS features:** Please see the chapter for [supported
 features][features] in the development guide.
 
-***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.***  We use
+***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.*** We use
 [`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
 Please see [Contributing to librsvg][contributing] for details.
 
@@ -20,7 +20,7 @@ Table of contents:
 
 [[_TOC_]]
 
-# Supported branches
+## Supported branches
 
 Only these versions are supported:
 
@@ -35,7 +35,7 @@ See the [policy for supported versions][versions] for more details.
 * [Release archive](https://gitlab.gnome.org/GNOME/librsvg/-/releases) in gitlab.gnome.org
 * [Source tarballs for download](https://download.gnome.org/sources/librsvg/) at download.gnome.org
 
-# Stable release series
+## Stable release series
 
 Since librsvg 2.55.x, all release streams are considered stable, not
 just ones with an even minor version number.  A micro version starting
@@ -46,7 +46,7 @@ at 90 means a beta release.  For example:
 
 See the [policy for supported versions][versions] for more details.
 
-# Using librsvg
+## Using librsvg
 
 * [C API documentation][c-docs]
 * [Rust API documentation][rust-docs]
@@ -71,7 +71,7 @@ also ask via chat in the Matrix room for [GNOME Rust][gnome-rust].
 
 **Programming languages:** Librsvg exports its API through [GObject
 Introspection][gi].  This way, it is available in many programming
-languages other than C.  Please see your language binding's
+languages other than C. Please see your language binding's
 documentation for information on how to load the `Rsvg` namespace.
 
 **Security:** For a list of releases with security issues,
@@ -82,7 +82,7 @@ chapter][security] in the development guide.
 [c-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/index.html
 [rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html
 
-# Contributing to librsvg's development
+## Contributing to librsvg's development
 
 There is a code of conduct for contributors to librsvg; please see the
 [GNOME Code of Conduct][coc], which is duplicated in the file
@@ -92,7 +92,7 @@ Please see the [Development Guide for librsvg][devel-guide] on how to
 contribute to librsvg, how to report bugs, how set up your development
 environment, and for a description of librsvg's architecture.
 
-# Goals of librsvg
+## Goals of librsvg
 
 Librsvg aims to be a low-footprint library for rendering SVG1.1 and SVG2 images.
 It is used primarily in the [GNOME project](https://www.gnome.org) to
@@ -109,7 +109,7 @@ Feature additions will be considered on a case-by-case basis.
 You can read about librsvg's [supported SVG and CSS features][features] in the
 development guide.
 
-# Non-goals of librsvg
+## Non-goals of librsvg
 
 We don't aim to:
 
@@ -117,24 +117,23 @@ We don't aim to:
 
 * Implement scripting or external access to the SVG's DOM.
 
-* Implement support for CSS-based animations (but if you can think of
-  a nice API to do this, we would be glad to know!)
+* Implement support for CSS-based animations (but if you can think of a nice API
+  to do this, we would be glad to know!)
 
-* Replace the industrial-strength SVG rendering machinery in modern
-  web browsers.
+* Replace the industrial-strength SVG rendering machinery in modern web
+  browsers.
 
 Of course, [contributions are welcome][contributing].  In particular,
 if you find nice ways of doing the above while still maintaining the
 existing API of librsvg, we would love to know about it!
 
-# Who uses librsvg?
+## Who uses librsvg?
 
 Librsvg is part of the [GNOME platform][platform].  Inside GNOME,
 librsvg takes multiple roles:
 
 * Loads SVGs from the generic gdk-pixbuf loader infrastructure, so any
-  application which uses gdk-pixbuf can load SVGs as if they were
-  raster images.
+  application which uses gdk-pixbuf can load SVGs as if they were raster images.
 
 * Loads SVG icons for the desktop.
 
@@ -165,8 +164,7 @@ Outside of GNOME's core:
 * Wikipedia, to render SVGs as raster images for old browsers.
   *Special thanks to Wikimedia for providing excellent bug reports.*
 
-
-# Presentations on librsvg
+## Presentations on librsvg
 
 "[Replacing C library code with Rust: What I learned with
 librsvg][guadec-presentation-1]" was presented at GUADEC 2017.  It gives
@@ -178,26 +176,23 @@ librsvg][guadec-presentation-2]" was presented at GUADEC 2018.  It
 describes ways in which librsvg's C code was refactored to allow
 porting it to Rust.
 
-
-# Maintainers
+## Maintainers
 
 The maintainer of librsvg is [Federico Mena Quintero][federico].  Feel
 free to contact me for any questions you may have about librsvg, both
 its usage and its development.  You can contact me in the following
 ways:
 
-* [Mail me][mail] at federico@gnome.org.
+* [Mail me][mail] at <federico@gnome.org>.
 
 * Matrix: I am `@federico` on the [GNOME Hackers][gnome-hackers] and
-  [Rust ❤️ GNOME][gnome-rust] channels on gnome.org's Matrix.  I'm
-  there most weekdays (Mon-Fri) starting at about UTC 14:00 (that's
-  08:00 my time; I am in the UTC-6 timezone).  If this is not a
-  convenient time for you, feel free to [mail me][mail] and we can
-  arrange a time.
+  [Rust ❤️ GNOME][gnome-rust] channels on gnome.org's Matrix. I'm there most
+  weekdays (Mon-Fri) starting at about UTC 14:00 (that's 08:00 my time; I am in
+  the UTC-6 timezone). If this is not a convenient time for you, feel free to
+  [mail me][mail] and we can arrange a time.
 
-* I frequently [blog about librsvg][blog].  You may be interested in
-  the articles about porting librsvg from C to Rust, which happened
-  between 2016 and 2020.
+* I frequently [blog about librsvg][blog]. You may be interested in the articles
+  about porting librsvg from C to Rust, which happened between 2016 and 2020.
 
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
@@ -207,6 +202,8 @@ ways:
 [meson]: https://mesonbuild.com
 [meson_options]: meson_options.txt
 [compiling]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/compiling.html
+<!-- rumdl doesn't like mailto: -->
+<!-- rumdl-disable-next-line MD034 -->
 [mail]: mailto:federico@gnome.org
 [bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [gi]: https://gi.readthedocs.io/en/latest/

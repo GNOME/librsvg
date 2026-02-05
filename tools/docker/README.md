@@ -1,11 +1,15 @@
-## Librsvg Docker Tests
+# Librsvg Docker Tests
 
-Run the librsvg test suite inside a docker container. The Librsvg CI runs on opensuse, so this is a simpler way to run the test suite locally on the same packages that are used by the Gitlab integration. 
+Run the librsvg test suite inside a docker container. The Librsvg CI runs on
+opensuse, so this is a simpler way to run the test suite locally on the same
+packages that are used by the Gitlab integration.
 
-Docker requires root for nearly all of its commands so the script will ask for root.
+Docker requires root for nearly all of its commands so the script will ask for
+root.
 
-### Usage:
-```
+## Usage
+
+```text
 This tool lets you run Librsvg's test suite under a couple different docker containers for testing, it requires sudo privleges, which it will ask for in the terminal (this is by the docker commands, which require it)
 
 Use -d [DIRECTORY] pointing at your librsvg Directory
@@ -19,76 +23,120 @@ Use -y to answer Yes to any prompts (This currently only includes the cleanup sc
 Use -c to Cleanup ALL related docker images (this will not run the test suite)
 ```
 
-### Example:
+### Example
+
+If the librsvg folder is in your home directory, run this from your home
+directory:
+
+```bash
+~/librsvg/tools/docker/docker-test.sh -d ~/librsvg -s opensuse -i
 ```
-If the librsvg folder is in your home directory, run this from your home directory:
-~/librsvg/tools/docker/docker-test.sh -d ~/librsvg -s opensuse -i 
 
-This will run it pointing at /home/Username/librsvg (-d) with opensuse tumbleweed docker image (-s), and interactive (-i), meaning it pauses and has the user input a keystroke before continuing, useful for debugging or catching typos.
+This will run it pointing at `/home/Username/librsvg` (-d) with opensuse
+tumbleweed docker image (-s), and interactive (-i), meaning it pauses and has
+the user input a keystroke before continuing, useful for debugging or catching
+typos.
 
-The first run will take some time as Docker downloads and installs the system, updates the packages, and installs the build requirements, but it's set up so that it won't re-download the system image each time, which takes more disk space but saves on bandwidth.
+The first run will take some time as Docker downloads and installs the system,
+updates the packages, and installs the build requirements, but it's set up so
+that it won't re-download the system image each time, which takes more disk
+space but saves on bandwidth.
 
-After the tests run, the links to rendered files in your terminal (in the case that there are errors) will point to the /tmp/librsvg directory, so in some terminals these links can be clicked on to view the files, otherwise the build is found in that folder, and can be accessed from the host system.
+After the tests run, the links to rendered files in your terminal (in the case
+that there are errors) will point to the `/tmp/librsvg` directory, so in some
+terminals these links can be clicked on to view the files, otherwise the build
+is found in that folder, and can be accessed from the host system.
 
 What I use, from the librsvg directory:
 
+```sh
 ./tools/docker/docker-test.sh -s opensuse
-
-This passes through the current directory (in this case the librsvg folder, as cloned from git) and runs the test suite in OpenSUSE
-
 ```
 
+This passes through the current directory (in this case the librsvg folder, as
+cloned from git) and runs the test suite in OpenSUSE
 
-### Cleanup:
-```
+### Cleanup
+
 To do a full cleanup of the docker images:
+
+```sh
 ./docker-test.sh -c
-This requires user input. 
-
-This asks if it should also clear out the tmp directory passed to it, or the default one. It checks if "/" is passed to it, so it shouldn't delete your system. If you answer "no" to clearing out the tmp directory, those files will not be deleted. 
-
-Dangerous: pass -y if using this where user input cannot be provided, but it will delete **all** docker images and the contents of /tmp/librsvg (if -t is not passed, otherwise that directory) without warning. It will not touch the actual librsvg library directory. 
 ```
 
-### Helpful Docker Commands: 
-```
+This requires user input.
+
+This asks if it should also clear out the tmp directory passed to it, or the
+default one. It checks if `/` is passed to it, so it shouldn't delete your
+system. If you answer "no" to clearing out the tmp directory, those files will
+not be deleted.
+
+Dangerous: pass -y if using this where user input cannot be provided, but it
+will delete **all** docker images and the contents of `/tmp/librsvg` (if `-t` is
+not passed, otherwise that directory) without warning. It will not touch the
+actual librsvg library directory.
+
+### Helpful Docker Commands
+
+```sh
 docker image prune
 docker container prune
+```
 
-This removes any dangling (not attached to an tagged image) docker images and containers. I would recommend running it once in a while, or you may end up with 100gb of docker containers like me, don't be like me. (disclaimer: I have also been testing all of this so there's been a lot of mishaps and learning)
+This removes any dangling (not attached to an tagged image) docker images and
+containers. I would recommend running it once in a while, or you may end up with
+100gb of docker containers like me, don't be like me. (disclaimer: I have also
+been testing all of this so there's been a lot of mishaps and learning)
 
-This tool should use ~3gb of disk space for running the tests with the opensuse image alone. 
-If all 3 systems are tested, the disk usage goes up to ~9gb
+This tool should use ~3gb of disk space for running the tests with the opensuse
+image alone. If all 3 systems are tested, the disk usage goes up to ~9gb
 
 See your disk usage with:
+
+```sh
 docker system df
 ```
 
 ### I want to add more OS's to test, how do I do that?
-To add a new OS clone one of the `tools/docker/librsvg-base` folders, renaming it to the OS you wish to add, eg. If I wanted to test Alpine, I would rename the folder to "alpine" all lower case, one word, to make things easy. 
 
+To add a new OS clone one of the `tools/docker/librsvg-base` folders, renaming
+it to the OS you wish to add, eg. If I wanted to test Alpine, I would rename the
+folder to "alpine" all lower case, one word, to make things easy.
 
-Then, go to [Docker Hub](https://hub.docker.com/search?q=&type=image&category=os) and find the OS you wish to add along with the version tag for it, for the alpine example that's `alpine:latest` and put that in the `FROM` portion of the Dockerfile.
+Then, go to
+[Docker Hub](https://hub.docker.com/search?q=&type=image&category=os) and find
+the OS you wish to add along with the version tag for it, for the alpine example
+that's `alpine:latest` and put that in the `FROM` portion of the Dockerfile.
 
-LABEL can remain how it is. 
+LABEL can remain how it is.
 
-Finally `RUN` needs to be filled in with the package manager command to install the dependencies to build Librsvg. See [COMPILING.md](../../COMPILING.md) for build dependencies, the other Dockerfiles can help here. Essentially it's just looking up what the packages are called on your OS of choice. 
+Finally `RUN` needs to be filled in with the package manager command to install
+the dependencies to build Librsvg. See [COMPILING.md](../../COMPILING.md) for
+build dependencies, the other Dockerfiles can help here. Essentially it's just
+looking up what the packages are called on your OS of choice.
 
-Once you have that out of he way, [docker-test.sh](docker-test.sh) will need a couple edits to be able to build. 
-First, inside the `check_system` function copy one of the `elif [[ $SYSTEM == "" ]]` and put it before the `else` at the bottom of that function. Add your system name inside there, copying the style of inside of the other `elif` statements. 
+Once you have that out of he way, [docker-test.sh](docker-test.sh) will need a
+couple edits to be able to build. First, inside the `check_system` function copy
+one of the `elif [[ $SYSTEM == "" ]]` and put it before the `else` at the bottom
+of that function. Add your system name inside there, copying the style of inside
+of the other `elif` statements.
 
-Then, in `cleanup` copy one of the `SYS= ... clean_base_image` lines and change the `SYS` to your OS. 
+Then, in `cleanup` copy one of the `SYS= ... clean_base_image` lines and change
+the `SYS` to your OS.
 
-Finally go to `clean_distro_image` and copy one of the `docker rmi --force` lines, filling in your OS at the end. 
+Finally go to `clean_distro_image` and copy one of the `docker rmi --force`
+lines, filling in your OS at the end.
 
-You're done! Now running the script with `./docker-test.sh -s youros` will use your OS, setting the docker images, base image, and everything else correctly!
+You're done! Now running the script with `./docker-test.sh -s youros` will use
+your OS, setting the docker images, base image, and everything else correctly!
 
 ## How does this tool work?
 
-See the docker-test.sh file for the script itself, below is the architecture of the script.
-The dockerfiles in the debian/fedora/opensuse folders have the build dependency install commands that are used to build each of the base images. 
+See the docker-test.sh file for the script itself, below is the architecture of
+the script. The dockerfiles in the debian/fedora/opensuse folders have the build
+dependency install commands that are used to build each of the base images.
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 |main                                                 │
 | This function runs the following functions one at a |
@@ -190,4 +238,3 @@ The dockerfiles in the debian/fedora/opensuse folders have the build dependency 
 └──────────────────────────────────────────────────────┘
 
 ```
-

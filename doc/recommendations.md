@@ -1,15 +1,16 @@
+---
 Title: Recommendations for Applications
+---
 
 # Recommendations for Applications
 
 Let's consider two common cases for rendering SVG documents:
 
-* Your application uses fixed-size assets, for example, "all icons at
-  16×16 pixels".
+* Your application uses fixed-size assets, for example, "all icons at 16×16
+  pixels".
 
-* Your application needs to accept arbitrarily-sized SVG documents, to
-  either render them at a fixed size, or to render them at a "natural"
-  size.
+* Your application needs to accept arbitrarily-sized SVG documents, to either
+  render them at a fixed size, or to render them at a "natural" size.
 
 In either case, librsvg assumes that for rendering you have already
 obtained a Cairo surface, and a Cairo context to draw on the surface.
@@ -58,8 +59,8 @@ if (!rsvg_handle_render_document (handle, cr, &viewport, &error))               
 
 2. Create an image surface of the size you want.
 
-3. Declare a viewport of that size.  If you want a non-zero `(x, y)`
-   offset you can set it right there.
+3. Declare a viewport of that size. If you want a non-zero `(x, y)` offset you
+   can set it right there.
 
 4. Render the document within that viewport.  Done!
 
@@ -108,7 +109,7 @@ height is 5 times the font size.
 
 In general an application cannot figure this out easily, since it
 would need a CSS parser and cascading engine to even be able to know
-what the font size is for the toplevel `<svg>`.  Fortunately, librsvg
+what the font size is for the toplevel `<svg>`. Fortunately, librsvg
 already does that!
 
 In all those cases, the width and height are in physical units (px,
@@ -178,7 +179,7 @@ You'll cleverly note that I have not answered your question.  You have
 an SVG with only a `viewBox`, and you want to pick a reasonable size
 to render it.
 
-And here is where I want to say, SVG documents are **scalable**.  Pick
+And here is where I want to say, SVG documents are **scalable**. Pick
 a size, any size for a viewport!  Here are some suggestions:
 
 * The size of your window's visible area.
@@ -199,22 +200,20 @@ effects in web browsers:
 <svg xmlns="http://www.w3.org/2000/svg">
 ```
 
-That's right, no `width`, no `height`, no `viewBox`.  There is no easy
+That's right, no `width`, no `height`, no `viewBox`. There is no easy
 way to figure out a suitable size for this.  You have two options:
 
-* Shrug your shoulders, and [method@Rsvg.Handle.render_document] with
-  a comfortable viewport size like in the last section.
+* Shrug your shoulders, and [method@Rsvg.Handle.render_document] with a
+  comfortable viewport size like in the last section.
 
-* Do a best-effort job of actually computing the geometries of all the
-  elements in the document.  You can use
-  [method@Rsvg.Handle.get_geometry_for_element] by passing `NULL` for
-  the target element's `id`; this will measure all the elements in the
-  document.  This is not expensive for typical SVGs, but it is not
-  "almost instantaneous" like just asking for intrinsic dimensions
-  would be.
+* Do a best-effort job of actually computing the geometries of all the elements
+  in the document. You can use [method@Rsvg.Handle.get_geometry_for_element] by
+  passing `NULL` for the target element's `id`; this will measure all the
+  elements in the document. This is not expensive for typical SVGs, but it is
+  not "almost instantaneous" like just asking for intrinsic dimensions would be.
 
 If this is starting to sound too complicated, please remember that
-**SVG documents are scalable**.  That's their whole reason for being!
+**SVG documents are scalable**. That's their whole reason for being!
 Pick a size for a viewport, and ask librsvg to render the document
 within that viewport with [method@Rsvg.Handle.render_document].
 

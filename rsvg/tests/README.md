@@ -1,4 +1,5 @@
-Librsvg test suite
+# Librsvg test suite
+
 ==================
 
 Librsvg's test suite is split like this:
@@ -21,7 +22,8 @@ hard-coded limits of the library.
 To run the full test suite, see ["Running the test
 suite"](#running-the-test-suite) below.
 
-Unit tests
+## Unit tests
+
 ----------
 
 The library's source code has small unit tests for particular sections
@@ -31,13 +33,12 @@ of the code.
 possible.  The test suite in this tests/ directory is for black box
 tests, which run the library as a normal program would use it.
 
-* **What should be in a unit test** - a small test of an algorithm; a
-  check for computed values given some starting values; checks for
-  edge cases.
+* **What should be in a unit test** - a small test of an algorithm; a check for
+  computed values given some starting values; checks for edge cases.
 
-* **What should be in these black-box tests** - rendering tests that
-  exercise a particular part of the code; CSS cascading tests; images
-  that expose bugs and that we want to avoid regressing on later.
+* **What should be in these black-box tests** - rendering tests that exercise a
+  particular part of the code; CSS cascading tests; images that expose bugs and
+  that we want to avoid regressing on later.
 
 For example, there are unit tests of the path data parser (the `<path
 d="M10 10 L20 20 ...">` element and its `d` attribute, to ensure that
@@ -46,9 +47,9 @@ appropriately.  Correspondingly, there are a bunch of black-box tests
 that exercise particular features of path rendering ("does this
 actually draw a line, or an arc?").
 
+## Running the test suite
 
-Running the test suite
-----------------------
+----------
 
 For regular development, use `cargo test`.  This will run most of the
 test suite, except for the C API tests and the long-running tests
@@ -65,8 +66,9 @@ meson compile -C _build
 meson test -C _build
 ```
 
-Running a single test case
---------------------------
+## Running a single test case
+
+----------
 
 For example, use this:
 
@@ -79,7 +81,6 @@ cargo test -p librsvg --test render_crash -- bug1088_fuzz_cairo_out_of_bounds
 * ``--test render_crash`` selects that test binary.
 
 * ``-- bug1088_fuzz_cairo_out_of_bounds`` selects the test case.
-
 
 ## Artifacts produced from the tests
 
@@ -102,7 +103,7 @@ C API, to ensure ABI compatibility across versions of the library.
 
 These tests are not meant to exhaustively test librsvg's features.
 For those, you should look at the [Rust integration
-tests][#rust-integration-tests].
+tests](#rust-integration-tests).
 
 This C API test suite is built upon [Glib's GTest utility
 functions][gtest], which let you define tests in the C language.
@@ -156,7 +157,8 @@ The test files are in the `fixtures/errors` directory.
 
 ## Tests for SVG filter effects - `filters.rs`
 
-These test the semantics of the `filter` property, and specific filter functions.
+These test the semantics of the `filter` property, and specific filter
+functions.
 
 ## Reference tests - `reference.rs`
 
@@ -167,15 +169,15 @@ The reference tests allow for minor differences in the pixel values of
 the results.  Each pixel's RGBA components gets compared to the
 corresponding one in the reference image:
 
-* If the absolute value of the difference between corresponding RGBA
-  components is more than 2, the test suite considers the result to be
-  *distinguishable* from the reference, but otherwise acceptable.
+* If the absolute value of the difference between corresponding RGBA components
+  is more than 2, the test suite considers the result to be *distinguishable*
+  from the reference, but otherwise acceptable.
 
-* If the absolute value of the difference is more than the number in
-  the `RSVG_TEST_TOLERANCE` environment variable, the result is
-  *inacceptable* and the test suite fails; the default is 2 if that
-  variable is not set.  You can tweak this value if your machine's
-  floating-point unit produces wildly different results.
+* If the absolute value of the difference is more than the number in the
+  `RSVG_TEST_TOLERANCE` environment variable, the result is *inacceptable* and
+  the test suite fails; the default is 2 if that variable is not set. You can
+  tweak this value if your machine's floating-point unit produces wildly
+  different results.
 
 The test files are in the `fixtures/reftests/` directory.  Each
 image-based reference test uses two files: `foo.svg` and
@@ -199,32 +201,32 @@ tests.  You can use this to skip a few problematic files temporarily.
 
 As of 2020/Oct/22 we have an informal organization of these files:
 
-* `fixtures/reftests/svg1.1` - Tests from the W3C's SVG1.1 test suite.
-  These are supposed to test all of SVG's features; we will add them one
-  by one as librsvg starts implementing the features.
-  
+* `fixtures/reftests/svg1.1` - Tests from the W3C's SVG1.1 test suite. These are
+  supposed to test all of SVG's features; we will add them one by one as librsvg
+  starts implementing the features.
+
 * `fixtures/reftests/svg2` - Tests for SVG2 or CSS3 features.
 
-* `fixtures/reftests/bugs/*.svg` - Tests for particular bug numbers.
-  Please use the bug number from Gitlab, like `1234-blah.svg`, and the
-  corresponding `1234-blah-ref.png` for the known-good reference image.
-  
-  **Note:** Librsvg migrated from git.gnome.org and bugzilla.gnome.org
-  to gitlab.gnome.org.  Bug numbers in Bugzilla were around 6 digits
-  in length; in Gitlab, they are small numbers.
+* `fixtures/reftests/bugs/*.svg` - Tests for particular bug numbers. Please use
+  the bug number from Gitlab, like `1234-blah.svg`, and the corresponding
+  `1234-blah-ref.png` for the known-good reference image.
 
-* `fixtures/reftests/*.svg` - Tests for special situations
-  that arose during development.
-  
-* `fixtures/reftests/adwaita/*.svg` - A snapshot of the Adwaita icon
-  theme (GNOME's default icon theme), to ensure that librsvg renders
-  it correctly.
+  **Note:** Librsvg migrated from git.gnome.org and bugzilla.gnome.org to
+  gitlab.gnome.org. Bug numbers in Bugzilla were around 6 digits in length; in
+  Gitlab, they are small numbers.
+
+* `fixtures/reftests/*.svg` - Tests for special situations that arose during
+  development.
+
+* `fixtures/reftests/adwaita/*.svg` - A snapshot of the Adwaita icon theme
+  (GNOME's default icon theme), to ensure that librsvg renders it correctly.
 
 ### Examining failed reference tests
 
-Let's say you run `cargo test` and see that one of the tests fails.  The test log may have lines like these:
+Let's say you run `cargo test` and see that one of the tests fails. The test log
+may have lines like these:
 
-```
+```text
 ---- reference::svg_1_1_tests_fixtures_reftests_svg1_1_painting_stroke_01_t_svg stdout ----
 output: output/painting-stroke-01-t-out.png
 painting-stroke-01-t: 12414 pixels changed with maximum difference of 255
@@ -240,7 +242,7 @@ produced incorrect output when compared to
 
 When a test fails, rsvg-test creates two images in `tests/output`:
 
-```
+```text
 tests/output/foo-out.png
 tests/output/foo-diff.png
 ```
@@ -252,22 +254,20 @@ viewer; pixels that differ are highlighted.
 
 It is up to you to decide what to do next:
 
-* If the `foo-out.png` image looks correct, and the only difference
-  with respect to the `foo-ref.png` reference image is that
-  antialiased edges look different, or font rendering is slightly
-  different due to the font-rendering machinery in your system, you
-  can just regenerate the test image.  See 
-  "[Regenerating reference images](#regenerating-reference-images)" below.
+* If the `foo-out.png` image looks correct, and the only difference with respect
+  to the `foo-ref.png` reference image is that antialiased edges look different,
+  or font rendering is slightly different due to the font-rendering machinery in
+  your system, you can just regenerate the test image. See "
+  [Regenerating reference images](#regenerating-reference-images)" below.
 
 * If the `foo-out.png` image is obviously wrong when compared to the
-  `foo-ref.png` reference, you can [file a bug][bug].  You can wait
-  until someone fixes it, or try to [fix the bug yourself][pull-requests]!
+  `foo-ref.png` reference, you can [file a bug][bug]. You can wait until someone
+  fixes it, or try to [fix the bug yourself][pull-requests]!
 
-* Any other situation of course deserves attention.  Feel free to [ask
-  the maintainers][maintainer] about it; even if you figure out the problem
-  yourself, a failed test almost always indicates a problem that is
-  not just on your end.
-
+* Any other situation of course deserves attention. Feel free to
+  [ask the maintainers][maintainer] about it; even if you figure out the problem
+  yourself, a failed test almost always indicates a problem that is not just on
+  your end.
 
 ### Regenerating reference images
 
@@ -277,9 +277,9 @@ and it just differs from the reference image due to antialiasing
 artifacts.  In this case, your next step is to regenerate the
 reference image so the test passes again.
 
-**You should not just use rsvg-convert to render test files!**  The
+**You should not just use rsvg-convert to render test files!** The
 test machinery sets up conditions for [reproducible font
-rendering][#reproducible-font-rendering], which are not available to
+rendering](#reproducible-font-rendering), which are not available to
 rsvg-convert.
 
 Run `cargo test`, and copy the resulting `foo-out.png` to the
@@ -292,14 +292,14 @@ You can then run `cargo test` again and ensure that the tests pass.
 Our SVG files in tests/fixtures/reftests/svg1.1 come from the "SVG 1.1
 Second Edition test suite" archive linked here:
 
-https://www.w3.org/Graphics/SVG/WG/wiki/Test_Suite_Overview
+<https://www.w3.org/Graphics/SVG/WG/wiki/Test_Suite_Overview>
 
 We don't know how the reference PNG files in that archive are
 generated.  However, they are done in such a way that objects tend not
 to be pixel-aligned.  For example, many tests have a rectangular frame
 around the whole viewport, defined like this:
 
-```
+```text
 <rect id="test-frame" x="1" y="1" width="478" height="358" fill="none" stroke="#000000"/>
 ```
 
@@ -355,8 +355,7 @@ just those fonts.  In addition, the Pango context used for rendering
 is set up with a hardcoded mode for antialiasing, hinting, and hint
 metrics.
 
-
 [gtest]: https://docs.gtk.org/glib/testing.html
-[bug]: ../CONTRIBUTING.md#reporting-bugs
-[pull-requests]: ../CONTRIBUTING.md#pull-requests
+[bug]: ../../devel-docs/bugs.rst
+[pull-requests]: ../../devel-docs/contributing.rst
 [maintainer]: README.md#maintainers
