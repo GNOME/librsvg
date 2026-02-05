@@ -13,12 +13,12 @@ set -o errexit -o pipefail -o noclobber -o nounset
 # https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/tree/master/elements/components
 
 FREETYPE2_TAG="VER-2-13-3"
-FONTCONFIG_TAG="2.15.0"
-CAIRO_TAG="1.18.2"
-HARFBUZZ_TAG="9.0.0"
-PANGO_TAG="1.54.0"
+FONTCONFIG_TAG="2.17.1"
+CAIRO_TAG="1.18.4"
+HARFBUZZ_TAG="12.3.2"
+PANGO_TAG="1.57.0"
 LIBXML2_TAG="v2.15.1"
-GDK_PIXBUF_TAG="2.42.12"
+GDK_PIXBUF_TAG="2.44.5"
 
 PARSED=$(getopt --options '' --longoptions 'prefix:,meson-flags:' --name "$0" -- "$@")
 eval set -- "$PARSED"
