@@ -106,6 +106,6 @@ make install
 cd ..
 git clone --depth 1 --branch $GDK_PIXBUF_TAG https://gitlab.gnome.org/GNOME/gdk-pixbuf
 cd gdk-pixbuf
-meson setup _build --prefix "$PREFIX" -Dman=false $MESON_FLAGS
+meson setup _build --prefix "$PREFIX" -Dman=false -Dglycin=disabled $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
