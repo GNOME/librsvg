@@ -1,9 +1,27 @@
+Version 2.61.91
+===============
+
+librsvg crate version 2.62.0-beta.1
+
+librsvg-rebind crate version 0.3.0-beta.0
+
+- Fix linking to the native library in librsvg-rebind
+  (Maximiliano Sandoval).
+
+- #1216 - Fix path used for the gdk-pixbuf-query-loaders binary when
+  compiling with spack.
+
+- Update dependencies (Sophie Herold).
+
+- Sanitize the Markdown files and add CI checks for them (Jordan Petridis).
+
+
 Version 2.61.90
 ===============
 
 librsvg crate version 2.62.0-beta.0
 
-librsvg-rebind crate version 0.2.2
+librsvg-rebind crate version 0.3.0-beta.0
 
 - #1211 - librsvg-rebind's constructors now return Result<Self>
   instead of Result<Option> for ergonomics (Maximiliano Sandoval).

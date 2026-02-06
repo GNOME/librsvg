@@ -20,7 +20,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! librsvg = "2.62.0-beta.0"
+//! librsvg = "2.62.0-beta.1"
 //! cairo-rs = "0.22.0-alpha"
 //! gio = "0.22.0-alpha"   # only if you need streams
 //! ```
