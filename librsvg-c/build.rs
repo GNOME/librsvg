@@ -71,13 +71,13 @@ fn write_version_rs(version: &Version) {
             r#"
 use std::os::raw::c_uint;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static rsvg_major_version: c_uint = {};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static rsvg_minor_version: c_uint = {};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static rsvg_micro_version: c_uint = {};
 "#,
             version.major, version.minor, version.micro,

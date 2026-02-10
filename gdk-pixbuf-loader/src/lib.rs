@@ -149,7 +149,7 @@ unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> 
     true.into_glib()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn fill_vtable(module: &mut GdkPixbufModule) {
     module.begin_load = Some(begin_load);
     module.stop_load = Some(stop_load);
@@ -191,7 +191,7 @@ const EXTENSIONS: [*const c_char; 4] = [
     std::ptr::null(),
 ];
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn fill_info(info: &mut GdkPixbufFormat) {
     info.name = gstr!("svg").as_ptr() as *mut c_char;
     info.signature = SIGNATURE.as_ptr() as *mut GdkPixbufModulePattern;
