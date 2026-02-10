@@ -939,6 +939,7 @@ pub unsafe extern "C" fn rsvg_handle_flags_get_type() -> glib::ffi::GType {
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_set_base_uri(
     handle: *const RsvgHandle,
     uri: *const libc::c_char,
@@ -959,6 +960,7 @@ pub unsafe extern "C" fn rsvg_handle_set_base_uri(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_set_base_gfile(
     handle: *const RsvgHandle,
     raw_gfile: *mut gio::ffi::GFile,
@@ -1043,6 +1045,7 @@ pub unsafe extern "C" fn rsvg_handle_set_size_callback(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_internal_set_testing(
     handle: *const RsvgHandle,
     testing: glib::ffi::gboolean,
@@ -1141,6 +1144,7 @@ impl IntoGError for Result<(), RenderingError> {
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_read_stream_sync(
     handle: *const RsvgHandle,
     stream: *mut gio::ffi::GInputStream,
@@ -1168,6 +1172,7 @@ pub unsafe extern "C" fn rsvg_handle_read_stream_sync(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_write(
     handle: *const RsvgHandle,
     buf: *const u8,
@@ -1190,6 +1195,7 @@ pub unsafe extern "C" fn rsvg_handle_write(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_close(
     handle: *const RsvgHandle,
     error: *mut *mut glib::ffi::GError,
@@ -1208,6 +1214,7 @@ pub unsafe extern "C" fn rsvg_handle_close(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_has_sub(
     handle: *const RsvgHandle,
     id: *const libc::c_char,
@@ -1246,6 +1253,7 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
     handle: *const RsvgHandle,
     cr: *mut cairo::ffi::cairo_t,
@@ -1349,10 +1357,13 @@ pub unsafe extern "C" fn rsvg_handle_get_dimensions(
     handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
 ) {
-    rsvg_handle_get_dimensions_sub(handle, dimension_data, ptr::null());
+    unsafe {
+        rsvg_handle_get_dimensions_sub(handle, dimension_data, ptr::null());
+    }
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_dimensions_sub(
     handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
@@ -1385,6 +1396,7 @@ pub unsafe extern "C" fn rsvg_handle_get_dimensions_sub(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_position_sub(
     handle: *const RsvgHandle,
     position_data: *mut RsvgPositionData,
@@ -1437,6 +1449,7 @@ pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_new_from_file(
     filename: *const libc::c_char,
     error: *mut *mut glib::ffi::GError,
@@ -1466,6 +1479,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_file(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
     file: *mut gio::ffi::GFile,
     flags: RsvgHandleFlags,
@@ -1507,6 +1521,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
     input_stream: *mut gio::ffi::GInputStream,
     base_file: *mut gio::ffi::GFile,
@@ -1548,6 +1563,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_new_from_data(
     data: *const u8,
     data_len: usize,
@@ -1588,6 +1604,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
     ret
 }
 
+#[allow(unsafe_op_in_unsafe_fn)]
 unsafe fn set_out_param<T: Copy>(
     out_has_param: *mut glib::ffi::gboolean,
     out_param: *mut T,
@@ -1610,10 +1627,13 @@ unsafe fn set_out_param<T: Copy>(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rsvg_handle_free(handle: *mut RsvgHandle) {
-    gobject_ffi::g_object_unref(handle as *mut _);
+    unsafe {
+        gobject_ffi::g_object_unref(handle as *mut _);
+    }
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
     handle: *const RsvgHandle,
     css: *const u8,
@@ -1661,12 +1681,13 @@ pub unsafe extern "C" fn rsvg_handle_set_cancellable_for_rendering(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
+    let cancellable: Option<gio::Cancellable> = unsafe { from_glib_none(cancellable) };
 
     rhandle.set_cancellable_for_rendering(cancellable.as_ref());
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_intrinsic_dimensions(
     handle: *const RsvgHandle,
     out_has_width: *mut glib::ffi::gboolean,
@@ -1698,6 +1719,7 @@ pub unsafe extern "C" fn rsvg_handle_get_intrinsic_dimensions(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_intrinsic_size_in_pixels(
     handle: *const RsvgHandle,
     out_width: *mut f64,
@@ -1729,6 +1751,7 @@ pub unsafe extern "C" fn rsvg_handle_get_intrinsic_size_in_pixels(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_render_document(
     handle: *const RsvgHandle,
     cr: *mut cairo::ffi::cairo_t,
@@ -1753,6 +1776,7 @@ pub unsafe extern "C" fn rsvg_handle_render_document(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
     handle: *mut RsvgHandle,
     id: *const libc::c_char,
@@ -1789,6 +1813,7 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_render_layer(
     handle: *const RsvgHandle,
     cr: *mut cairo::ffi::cairo_t,
@@ -1816,6 +1841,7 @@ pub unsafe extern "C" fn rsvg_handle_render_layer(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
     handle: *const RsvgHandle,
     id: *const libc::c_char,
@@ -1850,6 +1876,7 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_render_element(
     handle: *const RsvgHandle,
     cr: *mut cairo::ffi::cairo_t,
@@ -1936,6 +1963,7 @@ pub enum PathOrUrl {
 }
 
 impl PathOrUrl {
+    #[allow(unsafe_op_in_unsafe_fn)]
     unsafe fn new(s: *const libc::c_char) -> Result<PathOrUrl, String> {
         let cstr = CStr::from_ptr(s);
 
