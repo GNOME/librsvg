@@ -2,7 +2,7 @@
 # base to construct our container images.  They need to be updated periodically, but
 # not frequently, by pointing them to a more recent commit.
 include:
-  - remote: "https://gitlab.gnome.org/Infrastructure/freedesktop-ci-templates/-/raw/3cd5fdf6dcfbef9a75514256d210db5178bd9c2a/templates/opensuse.yml"
+  - remote: "https://gitlab.gnome.org/Infrastructure/freedesktop-ci-templates/-/raw/a4eb2bbf65c482f024cae7ee178b8fe0cfef0537/templates/opensuse.yml"
   - remote: "https://gitlab.freedesktop.org/alatiera/ci-templates/-/raw/104fbc7115a99a450ba926d2a96208457d77cac0/templates/gnomeos.yml"
 
 # IMPORTANT: See
