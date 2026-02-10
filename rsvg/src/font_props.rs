@@ -9,7 +9,7 @@ use cssparser::{Parser, Token};
 use crate::error::*;
 use crate::length::*;
 use crate::parse_identifiers;
-use crate::parsers::{finite_f32, Parse};
+use crate::parsers::{Parse, finite_f32};
 use crate::properties::ComputedValues;
 use crate::property_defs::{FontStretch, FontStyle, FontVariant};
 
@@ -108,11 +108,7 @@ impl Parse for Font {
 
         #[inline]
         fn count<T>(opt: &Option<T>) -> u8 {
-            if opt.is_some() {
-                1
-            } else {
-                0
-            }
+            if opt.is_some() { 1 } else { 0 }
         }
 
         if (count(&style) + count(&weight) + count(&variant_caps) + count(&stretch) + nb_normals)

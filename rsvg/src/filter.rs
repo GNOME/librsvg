@@ -8,7 +8,7 @@ use crate::color::Color;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;
-use crate::element::{set_attribute, ElementData, ElementTrait};
+use crate::element::{ElementData, ElementTrait, set_attribute};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
 use crate::filters::{FilterResolveError, FilterSpec};

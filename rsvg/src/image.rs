@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, ns};
 use crate::aspect_ratio::AspectRatio;
 use crate::document::{AcquiredNodes, Document, Resource};
 use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
-use crate::element::{set_attribute, DrawResult, ElementTrait};
+use crate::element::{DrawResult, ElementTrait, set_attribute};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::{self, Layer, LayerKind, StackingContext};

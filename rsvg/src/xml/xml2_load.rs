@@ -18,14 +18,14 @@ use std::str;
 use std::sync::Once;
 
 use glib::translate::*;
-use markup5ever::{ns, LocalName, Namespace, Prefix, QualName};
+use markup5ever::{LocalName, Namespace, Prefix, QualName, ns};
 
 use crate::error::LoadingError;
 use crate::util::{cstr, opt_utf8_cstr, utf8_cstr, utf8_cstr_len};
 
-use super::xml2::*;
 use super::Attributes;
 use super::XmlState;
+use super::xml2::*;
 
 #[rustfmt::skip]
 fn get_xml2_sax_handler() -> xmlSAXHandler {

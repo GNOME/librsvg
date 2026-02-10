@@ -2,7 +2,7 @@ use matches::matches;
 use rsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 
 use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
-use rsvg::test_utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};
+use rsvg::test_utils::{SurfaceSize, load_svg, render_document, setup_font_map, setup_language};
 
 // https://gitlab.gnome.org/GNOME/librsvg/issues/335
 #[test]

@@ -1,7 +1,7 @@
 use markup5ever::{expanded_name, local_name, ns};
 
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, ElementData, ElementTrait};
+use crate::element::{ElementData, ElementTrait, set_attribute};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::properties::ColorInterpolationFilters;

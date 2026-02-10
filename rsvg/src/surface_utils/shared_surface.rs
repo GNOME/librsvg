@@ -5,9 +5,9 @@ use std::ptr::NonNull;
 use std::slice;
 
 use cast::i32;
-use nalgebra::{storage::Storage, Dim, Matrix};
+use nalgebra::{Dim, Matrix, storage::Storage};
 
-use crate::color::{color_to_rgba, Color};
+use crate::color::{Color, color_to_rgba};
 use crate::drawing_ctx::set_source_color_on_cairo;
 use crate::error::*;
 use crate::rect::{IRect, Rect};
@@ -15,8 +15,8 @@ use crate::surface_utils::srgb;
 use crate::util::clamp;
 
 use super::{
-    iterators::{PixelRectangle, Pixels},
     AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps, ToCairoARGB, ToPixel,
+    iterators::{PixelRectangle, Pixels},
 };
 
 /// Interpolation when scaling images.
@@ -1374,8 +1374,8 @@ impl ImageSurface<Exclusive> {
 
 impl From<Operator> for cairo::Operator {
     fn from(op: Operator) -> cairo::Operator {
-        use cairo::Operator as Cairo;
         use Operator::*;
+        use cairo::Operator as Cairo;
 
         match op {
             Over => Cairo::Over,

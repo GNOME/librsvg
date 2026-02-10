@@ -1,9 +1,9 @@
 use std::fmt;
 
 use crate::surface_utils::{
+    ImageSurfaceDataExt, Pixel, PixelOps,
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt, Pixel, PixelOps,
 };
 
 use rgb::{ColorComponentMap, ComponentMap, RGB};

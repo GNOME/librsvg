@@ -12,7 +12,7 @@ use crate::error::InternalRenderingError;
 use crate::float_eq_cairo::{CAIRO_FIXED_MAX_DOUBLE, CAIRO_FIXED_MIN_DOUBLE};
 use crate::layout::{self, Stroke};
 use crate::path_builder::{
-    arc_segment, ArcParameterization, CubicBezierCurve, EllipticalArc, Path, PathCommand,
+    ArcParameterization, CubicBezierCurve, EllipticalArc, Path, PathCommand, arc_segment,
 };
 use crate::properties::StrokeLinecap;
 use crate::rect::Rect;

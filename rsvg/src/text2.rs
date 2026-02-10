@@ -4,7 +4,7 @@ use markup5ever::{expanded_name, local_name, ns};
 use pango::IsAttribute;
 use rctree::NodeEdge;
 
-use crate::element::{set_attribute, Element, ElementData, ElementTrait};
+use crate::element::{Element, ElementData, ElementTrait, set_attribute};
 use crate::error::ParseError;
 use crate::layout::FontProperties;
 use crate::length::{Horizontal, Length, NormalizeParams, Vertical};

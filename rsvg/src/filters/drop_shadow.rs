@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, ns};
 
 use crate::color::resolve_color;
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{ElementTrait, set_attribute};
 use crate::filter_func::drop_shadow_primitives;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberOptionalNumber, ParseValue};

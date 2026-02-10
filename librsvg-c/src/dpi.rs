@@ -65,5 +65,7 @@ pub unsafe extern "C" fn rsvg_set_default_dpi_x_y(dpi_x: libc::c_double, dpi_y: 
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rsvg_set_default_dpi(dpi: libc::c_double) {
-    unsafe { rsvg_set_default_dpi_x_y(dpi, dpi); }
+    unsafe {
+        rsvg_set_default_dpi_x_y(dpi, dpi);
+    }
 }

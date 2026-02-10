@@ -1,9 +1,9 @@
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, ns, QualName};
+use markup5ever::{QualName, expanded_name, local_name, ns};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{ElementTrait, set_attribute};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parse_identifiers;
@@ -13,7 +13,7 @@ use crate::rect::IRect;
 use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::{
-    iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
+    ImageSurfaceDataExt, Pixel, iterators::Pixels, shared_surface::ExclusiveImageSurface,
 };
 use crate::util::clamp;
 use crate::xml::Attributes;
@@ -122,7 +122,11 @@ fn parse_matrix(dest: &mut Matrix5<f64>, attr: QualName, value: &str, session: &
         }
 
         Err(e) => {
-            rsvg_log!(session, "element feColorMatrix with type=\"matrix\", expected a values attribute with 20 numbers: {}", e);
+            rsvg_log!(
+                session,
+                "element feColorMatrix with type=\"matrix\", expected a values attribute with 20 numbers: {}",
+                e
+            );
         }
     }
 }
@@ -136,7 +140,11 @@ fn parse_saturate_matrix(dest: &mut Matrix5<f64>, attr: QualName, value: &str, s
         }
 
         Err(e) => {
-            rsvg_log!(session, "element feColorMatrix with type=\"saturate\", expected a values attribute with 1 number: {}", e);
+            rsvg_log!(
+                session,
+                "element feColorMatrix with type=\"saturate\", expected a values attribute with 1 number: {}",
+                e
+            );
         }
     }
 }
@@ -155,7 +163,11 @@ fn parse_hue_rotate_matrix(
         }
 
         Err(e) => {
-            rsvg_log!(session, "element feColorMatrix with type=\"hueRotate\", expected a values attribute with 1 number: {}", e);
+            rsvg_log!(
+                session,
+                "element feColorMatrix with type=\"hueRotate\", expected a values attribute with 1 number: {}",
+                e
+            );
         }
     }
 }

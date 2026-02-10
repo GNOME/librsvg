@@ -1,6 +1,6 @@
 use float_cmp::approx_eq;
-use gio::glib::Bytes;
 use gio::MemoryInputStream;
+use gio::glib::Bytes;
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
 use std::cmp;

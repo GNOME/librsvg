@@ -8,8 +8,8 @@ use std::env;
 use std::sync::Once;
 
 use crate::{
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     CairoRenderer, Loader, LoadingError, RenderingError, SvgHandle,
+    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
 };
 
 pub fn load_svg(input: &'static [u8]) -> Result<SvgHandle, LoadingError> {
@@ -76,7 +76,7 @@ mod pango_ft2 {
             "resources",
         ]
         .iter()
-            .collect();
+        .collect();
 
         unsafe {
             let config = fontconfig_sys::FcConfigCreate();
@@ -85,16 +85,23 @@ mod pango_ft2 {
             }
 
             let fonts_dot_conf_path = tests_resources_path.clone().join("fonts.conf");
-            let fonts_dot_conf_cstring = CString::new(fonts_dot_conf_path.to_str().unwrap()).unwrap();
-            if fontconfig_sys::FcConfigParseAndLoad(config, fonts_dot_conf_cstring.as_ptr().cast(), 1)
-                == 0
+            let fonts_dot_conf_cstring =
+                CString::new(fonts_dot_conf_path.to_str().unwrap()).unwrap();
+            if fontconfig_sys::FcConfigParseAndLoad(
+                config,
+                fonts_dot_conf_cstring.as_ptr().cast(),
+                1,
+            ) == 0
             {
                 panic!("Could not parse fontconfig configuration from tests/resources/fonts.conf");
             }
 
-            let tests_resources_cstring = CString::new(tests_resources_path.to_str().unwrap()).unwrap();
-            if fontconfig_sys::FcConfigAppFontAddDir(config, tests_resources_cstring.as_ptr().cast())
-                == 0
+            let tests_resources_cstring =
+                CString::new(tests_resources_path.to_str().unwrap()).unwrap();
+            if fontconfig_sys::FcConfigAppFontAddDir(
+                config,
+                tests_resources_cstring.as_ptr().cast(),
+            ) == 0
             {
                 panic!("Could not load fonts from directory tests/resources");
             }

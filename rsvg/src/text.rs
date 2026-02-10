@@ -1,15 +1,15 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
-use markup5ever::{expanded_name, local_name, ns, QualName};
-use pango::prelude::FontExt;
+use markup5ever::{QualName, expanded_name, local_name, ns};
 use pango::IsAttribute;
+use pango::prelude::FontExt;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
 
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, Viewport};
-use crate::element::{set_attribute, DrawResult, ElementData, ElementTrait};
+use crate::drawing_ctx::{DrawingCtx, FontOptions, Viewport, create_pango_context};
+use crate::element::{DrawResult, ElementData, ElementTrait, set_attribute};
 use crate::error::*;
 use crate::layout::{self, FontProperties, Layer, LayerKind, StackingContext, Stroke, TextSpan};
 use crate::length::*;
@@ -23,7 +23,7 @@ use crate::properties::{
 use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
-use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
+use crate::space::{NormalizeDefault, XmlSpaceNormalize, xml_space_normalize};
 use crate::xml::Attributes;
 
 /// The state of a text layout operation.

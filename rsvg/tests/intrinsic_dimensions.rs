@@ -1,7 +1,7 @@
 use rsvg::{CairoRenderer, IntrinsicDimensions, Length, LengthUnit, RenderingError};
 
 use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
-use rsvg::test_utils::{load_svg, render_document, SurfaceSize};
+use rsvg::test_utils::{SurfaceSize, load_svg, render_document};
 
 #[test]
 fn no_intrinsic_dimensions() {

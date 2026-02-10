@@ -5,7 +5,7 @@
 //! prefix, to be clear that they should only be used from the implementation of the C API
 //! and not from the main Rust code of the library.
 
-use glib::ffi::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING};
+use glib::ffi::{G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING, GLogField, g_log_structured_array};
 use glib::translate::*;
 
 /*

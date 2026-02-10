@@ -14,10 +14,11 @@
 use cssparser::Parser;
 
 use crate::angle::Angle;
-use crate::color::{resolve_color, Color};
+use crate::color::{Color, resolve_color};
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
+    FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive, UserSpacePrimitive,
     color_matrix::ColorMatrix,
     component_transfer::{self, FeFuncA, FeFuncB, FeFuncCommon, FeFuncG, FeFuncR},
     composite::{Composite, Operator},
@@ -25,7 +26,6 @@ use crate::filters::{
     gaussian_blur::GaussianBlur,
     merge::{Merge, MergeNode},
     offset::Offset,
-    FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive, UserSpacePrimitive,
 };
 use crate::length::*;
 use crate::parsers::{CustomIdent, NumberOptionalNumber, NumberOrPercentage, Parse};

@@ -4,7 +4,7 @@ use cssparser::Parser;
 
 use crate::error::*;
 use crate::length::*;
-use crate::parsers::{optional_comma, Parse};
+use crate::parsers::{Parse, optional_comma};
 
 #[derive(Debug, Default, PartialEq, Clone)]
 pub enum Dasharray {

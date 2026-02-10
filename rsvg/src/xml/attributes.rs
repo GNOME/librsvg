@@ -4,7 +4,7 @@ use std::slice;
 use std::str;
 
 use markup5ever::{
-    expanded_name, local_name, namespace_url, ns, LocalName, Namespace, Prefix, QualName,
+    LocalName, Namespace, Prefix, QualName, expanded_name, local_name, namespace_url, ns,
 };
 use string_cache::DefaultAtom;
 

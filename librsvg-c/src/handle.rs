@@ -34,13 +34,13 @@ use gio::prelude::*;
 use glib::error::ErrorDomain;
 use url::Url;
 
+use glib::Bytes;
 use glib::subclass::prelude::*;
 use glib::translate::*;
 use glib::types::instance_of;
-use glib::Bytes;
 use glib::{ffi::gpointer, gobject_ffi};
 
-use rsvg::c_api_only::{rsvg_log, Session};
+use rsvg::c_api_only::{Session, rsvg_log};
 use rsvg::{CairoRenderer, IntrinsicDimensions, Length, Loader, LoadingError, SvgHandle};
 
 use super::dpi::Dpi;

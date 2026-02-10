@@ -1,9 +1,9 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
 use rsvg::bench_only::{
-    linearize, map_unpremultiplied_components_loop, ExclusiveImageSurface, IRect,
-    ImageSurfaceDataExt, Pixel, SurfaceType,
+    ExclusiveImageSurface, IRect, ImageSurfaceDataExt, Pixel, SurfaceType, linearize,
+    map_unpremultiplied_components_loop,
 };
 
 const SURFACE_SIDE: i32 = 512;

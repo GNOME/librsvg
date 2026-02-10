@@ -330,21 +330,31 @@ mod tests {
             Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
         ));
 
-        assert!(url_resolver
-            .resolve_href(".@../../../../../../../../../../etc/passwd")
-            .is_err());
-        assert!(url_resolver
-            .resolve_href(".$../../../../../../../../../../etc/passwd")
-            .is_err());
-        assert!(url_resolver
-            .resolve_href(".%../../../../../../../../../../etc/passwd")
-            .is_err());
-        assert!(url_resolver
-            .resolve_href(".*../../../../../../../../../../etc/passwd")
-            .is_err());
-        assert!(url_resolver
-            .resolve_href("~/../../../../../../../../../../etc/passwd")
-            .is_err());
+        assert!(
+            url_resolver
+                .resolve_href(".@../../../../../../../../../../etc/passwd")
+                .is_err()
+        );
+        assert!(
+            url_resolver
+                .resolve_href(".$../../../../../../../../../../etc/passwd")
+                .is_err()
+        );
+        assert!(
+            url_resolver
+                .resolve_href(".%../../../../../../../../../../etc/passwd")
+                .is_err()
+        );
+        assert!(
+            url_resolver
+                .resolve_href(".*../../../../../../../../../../etc/passwd")
+                .is_err()
+        );
+        assert!(
+            url_resolver
+                .resolve_href("~/../../../../../../../../../../etc/passwd")
+                .is_err()
+        );
     }
 
     #[test]

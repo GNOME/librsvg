@@ -42,7 +42,7 @@
 //!
 //! [diag]: https://www.w3.org/TR/SVG/coords.html#Units
 
-use cssparser::{match_ignore_ascii_case, Parser, Token};
+use cssparser::{Parser, Token, match_ignore_ascii_case};
 use std::f64::consts::*;
 use std::fmt;
 use std::marker::PhantomData;
@@ -50,7 +50,7 @@ use std::marker::PhantomData;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::Viewport;
 use crate::error::*;
-use crate::parsers::{finite_f32, Parse};
+use crate::parsers::{Parse, finite_f32};
 use crate::properties::{ComputedValues, FontSize, TextOrientation, WritingMode};
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;

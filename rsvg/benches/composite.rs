@@ -1,8 +1,8 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
 use rsvg::bench_only::{
-    composite_arithmetic, ExclusiveImageSurface, IRect, SharedImageSurface, SurfaceType,
+    ExclusiveImageSurface, IRect, SharedImageSurface, SurfaceType, composite_arithmetic,
 };
 
 const SURFACE_SIDE: i32 = 512;

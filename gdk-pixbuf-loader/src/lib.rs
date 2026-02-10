@@ -1,21 +1,21 @@
 use std::ptr::null_mut;
 
 use gdk_pixbuf::ffi::{
-    GdkPixbufFormat, GdkPixbufModule, GdkPixbufModulePattern, GdkPixbufModulePreparedFunc,
-    GdkPixbufModuleSizeFunc, GdkPixbufModuleUpdatedFunc, GDK_PIXBUF_FORMAT_SCALABLE,
-    GDK_PIXBUF_FORMAT_THREADSAFE,
+    GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE, GdkPixbufFormat, GdkPixbufModule,
+    GdkPixbufModulePattern, GdkPixbufModulePreparedFunc, GdkPixbufModuleSizeFunc,
+    GdkPixbufModuleUpdatedFunc,
 };
 
 use std::ffi::{c_char, c_int, c_uint};
 
-use glib::ffi::{gboolean, gpointer, GDestroyNotify, GError};
+use glib::Bytes;
+use glib::ffi::{GDestroyNotify, GError, gboolean, gpointer};
 use glib::prelude::*;
 use glib::translate::*;
-use glib::Bytes;
 
+use gio::MemoryInputStream;
 use gio::ffi::{GCancellable, GFile, GInputStream};
 use gio::prelude::*;
-use gio::MemoryInputStream;
 
 use glib::gstr;
 
@@ -205,7 +205,7 @@ extern "C" fn fill_info(info: &mut GdkPixbufFormat) {
 #[cfg(test)]
 mod tests {
     use gdk_pixbuf::ffi::{
-        GdkPixbufFormat, GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE,
+        GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE, GdkPixbufFormat,
     };
     use glib::translate::IntoGlib;
 

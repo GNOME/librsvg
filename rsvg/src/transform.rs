@@ -18,7 +18,7 @@ use std::ops::Deref;
 use crate::angle::Angle;
 use crate::error::*;
 use crate::length::*;
-use crate::parsers::{optional_comma, Parse};
+use crate::parsers::{Parse, optional_comma};
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::rect::Rect;
