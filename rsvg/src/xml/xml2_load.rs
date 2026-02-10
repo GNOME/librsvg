@@ -3,6 +3,11 @@
 //! This file provides functions to create a libxml2 xmlParserCtxtPtr, configured
 //! to read from a gio::InputStream, and to maintain its loading data in an XmlState.
 
+// This file is a bunch of glue between libxml2 and Rust, and we are calling unsafe extern
+// "C" functions everywhere.  So, have this annotation here, just once, instead of in
+// every place that it is needed in this file.
+#![allow(unsafe_op_in_unsafe_fn)]
+
 use gio::prelude::*;
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};

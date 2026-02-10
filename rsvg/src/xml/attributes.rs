@@ -66,6 +66,7 @@ impl Attributes {
     /// * `attrs` is a valid pointer, with (n_attributes * 5) elements.
     ///
     /// * All strings are valid UTF-8.
+    #[allow(unsafe_op_in_unsafe_fn)]
     pub unsafe fn new_from_xml2_attributes(
         n_attributes: usize,
         attrs: *const *const libc::c_char,
