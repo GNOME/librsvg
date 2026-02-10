@@ -13,7 +13,7 @@ variables:
   RUST_MINIMUM: "1.85.1"
   RUST_NIGHTLY: "nightly"
   RUSTUP_VERSION: "1.28.0"
-  GNOMEOS_STABLE: "core-48"
+  GNOMEOS_STABLE: "core-49"
 
 # This bunch of packages are the system's C/C++ compilers, and the indirect dependencies needed
 # to build librsvg's direct dependencies.  E.g. we must build cairo from a git tag, but we don't
