@@ -822,7 +822,7 @@ impl DrawingCtx {
 
         let viewport = viewport.with_composed_transform(stacking_ctx_transform)?;
 
-        let res = if clipping {
+        if clipping {
             self.draw_in_optional_new_viewport(acquired_nodes, &viewport, &layout_viewport, draw_fn)
         } else {
             with_saved_cr(&self.cr.clone(), || {
@@ -992,9 +992,7 @@ impl DrawingCtx {
 
                 res
             })
-        };
-
-        res
+        }
     }
 
     pub fn with_discrete_layer(
