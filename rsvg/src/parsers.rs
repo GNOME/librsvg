@@ -231,7 +231,7 @@ macro_rules! parse_identifiers {
             let token = $parser.next()?;
 
             match token {
-                $(cssparser::Token::Ident(ref cow) if cow.eq_ignore_ascii_case($str) => Ok($val),)+
+                $(&cssparser::Token::Ident(ref cow) if cow.eq_ignore_ascii_case($str) => Ok($val),)+
 
                 _ => Err(loc.new_basic_unexpected_token_error(token.clone()))
             }

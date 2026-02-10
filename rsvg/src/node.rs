@@ -273,7 +273,7 @@ macro_rules! is_element_of_type {
 macro_rules! borrow_element_as {
     ($node:expr, $element_type:ident) => {
         std::cell::Ref::map($node.borrow_element_data(), |d| match d {
-            $crate::element::ElementData::$element_type(ref e) => &*e,
+            &$crate::element::ElementData::$element_type(ref e) => &*e,
             _ => panic!("tried to borrow_element_as {}", stringify!($element_type)),
         })
     };
