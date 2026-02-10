@@ -11,7 +11,7 @@ homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
 categories = ["graphics", "multimedia::images", "rendering::data-formats"]
 keywords = ["svg", "cairo"]
-edition = "2021"
+edition = "2024"
 rust-version = "1.92.0"
 
 [profile.overflow]
@@ -31,7 +31,7 @@ members = [
 ]
 default-members = ["rsvg", "rsvg_convert"]
 exclude = ["afl-fuzz", "librsvg-rebind/gir", "fuzz"]
-resolver = "2"
+resolver = "3"
 
 [workspace.dependencies]
 afl = "*"
