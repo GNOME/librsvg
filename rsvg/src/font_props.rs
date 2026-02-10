@@ -72,30 +72,34 @@ impl Parse for Font {
                 nb_normals += 1;
                 continue;
             }
-            if style.is_none() {
-                if let Ok(value) = parser.try_parse(FontStyle::parse) {
-                    style = Some(value);
-                    continue;
-                }
+            if style.is_none()
+                && let Ok(value) = parser.try_parse(FontStyle::parse)
+            {
+                style = Some(value);
+                continue;
             }
-            if weight.is_none() {
-                if let Ok(value) = parser.try_parse(FontWeight::parse) {
-                    weight = Some(value);
-                    continue;
-                }
+
+            if weight.is_none()
+                && let Ok(value) = parser.try_parse(FontWeight::parse)
+            {
+                weight = Some(value);
+                continue;
             }
-            if variant_caps.is_none() {
-                if let Ok(value) = parser.try_parse(FontVariant::parse) {
-                    variant_caps = Some(value);
-                    continue;
-                }
+
+            if variant_caps.is_none()
+                && let Ok(value) = parser.try_parse(FontVariant::parse)
+            {
+                variant_caps = Some(value);
+                continue;
             }
-            if stretch.is_none() {
-                if let Ok(value) = parser.try_parse(FontStretch::parse) {
-                    stretch = Some(value);
-                    continue;
-                }
+
+            if stretch.is_none()
+                && let Ok(value) = parser.try_parse(FontStretch::parse)
+            {
+                stretch = Some(value);
+                continue;
             }
+
             size = FontSize::parse(parser)?;
             break;
         }
