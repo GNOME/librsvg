@@ -1275,6 +1275,7 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
 
 #[unsafe(no_mangle)]
 #[cfg(feature = "pixbuf")]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
     handle: *const RsvgHandle,
 ) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
@@ -1301,6 +1302,7 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
 
 #[unsafe(no_mangle)]
 #[cfg(feature = "pixbuf")]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_pixbuf_and_error(
     handle: *const RsvgHandle,
     error: *mut *mut glib::ffi::GError,
@@ -1327,6 +1329,7 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf_and_error(
 
 #[unsafe(no_mangle)]
 #[cfg(feature = "pixbuf")]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_pixbuf_sub(
     handle: *const RsvgHandle,
     id: *const libc::c_char,
@@ -1353,13 +1356,12 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf_sub(
 }
 
 #[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_handle_get_dimensions(
     handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
 ) {
-    unsafe {
-        rsvg_handle_get_dimensions_sub(handle, dimension_data, ptr::null());
-    }
+    rsvg_handle_get_dimensions_sub(handle, dimension_data, ptr::null());
 }
 
 #[unsafe(no_mangle)]
