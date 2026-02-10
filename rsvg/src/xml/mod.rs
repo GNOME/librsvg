@@ -74,7 +74,7 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-extern "C" {
+unsafe extern "C" {
     // The original function takes an xmlNodePtr, but that is compatible
     // with xmlEntityPtr for the purposes of this function.
     fn xmlFreeNode(node: xmlEntityPtr);

@@ -57,7 +57,7 @@ mod pango_ft2 {
     use std::ffi::CString;
     use std::path::PathBuf;
 
-    extern "C" {
+    unsafe extern "C" {
         // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,
         //                               FcConfig       *fcconfig);
         // This is not bound in gtk-rs, and PangoFcFontMap is not even exposed, so we'll bind it by hand.

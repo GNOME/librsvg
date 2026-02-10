@@ -26,7 +26,7 @@ type RsvgSizeFunc = Option<
 >;
 
 #[link(name = "rsvg-2")]
-extern "C" {
+unsafe extern "C" {
     fn rsvg_handle_new_from_stream_sync(
         input_stream: *mut GInputStream,
         base_file: *mut GFile,

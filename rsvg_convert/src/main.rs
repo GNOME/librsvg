@@ -813,7 +813,7 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut clap::Command) {
     clap_complete::generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
 }
 
-extern "C" {
+unsafe extern "C" {
     fn hb_version_string() -> *const libc::c_char;
 
     #[cfg(unix)]
