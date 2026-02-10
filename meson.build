@@ -21,7 +21,7 @@ cc = meson.get_compiler('c')
 #   - the "rust-version" value in Cargo.toml
 #   - the "Compilers and build tools" section of devel-docs/_build_dependencies.rst
 #   - the "RUST_MINIMUM" variable in ci/container_builds.yml
-msrv = '1.85.1'
+msrv = '1.88.0'
 cargo_cbuild_version = '0.10.10'
 cargo = find_program('cargo', version:'>= @0@'.format(msrv))
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)
