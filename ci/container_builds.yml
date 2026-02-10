@@ -8,7 +8,7 @@ include:
 # IMPORTANT: See
 # https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
 variables:
-  BASE_TAG: "2026-02-10.0-librsvg-2.61"
+  BASE_TAG: "2026-02-10.1-librsvg-2.61"
   RUST_STABLE: "1.89.0"
   RUST_MINIMUM: "1.88.0"
   RUST_NIGHTLY: "nightly"
