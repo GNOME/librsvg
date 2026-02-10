@@ -8,7 +8,7 @@ use std::time::Instant;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{ElementTrait, set_attribute};
 use crate::error::{InternalRenderingError, ParseError};
 use crate::filter::UserSpaceFilter;
 use crate::length::*;
@@ -19,8 +19,8 @@ use crate::properties::ColorInterpolationFilters;
 use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::{
-    shared_surface::{SharedImageSurface, SurfaceType},
     EdgeMode,
+    shared_surface::{SharedImageSurface, SurfaceType},
 };
 use crate::xml::Attributes;
 

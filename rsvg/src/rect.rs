@@ -13,19 +13,11 @@ mod rect {
     // Use our own min() and max() that are acceptable for floating point
 
     fn min<T: PartialOrd>(x: T, y: T) -> T {
-        if x <= y {
-            x
-        } else {
-            y
-        }
+        if x <= y { x } else { y }
     }
 
     fn max<T: PartialOrd>(x: T, y: T) -> T {
-        if x >= y {
-            x
-        } else {
-            y
-        }
+        if x >= y { x } else { y }
     }
 
     #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -215,11 +207,7 @@ pub fn rect_to_transform(rect: &Option<Rect>, units: CoordUnits) -> Result<Trans
                 let r = rect.as_ref().unwrap();
                 let t = Transform::new_unchecked(r.width(), 0.0, 0.0, r.height(), r.x0, r.y0);
 
-                if t.is_invertible() {
-                    Ok(t)
-                } else {
-                    Err(())
-                }
+                if t.is_invertible() { Ok(t) } else { Err(()) }
             }
         }
     }

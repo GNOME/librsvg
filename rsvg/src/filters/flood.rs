@@ -1,4 +1,4 @@
-use crate::color::{resolve_color, Color};
+use crate::color::{Color, resolve_color};
 use crate::document::AcquiredNodes;
 use crate::element::ElementTrait;
 use crate::node::{CascadedValues, Node};

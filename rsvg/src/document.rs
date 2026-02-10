@@ -4,8 +4,8 @@ use data_url::mime::Mime;
 use glib::prelude::*;
 use markup5ever::QualName;
 use std::cell::Cell;
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt;
 use std::include_str;
 use std::io::Cursor;
@@ -20,7 +20,7 @@ use crate::borrow_element_as;
 use crate::css::{self, Origin, Stylesheet};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{
-    draw_tree, with_saved_cr, DrawingMode, RenderingConfiguration, SvgNesting,
+    DrawingMode, RenderingConfiguration, SvgNesting, draw_tree, with_saved_cr,
 };
 use crate::error::{AcquireError, InternalRenderingError, LoadingError, NodeIdError};
 use crate::io::{self, BinaryData};
@@ -33,7 +33,7 @@ use crate::session::Session;
 use crate::structure::IntrinsicDimensions;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
-use crate::xml::{xml_load_from_possibly_compressed_stream, Attributes};
+use crate::xml::{Attributes, xml_load_from_possibly_compressed_stream};
 
 /// Identifier of a node
 #[derive(Debug, PartialEq, Clone)]
@@ -286,13 +286,15 @@ impl Document {
         let stylesheets = {
             static UA_STYLESHEETS: OnceLock<Vec<Stylesheet>> = OnceLock::new();
             UA_STYLESHEETS.get_or_init(|| {
-                vec![Stylesheet::from_data(
-                    include_str!("ua.css"),
-                    &UrlResolver::new(None),
-                    Origin::UserAgent,
-                    Session::default(),
-                )
-                .expect("could not parse user agent stylesheet for librsvg, there's a bug!")]
+                vec![
+                    Stylesheet::from_data(
+                        include_str!("ua.css"),
+                        &UrlResolver::new(None),
+                        Origin::UserAgent,
+                        Session::default(),
+                    )
+                    .expect("could not parse user agent stylesheet for librsvg, there's a bug!"),
+                ]
             })
         };
         css::cascade(

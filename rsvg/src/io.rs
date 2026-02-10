@@ -1,11 +1,11 @@
 //! Utilities to acquire streams and data from from URLs.
 
-use data_url::{mime::Mime, DataUrl};
+use data_url::{DataUrl, mime::Mime};
 use gio::{
-    prelude::{FileExt, FileExtManual},
     Cancellable, File as GFile, InputStream, MemoryInputStream,
+    prelude::{FileExt, FileExtManual},
 };
-use glib::{self, object::Cast, Bytes as GBytes};
+use glib::{self, Bytes as GBytes, object::Cast};
 use std::fmt;
 
 use crate::url_resolver::AllowedUrl;

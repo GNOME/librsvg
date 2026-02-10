@@ -21,8 +21,8 @@ use cssparser::match_ignore_ascii_case;
 
 use librsvg_c::{handle::PathOrUrl, sizing::LegacySize};
 use rsvg::rsvg_convert_only::{
-    set_source_color_on_cairo, AspectRatio, Color, CssLength, Dpi, Horizontal, Length, Normalize,
-    NormalizeParams, Parse, Rect, ULength, Validate, Vertical, ViewBox,
+    AspectRatio, Color, CssLength, Dpi, Horizontal, Length, Normalize, NormalizeParams, Parse,
+    Rect, ULength, Validate, Vertical, ViewBox, set_source_color_on_cairo,
 };
 use rsvg::{AcceptLanguage, CairoRenderer, Language, LengthUnit, Loader, RenderingError};
 
@@ -809,11 +809,16 @@ fn natural_geometry(
     })
 }
 
-fn print_completions<G: Generator>(gen: G, cmd: &mut clap::Command) {
-    clap_complete::generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
+fn print_completions<G: Generator>(generator: G, cmd: &mut clap::Command) {
+    clap_complete::generate(
+        generator,
+        cmd,
+        cmd.get_name().to_string(),
+        &mut io::stdout(),
+    );
 }
 
-extern "C" {
+unsafe extern "C" {
     fn hb_version_string() -> *const libc::c_char;
 
     #[cfg(unix)]

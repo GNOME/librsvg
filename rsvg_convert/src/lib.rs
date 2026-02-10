@@ -5,10 +5,10 @@
 use clap::crate_version;
 use clap_complete::Shell;
 
+use rsvg::LengthUnit;
 use rsvg::rsvg_convert_only::{
     CssLength, Horizontal, Normalize, Parse, Signed, Unsigned, Validate, Vertical,
 };
-use rsvg::LengthUnit;
 
 use std::ffi::OsString;
 use std::path::PathBuf;

@@ -12,7 +12,7 @@ use crate::bbox::BoundingBox;
 use crate::borrow_element_as;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
-use crate::element::{set_attribute, DrawResult, ElementTrait};
+use crate::element::{DrawResult, ElementTrait, set_attribute};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::layout::{self, Shape, StackingContext};
@@ -20,7 +20,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
-use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
+use crate::path_builder::{ArcParameterization, CubicBezierCurve, Path, PathCommand, arc_segment};
 use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
@@ -1171,15 +1171,21 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        assert!(emit_markers_for_path(
-            &builder.into_path(),
-            Box::new(BoundingBox::new()),
-            &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| -> DrawResult {
-                v.push((marker_type, x, y, computed_angle));
-                Ok(Box::new(BoundingBox::new()))
-            }
-        )
-        .is_ok());
+        assert!(
+            emit_markers_for_path(
+                &builder.into_path(),
+                Box::new(BoundingBox::new()),
+                &mut |marker_type: MarkerType,
+                      x: f64,
+                      y: f64,
+                      computed_angle: Angle|
+                 -> DrawResult {
+                    v.push((marker_type, x, y, computed_angle));
+                    Ok(Box::new(BoundingBox::new()))
+                }
+            )
+            .is_ok()
+        );
 
         assert_eq!(
             v,
@@ -1203,15 +1209,21 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        assert!(emit_markers_for_path(
-            &builder.into_path(),
-            Box::new(BoundingBox::new()),
-            &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| -> DrawResult {
-                v.push((marker_type, x, y, computed_angle));
-                Ok(Box::new(BoundingBox::new()))
-            }
-        )
-        .is_ok());
+        assert!(
+            emit_markers_for_path(
+                &builder.into_path(),
+                Box::new(BoundingBox::new()),
+                &mut |marker_type: MarkerType,
+                      x: f64,
+                      y: f64,
+                      computed_angle: Angle|
+                 -> DrawResult {
+                    v.push((marker_type, x, y, computed_angle));
+                    Ok(Box::new(BoundingBox::new()))
+                }
+            )
+            .is_ok()
+        );
 
         assert_eq!(
             v,

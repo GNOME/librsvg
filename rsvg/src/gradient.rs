@@ -1,21 +1,21 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, ns, ExpandedName, LocalName, Namespace};
+use markup5ever::{ExpandedName, LocalName, Namespace, expanded_name, local_name, ns};
 
-use crate::color::{resolve_color, Color};
+use crate::color::{Color, resolve_color};
 use crate::coord_units;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::Viewport;
-use crate::element::{set_attribute, ElementData, ElementTrait};
+use crate::element::{ElementData, ElementTrait, set_attribute};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
-use crate::rect::{rect_to_transform, Rect};
+use crate::rect::{Rect, rect_to_transform};
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
@@ -411,7 +411,7 @@ impl UnresolvedGradient {
         ));
 
         for child in node.children().filter(|c| c.is_element()) {
-            if let ElementData::Stop(ref stop) = &*child.borrow_element_data() {
+            if let ElementData::Stop(stop) = &*child.borrow_element_data() {
                 let cascaded = CascadedValues::new_from_node(&child);
                 let values = cascaded.get();
 
@@ -702,7 +702,7 @@ impl ResolvedGradient {
 mod tests {
     use super::*;
 
-    use markup5ever::{ns, QualName};
+    use markup5ever::{QualName, ns};
 
     use crate::borrow_element_as;
     use crate::node::{Node, NodeData};

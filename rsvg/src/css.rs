@@ -74,12 +74,12 @@
 //! matches by specificity and apply the result to each element.
 
 use cssparser::{
-    self, match_ignore_ascii_case, parse_important, AtRuleParser, BasicParseErrorKind, CowRcStr,
-    DeclarationParser, Parser, ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser,
-    RuleBodyParser, SourceLocation, StyleSheetParser, ToCss,
+    self, AtRuleParser, BasicParseErrorKind, CowRcStr, DeclarationParser, Parser, ParserInput,
+    ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourceLocation,
+    StyleSheetParser, ToCss, match_ignore_ascii_case, parse_important,
 };
 use language_tags::LanguageTag;
-use markup5ever::{self, ns, Namespace, QualName};
+use markup5ever::{self, Namespace, QualName, ns};
 use precomputed_hash::PrecomputedHash;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::BloomFilter;
@@ -99,7 +99,7 @@ use crate::element::Element;
 use crate::error::*;
 use crate::io;
 use crate::node::{Node, NodeBorrow, NodeCascade};
-use crate::properties::{parse_value, ComputedValues, ParseAs, ParsedProperty};
+use crate::properties::{ComputedValues, ParseAs, ParsedProperty, parse_value};
 use crate::rsvg_log;
 use crate::session::Session;
 use crate::url_resolver::{AllowedUrl, UrlResolver};

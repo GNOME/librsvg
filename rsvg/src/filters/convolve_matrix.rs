@@ -6,7 +6,7 @@ use crate::bench_only::{
     EdgeMode, ExclusiveImageSurface, ImageSurfaceDataExt, Pixel, PixelRectangle, Pixels,
 };
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{ElementTrait, set_attribute};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parse_identifiers;
@@ -151,7 +151,7 @@ impl ConvolveMatrix {
             Some(x) if x >= self.order.0 => {
                 return Err(FilterError::InvalidParameter(
                     "targetX must be less than orderX".to_string(),
-                ))
+                ));
             }
             Some(x) => x,
             None => self.order.0 / 2,
@@ -161,7 +161,7 @@ impl ConvolveMatrix {
             Some(y) if y >= self.order.1 => {
                 return Err(FilterError::InvalidParameter(
                     "targetY must be less than orderY".to_string(),
-                ))
+                ));
             }
             Some(y) => y,
             None => self.order.1 / 2,
@@ -216,11 +216,7 @@ impl ConvolveMatrix {
         } else {
             let d = matrix.iter().sum();
 
-            if d != 0.0 {
-                d
-            } else {
-                1.0
-            }
+            if d != 0.0 { d } else { 1.0 }
         };
 
         let mut surface = ExclusiveImageSurface::new(

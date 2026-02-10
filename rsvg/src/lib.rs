@@ -217,13 +217,13 @@ pub mod bench_only {
     pub use crate::path_parser::Lexer;
     pub use crate::rect::IRect;
     pub use crate::surface_utils::{
+        EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps,
         iterators::{PixelRectangle, Pixels},
         shared_surface::{
-            composite_arithmetic, AlphaOnly, ExclusiveImageSurface, Horizontal, NotAlphaOnly,
-            SharedImageSurface, SurfaceType, Vertical,
+            AlphaOnly, ExclusiveImageSurface, Horizontal, NotAlphaOnly, SharedImageSurface,
+            SurfaceType, Vertical, composite_arithmetic,
         },
         srgb::{linearize, map_unpremultiplied_components_loop},
-        EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps,
     };
 }
 

@@ -179,7 +179,7 @@ pub type xmlInputCloseCallback =
 
 pub type xmlCharEncoding = libc::c_int;
 
-extern "C" {
+unsafe extern "C" {
     pub fn xmlInitParser();
 
     pub fn xmlCreateIOParserCtxt(

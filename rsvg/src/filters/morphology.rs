@@ -4,7 +4,7 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, ns};
 
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{ElementTrait, set_attribute};
 use crate::error::*;
 use crate::node::Node;
 use crate::parse_identifiers;
@@ -13,9 +13,9 @@ use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
 use crate::surface_utils::{
+    EdgeMode, ImageSurfaceDataExt, Pixel,
     iterators::{PixelRectangle, Pixels},
     shared_surface::ExclusiveImageSurface,
-    EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 use crate::xml::Attributes;
 

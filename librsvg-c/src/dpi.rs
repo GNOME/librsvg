@@ -45,22 +45,27 @@ impl Dpi {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rsvg_set_default_dpi_x_y(dpi_x: libc::c_double, dpi_y: libc::c_double) {
-    if dpi_x <= 0.0 {
-        DPI_X = DEFAULT_DPI_X;
-    } else {
-        DPI_X = dpi_x;
-    }
+    // mutating global statics is unsafe
+    unsafe {
+        if dpi_x <= 0.0 {
+            DPI_X = DEFAULT_DPI_X;
+        } else {
+            DPI_X = dpi_x;
+        }
 
-    if dpi_y <= 0.0 {
-        DPI_Y = DEFAULT_DPI_Y;
-    } else {
-        DPI_Y = dpi_y;
+        if dpi_y <= 0.0 {
+            DPI_Y = DEFAULT_DPI_Y;
+        } else {
+            DPI_Y = dpi_y;
+        }
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn rsvg_set_default_dpi(dpi: libc::c_double) {
-    rsvg_set_default_dpi_x_y(dpi, dpi);
+    unsafe {
+        rsvg_set_default_dpi_x_y(dpi, dpi);
+    }
 }

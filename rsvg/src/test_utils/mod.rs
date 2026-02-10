@@ -8,8 +8,8 @@ use std::env;
 use std::sync::Once;
 
 use crate::{
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     CairoRenderer, Loader, LoadingError, RenderingError, SvgHandle,
+    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
 };
 
 pub fn load_svg(input: &'static [u8]) -> Result<SvgHandle, LoadingError> {
@@ -57,7 +57,7 @@ mod pango_ft2 {
     use std::ffi::CString;
     use std::path::PathBuf;
 
-    extern "C" {
+    unsafe extern "C" {
         // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,
         //                               FcConfig       *fcconfig);
         // This is not bound in gtk-rs, and PangoFcFontMap is not even exposed, so we'll bind it by hand.
@@ -78,33 +78,42 @@ mod pango_ft2 {
         .iter()
         .collect();
 
-        let config = fontconfig_sys::FcConfigCreate();
-        if fontconfig_sys::FcConfigSetCurrent(config) == 0 {
-            panic!("Could not set a fontconfig configuration");
+        unsafe {
+            let config = fontconfig_sys::FcConfigCreate();
+            if fontconfig_sys::FcConfigSetCurrent(config) == 0 {
+                panic!("Could not set a fontconfig configuration");
+            }
+
+            let fonts_dot_conf_path = tests_resources_path.clone().join("fonts.conf");
+            let fonts_dot_conf_cstring =
+                CString::new(fonts_dot_conf_path.to_str().unwrap()).unwrap();
+            if fontconfig_sys::FcConfigParseAndLoad(
+                config,
+                fonts_dot_conf_cstring.as_ptr().cast(),
+                1,
+            ) == 0
+            {
+                panic!("Could not parse fontconfig configuration from tests/resources/fonts.conf");
+            }
+
+            let tests_resources_cstring =
+                CString::new(tests_resources_path.to_str().unwrap()).unwrap();
+            if fontconfig_sys::FcConfigAppFontAddDir(
+                config,
+                tests_resources_cstring.as_ptr().cast(),
+            ) == 0
+            {
+                panic!("Could not load fonts from directory tests/resources");
+            }
+
+            let font_map = FontMap::for_font_type(cairo::FontType::FontTypeFt).unwrap();
+            let raw_font_map: *mut pango::ffi::PangoFontMap = font_map.to_glib_none().0;
+
+            pango_fc_font_map_set_config(raw_font_map as *mut _, config);
+            fontconfig_sys::FcConfigDestroy(config);
+
+            FontMap::set_default(Some(&font_map.downcast::<pangocairo::FontMap>().unwrap()));
         }
-
-        let fonts_dot_conf_path = tests_resources_path.clone().join("fonts.conf");
-        let fonts_dot_conf_cstring = CString::new(fonts_dot_conf_path.to_str().unwrap()).unwrap();
-        if fontconfig_sys::FcConfigParseAndLoad(config, fonts_dot_conf_cstring.as_ptr().cast(), 1)
-            == 0
-        {
-            panic!("Could not parse fontconfig configuration from tests/resources/fonts.conf");
-        }
-
-        let tests_resources_cstring = CString::new(tests_resources_path.to_str().unwrap()).unwrap();
-        if fontconfig_sys::FcConfigAppFontAddDir(config, tests_resources_cstring.as_ptr().cast())
-            == 0
-        {
-            panic!("Could not load fonts from directory tests/resources");
-        }
-
-        let font_map = FontMap::for_font_type(cairo::FontType::FontTypeFt).unwrap();
-        let raw_font_map: *mut pango::ffi::PangoFontMap = font_map.to_glib_none().0;
-
-        pango_fc_font_map_set_config(raw_font_map as *mut _, config);
-        fontconfig_sys::FcConfigDestroy(config);
-
-        FontMap::set_default(Some(&font_map.downcast::<pangocairo::FontMap>().unwrap()));
     }
 }
 
@@ -132,7 +141,9 @@ pub fn setup_language() {
     ONCE.call_once(|| {
         // For systemLanguage attribute tests.
         // The trailing ":" is intentional to test gitlab#425.
-        env::set_var("LANGUAGE", "de:en_US:en:");
-        env::set_var("LC_ALL", "de:en_US:en:");
+        unsafe {
+            env::set_var("LANGUAGE", "de:en_US:en:");
+            env::set_var("LC_ALL", "de:en_US:en:");
+        }
     });
 }

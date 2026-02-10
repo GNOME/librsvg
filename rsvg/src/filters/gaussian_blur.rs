@@ -5,15 +5,15 @@ use markup5ever::{expanded_name, local_name, ns};
 use nalgebra::{DMatrix, Dyn, VecStorage};
 
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{ElementTrait, set_attribute};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
 use crate::surface_utils::{
-    shared_surface::{BlurDirection, Horizontal, SharedImageSurface, Vertical},
     EdgeMode,
+    shared_surface::{BlurDirection, Horizontal, SharedImageSurface, Vertical},
 };
 use crate::xml::Attributes;
 

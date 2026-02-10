@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, ns};
 use crate::aspect_ratio::AspectRatio;
 use crate::document::{AcquiredNodes, Document, NodeId, Resource};
 use crate::drawing_ctx::{DrawingCtx, SvgNesting};
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{ElementTrait, set_attribute};
 use crate::href::{is_href, set_href};
 use crate::image::checked_i32;
 use crate::node::{CascadedValues, Node};
@@ -90,7 +90,7 @@ impl Image {
         let surface = match &self.source {
             Source::None => return Err(FilterError::InvalidInput),
 
-            Source::Node(node, ref name) => {
+            Source::Node(node, name) => {
                 if let Ok(acquired) = acquired_nodes.acquire_ref(node) {
                     rsvg_log!(ctx.session(), "(feImage \"{}\"", name);
                     let res = self.render_node(
@@ -107,7 +107,7 @@ impl Image {
                 }
             }
 
-            Source::ExternalImage(ref href) => {
+            Source::ExternalImage(href) => {
                 self.render_external_image(ctx, acquired_nodes, draw_ctx, &bounds, href)?
             }
         };

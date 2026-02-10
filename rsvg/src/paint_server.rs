@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use cssparser::{ParseErrorKind, Parser};
 
-use crate::color::{resolve_color, Color};
+use crate::color::{Color, resolve_color};
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;
 use crate::element::ElementData;
@@ -142,10 +142,7 @@ impl PaintServer {
         session: &Session,
     ) -> Rc<PaintSource> {
         match self {
-            PaintServer::Iri {
-                ref iri,
-                ref alternate,
-            } => acquired_nodes
+            PaintServer::Iri { iri, alternate } => acquired_nodes
                 .acquire(iri)
                 .and_then(|acquired| {
                     let node = acquired.get();

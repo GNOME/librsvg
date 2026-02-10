@@ -2,9 +2,9 @@
 mod internal_predicates;
 use internal_predicates::file;
 
+use assert_cmd::Command;
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::cargo::cargo_bin_cmd;
-use assert_cmd::Command;
 #[cfg(system_deps_have_cairo_pdf)]
 use chrono::{TimeZone, Utc};
 use predicates::boolean::*;

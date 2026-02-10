@@ -13,10 +13,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Once;
 
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use crate::test_utils::{render_document, setup_font_map, SurfaceSize};
+use crate::test_utils::{SurfaceSize, render_document, setup_font_map};
 use crate::{CairoRenderer, Loader};
 
-use super::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
+use super::compare_surfaces::{BufferDiff, Diff, compare_surfaces};
 use super::load_svg;
 
 pub struct Reference(SharedImageSurface);

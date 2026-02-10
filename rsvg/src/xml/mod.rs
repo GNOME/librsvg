@@ -2,11 +2,11 @@
 
 use encoding_rs::Encoding;
 use gio::{
-    prelude::BufferedInputStreamExt, BufferedInputStream, Cancellable, ConverterInputStream,
-    InputStream, ZlibCompressorFormat, ZlibDecompressor,
+    BufferedInputStream, Cancellable, ConverterInputStream, InputStream, ZlibCompressorFormat,
+    ZlibDecompressor, prelude::BufferedInputStreamExt,
 };
 use glib::object::Cast;
-use markup5ever::{expanded_name, local_name, ns, ExpandedName, LocalName, Namespace, QualName};
+use markup5ever::{ExpandedName, LocalName, Namespace, QualName, expanded_name, local_name, ns};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -14,10 +14,10 @@ use std::str;
 use std::string::ToString;
 use std::sync::Arc;
 use xml5ever::{
+    TokenizerResult,
     buffer_queue::BufferQueue,
     tendril::format_tendril,
     tokenizer::{ProcessResult, TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts},
-    TokenizerResult,
 };
 
 use crate::borrow_element_as;
@@ -74,7 +74,7 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-extern "C" {
+unsafe extern "C" {
     // The original function takes an xmlNodePtr, but that is compatible
     // with xmlEntityPtr for the purposes of this function.
     fn xmlFreeNode(node: xmlEntityPtr);
@@ -473,7 +473,7 @@ impl XmlState {
             Ok(()) => false,
             Err(AcquireError::ResourceError) => true,
             Err(AcquireError::FatalError(s)) => {
-                return Context::FatalError(LoadingError::XmlParseError(s))
+                return Context::FatalError(LoadingError::XmlParseError(s));
             }
         };
 

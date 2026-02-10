@@ -7,14 +7,14 @@ use num_traits::identities::Zero;
 use rayon::prelude::*;
 use std::cmp::max;
 
-use crate::color::{color_to_rgba, resolve_color, Color, RGBA};
+use crate::color::{Color, RGBA, color_to_rgba, resolve_color};
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, ElementData, ElementTrait};
+use crate::element::{ElementData, ElementTrait, set_attribute};
 use crate::filters::{
-    bounds::BoundsBuilder,
-    context::{FilterContext, FilterOutput},
     FilterEffect, FilterError, FilterResolveError, Input, InputRequirements, Primitive,
     PrimitiveParams, ResolvedPrimitive,
+    bounds::BoundsBuilder,
+    context::{FilterContext, FilterOutput},
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NonNegative, ParseValue};
@@ -22,8 +22,8 @@ use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
 use crate::surface_utils::{
-    shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel,
+    shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;

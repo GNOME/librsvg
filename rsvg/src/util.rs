@@ -15,7 +15,7 @@ use std::str;
 pub unsafe fn utf8_cstr<'a>(s: *const libc::c_char) -> &'a str {
     assert!(!s.is_null());
 
-    str::from_utf8_unchecked(CStr::from_ptr(s).to_bytes())
+    unsafe { str::from_utf8_unchecked(CStr::from_ptr(s).to_bytes()) }
 }
 
 /// Converts a `char *` which is known to be valid UTF-8 into an `Option<&str>`
@@ -27,7 +27,7 @@ pub unsafe fn opt_utf8_cstr<'a>(s: *const libc::c_char) -> Option<&'a str> {
     if s.is_null() {
         None
     } else {
-        Some(utf8_cstr(s))
+        unsafe { Some(utf8_cstr(s)) }
     }
 }
 
@@ -39,10 +39,12 @@ pub unsafe fn utf8_cstr_bounds<'a>(
     start: *const libc::c_char,
     end: *const libc::c_char,
 ) -> &'a str {
-    let len = end.offset_from(start);
-    assert!(len >= 0);
+    unsafe {
+        let len = end.offset_from(start);
+        assert!(len >= 0);
 
-    utf8_cstr_len(start, len as usize)
+        utf8_cstr_len(start, len as usize)
+    }
 }
 
 /// Gets a known-to-be valid UTF-8 string given a pointer to its start and a length.
@@ -50,15 +52,17 @@ pub unsafe fn utf8_cstr_bounds<'a>(
 /// Safety: `start` must be a valid pointer, and `len` bytes starting from it must be
 /// valid UTF-8.
 pub unsafe fn utf8_cstr_len<'a>(start: *const libc::c_char, len: usize) -> &'a str {
-    // Convert from libc::c_char to u8.  Why transmute?  Because libc::c_char
-    // is of different signedness depending on the architecture (u8 on aarch64,
-    // i8 on x86_64).  If one just uses "start as *const u8", it triggers a
-    // trivial_casts warning.
-    #[allow(trivial_casts)]
-    let start = start as *const u8;
-    let value_slice = std::slice::from_raw_parts(start, len);
+    unsafe {
+        // Convert from libc::c_char to u8.  Why cast like this?  Because libc::c_char
+        // is of different signedness depending on the architecture (u8 on aarch64,
+        // i8 on x86_64).  If one just uses "start as *const u8", it triggers a
+        // trivial_casts warning.
+        #[allow(trivial_casts)]
+        let start = start as *const u8;
+        let value_slice = std::slice::from_raw_parts(start, len);
 
-    str::from_utf8_unchecked(value_slice)
+        str::from_utf8_unchecked(value_slice)
+    }
 }
 
 /// Error-tolerant C string import
@@ -66,7 +70,7 @@ pub unsafe fn cstr<'a>(s: *const libc::c_char) -> Cow<'a, str> {
     if s.is_null() {
         return Cow::Borrowed("(null)");
     }
-    CStr::from_ptr(s).to_string_lossy()
+    unsafe { CStr::from_ptr(s).to_string_lossy() }
 }
 
 pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {

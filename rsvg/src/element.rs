@@ -1,6 +1,6 @@
 //! SVG Elements.
 
-use markup5ever::{expanded_name, local_name, ns, QualName};
+use markup5ever::{QualName, expanded_name, local_name, ns};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::sync::OnceLock;
@@ -14,6 +14,7 @@ use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
+    FilterEffect,
     blend::FeBlend,
     color_matrix::FeColorMatrix,
     component_transfer::{FeComponentTransfer, FeFuncA, FeFuncB, FeFuncG, FeFuncR},
@@ -30,7 +31,6 @@ use crate::filters::{
     offset::FeOffset,
     tile::FeTile,
     turbulence::FeTurbulence,
-    FilterEffect,
 };
 use crate::gradient::{LinearGradient, RadialGradient, Stop};
 use crate::image::Image;

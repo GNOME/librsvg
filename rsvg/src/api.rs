@@ -34,8 +34,8 @@ use url::Url;
 use std::path::Path;
 use std::sync::Arc;
 
-use gio::prelude::*; // Re-exposes glib's prelude as well
 use gio::Cancellable;
+use gio::prelude::*; // Re-exposes glib's prelude as well
 
 use locale_config::{LanguageRange, Locale};
 

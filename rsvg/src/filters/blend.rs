@@ -2,7 +2,7 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, ns};
 
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, ElementTrait};
+use crate::element::{ElementTrait, set_attribute};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parse_identifiers;

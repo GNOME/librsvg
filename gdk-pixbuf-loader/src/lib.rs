@@ -1,21 +1,21 @@
 use std::ptr::null_mut;
 
 use gdk_pixbuf::ffi::{
-    GdkPixbufFormat, GdkPixbufModule, GdkPixbufModulePattern, GdkPixbufModulePreparedFunc,
-    GdkPixbufModuleSizeFunc, GdkPixbufModuleUpdatedFunc, GDK_PIXBUF_FORMAT_SCALABLE,
-    GDK_PIXBUF_FORMAT_THREADSAFE,
+    GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE, GdkPixbufFormat, GdkPixbufModule,
+    GdkPixbufModulePattern, GdkPixbufModulePreparedFunc, GdkPixbufModuleSizeFunc,
+    GdkPixbufModuleUpdatedFunc,
 };
 
 use std::ffi::{c_char, c_int, c_uint};
 
-use glib::ffi::{gboolean, gpointer, GDestroyNotify, GError};
+use glib::Bytes;
+use glib::ffi::{GDestroyNotify, GError, gboolean, gpointer};
 use glib::prelude::*;
 use glib::translate::*;
-use glib::Bytes;
 
+use gio::MemoryInputStream;
 use gio::ffi::{GCancellable, GFile, GInputStream};
 use gio::prelude::*;
-use gio::MemoryInputStream;
 
 use glib::gstr;
 
@@ -26,7 +26,7 @@ type RsvgSizeFunc = Option<
 >;
 
 #[link(name = "rsvg-2")]
-extern "C" {
+unsafe extern "C" {
     fn rsvg_handle_new_from_stream_sync(
         input_stream: *mut GInputStream,
         base_file: *mut GFile,
@@ -149,7 +149,7 @@ unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> 
     true.into_glib()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn fill_vtable(module: &mut GdkPixbufModule) {
     module.begin_load = Some(begin_load);
     module.stop_load = Some(stop_load);
@@ -191,7 +191,7 @@ const EXTENSIONS: [*const c_char; 4] = [
     std::ptr::null(),
 ];
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn fill_info(info: &mut GdkPixbufFormat) {
     info.name = gstr!("svg").as_ptr() as *mut c_char;
     info.signature = SIGNATURE.as_ptr() as *mut GdkPixbufModulePattern;
@@ -205,7 +205,7 @@ extern "C" fn fill_info(info: &mut GdkPixbufFormat) {
 #[cfg(test)]
 mod tests {
     use gdk_pixbuf::ffi::{
-        GdkPixbufFormat, GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE,
+        GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE, GdkPixbufFormat,
     };
     use glib::translate::IntoGlib;
 

@@ -231,7 +231,7 @@ macro_rules! parse_identifiers {
             let token = $parser.next()?;
 
             match token {
-                $(cssparser::Token::Ident(ref cow) if cow.eq_ignore_ascii_case($str) => Ok($val),)+
+                $(&cssparser::Token::Ident(ref cow) if cow.eq_ignore_ascii_case($str) => Ok($val),)+
 
                 _ => Err(loc.new_basic_unexpected_token_error(token.clone()))
             }
@@ -253,7 +253,7 @@ impl Parse for CustomIdent {
         match token {
             // CSS-wide keywords and "default" are errors here
             // https://www.w3.org/TR/css-values-4/#css-wide-keywords
-            Token::Ident(ref cow) => {
+            Token::Ident(cow) => {
                 for s in &["initial", "inherit", "unset", "default"] {
                     if cow.eq_ignore_ascii_case(s) {
                         return Err(loc.new_basic_unexpected_token_error(token.clone()).into());
@@ -272,7 +272,7 @@ impl Parse for CustomIdent {
 mod tests {
     use super::*;
 
-    use markup5ever::{local_name, ns, QualName};
+    use markup5ever::{QualName, local_name, ns};
 
     #[test]
     fn parses_number_optional_number() {

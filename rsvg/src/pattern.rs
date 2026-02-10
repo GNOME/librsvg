@@ -8,7 +8,7 @@ use crate::coord_units::CoordUnits;
 use crate::aspect_ratio::*;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::Viewport;
-use crate::element::{set_attribute, ElementData, ElementTrait};
+use crate::element::{ElementData, ElementTrait, set_attribute};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -488,7 +488,7 @@ impl Pattern {
                     }
 
                     Err(AcquireError::MaxReferencesExceeded) => {
-                        return Err(AcquireError::MaxReferencesExceeded)
+                        return Err(AcquireError::MaxReferencesExceeded);
                     }
 
                     Err(e) => {
@@ -511,7 +511,7 @@ impl Pattern {
 mod tests {
     use super::*;
 
-    use markup5ever::{ns, QualName};
+    use markup5ever::{QualName, ns};
 
     use crate::borrow_element_as;
     use crate::node::NodeData;

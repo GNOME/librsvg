@@ -6,7 +6,7 @@ use cssparser::{Parser, Token};
 use float_cmp::approx_eq;
 
 use crate::error::*;
-use crate::parsers::{finite_f32, Parse};
+use crate::parsers::{Parse, finite_f32};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Angle(f64);

@@ -195,7 +195,7 @@ unsafe fn pixbuf_from_file_with_size_mode(
     size_mode: &SizeMode,
     error: *mut *mut glib::ffi::GError,
 ) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
-    let path = PathBuf::from_glib_none(filename);
+    let path = unsafe { PathBuf::from_glib_none(filename) };
 
     let session = Session::default();
 
@@ -235,7 +235,8 @@ unsafe fn pixbuf_from_file_with_size_mode(
     })
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file(
     filename: *const libc::c_char,
     error: *mut *mut glib::ffi::GError,
@@ -260,7 +261,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file(
     )
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_size(
     filename: *const libc::c_char,
     width: libc::c_int,
@@ -288,7 +290,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_size(
     )
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom(
     filename: *const libc::c_char,
     x_zoom: libc::c_double,
@@ -316,7 +319,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom(
     )
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom_with_max(
     filename: *const libc::c_char,
     x_zoom: libc::c_double,
@@ -347,7 +351,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom_with_max(
     )
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_max_size(
     filename: *const libc::c_char,
     max_width: libc::c_int,
