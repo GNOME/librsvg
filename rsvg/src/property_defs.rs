@@ -815,9 +815,9 @@ make_property!(
                     let token = parser.next()?;
 
                     let value = match token {
-                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("fill") && !targets.contains(&PaintTarget::Fill) => PaintTarget::Fill,
-                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("stroke") && !targets.contains(&PaintTarget::Stroke) => PaintTarget::Stroke,
-                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("markers") && !targets.contains(&PaintTarget::Markers) => PaintTarget::Markers,
+                        Token::Ident(cow) if cow.eq_ignore_ascii_case("fill") && !targets.contains(&PaintTarget::Fill) => PaintTarget::Fill,
+                        Token::Ident(cow) if cow.eq_ignore_ascii_case("stroke") && !targets.contains(&PaintTarget::Stroke) => PaintTarget::Stroke,
+                        Token::Ident(cow) if cow.eq_ignore_ascii_case("markers") && !targets.contains(&PaintTarget::Markers) => PaintTarget::Markers,
                         _ => return Err(loc.new_basic_unexpected_token_error(token.clone()).into()),
                     };
 
@@ -1073,9 +1073,9 @@ make_property!(
                     let token = parser.next()?;
 
                     match token {
-                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("overline") => overline = true,
-                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("underline") => underline = true,
-                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("line-through") => strike = true,
+                        Token::Ident(cow) if cow.eq_ignore_ascii_case("overline") => overline = true,
+                        Token::Ident(cow) if cow.eq_ignore_ascii_case("underline") => underline = true,
+                        Token::Ident(cow) if cow.eq_ignore_ascii_case("line-through") => strike = true,
                         _ => return Err(loc.new_basic_unexpected_token_error(token.clone()).into()),
                     }
                 }

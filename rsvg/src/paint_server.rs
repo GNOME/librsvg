@@ -143,8 +143,8 @@ impl PaintServer {
     ) -> Rc<PaintSource> {
         match self {
             PaintServer::Iri {
-                ref iri,
-                ref alternate,
+                iri,
+                alternate,
             } => acquired_nodes
                 .acquire(iri)
                 .and_then(|acquired| {

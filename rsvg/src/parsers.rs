@@ -253,7 +253,7 @@ impl Parse for CustomIdent {
         match token {
             // CSS-wide keywords and "default" are errors here
             // https://www.w3.org/TR/css-values-4/#css-wide-keywords
-            Token::Ident(ref cow) => {
+            Token::Ident(cow) => {
                 for s in &["initial", "inherit", "unset", "default"] {
                     if cow.eq_ignore_ascii_case(s) {
                         return Err(loc.new_basic_unexpected_token_error(token.clone()).into());

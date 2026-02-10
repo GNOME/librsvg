@@ -411,7 +411,7 @@ impl UnresolvedGradient {
         ));
 
         for child in node.children().filter(|c| c.is_element()) {
-            if let ElementData::Stop(ref stop) = &*child.borrow_element_data() {
+            if let ElementData::Stop(stop) = &*child.borrow_element_data() {
                 let cascaded = CascadedValues::new_from_node(&child);
                 let values = cascaded.get();
 
