@@ -1,7 +1,7 @@
 //! C API for librsvg, based on GObject.
 //!
-//! The main API is in the [`handle`] module.  The other modules
-//! have utility functions and the legacy [pixbuf-based API][pixbuf_utils].
+//! The main API is in the [`handle`] module.  The other modules have utility functions
+//! and the legacy pixbuf-based API in the `pixbuf_utils` module.
 
 #![allow(clippy::missing_safety_doc)]
 
