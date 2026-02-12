@@ -115,12 +115,18 @@ cargo_test:
     - meson setup _build --prefix=$PREFIX -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled -Dwarning_level=3
     - meson compile -C _build
     - meson test -C _build --print-errorlogs
+    - meson install -C _build
+
+    # Generate 'cargo doc' documentation here, since the librsvg-rebind docs require an installed library
+    # and pkg-config file.
+    - bash -x ./ci/gen-rust-docs.sh
   artifacts:
     when: 'always'
     paths:
       - _build/doc/
       - _build/meson-logs/*.*
       - _build/tests/output
+      - public
     reports:
       junit: _build/meson-logs/testlog.junit.xml
     expire_in: 1 day
@@ -508,27 +514,6 @@ devel-docs:
       - public
     expire_in: 1 day
 
-cargo-doc:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: docs
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-  variables:
-    PREFIX: "/usr/local/librsvg"
-    # RUSTFLAGS: "--cfg docsrs"
-  script:
-    - source ./ci/setup-dependencies-env.sh
-    # - rustup default ${RUST_NIGHTLY}
-    - bash -x ./ci/gen-rust-docs.sh
-  artifacts:
-    paths:
-      - public
-    expire_in: 1 day
-
 pages:
   stage: docs
   extends:
@@ -539,7 +524,7 @@ pages:
     - job: reference
     - job: coverage
     - job: devel-docs
-    - job: cargo-doc
+    - job: "meson build - opensuse@x86_64.stable"
   script:
     - cp ci/pages-index.html public/index.html
   artifacts:
