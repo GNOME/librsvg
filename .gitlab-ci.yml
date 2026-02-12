@@ -115,6 +115,7 @@ cargo_test:
     - meson setup _build --prefix=$PREFIX -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled -Dwarning_level=3
     - meson compile -C _build
     - meson test -C _build --print-errorlogs
+    - meson install -C _build
   artifacts:
     when: 'always'
     paths:
@@ -517,6 +518,7 @@ cargo-doc:
   needs:
     - job: opensuse-container@x86_64.stable
       artifacts: false
+    - job: "meson build - opensuse@x86_64.stable"
   variables:
     PREFIX: "/usr/local/librsvg"
     # RUSTFLAGS: "--cfg docsrs"
