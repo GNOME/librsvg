@@ -175,7 +175,7 @@ impl ElementTrait for Switch {
         let switch_elt = node.borrow_element();
         let child_that_matches = node.children().filter(|c| c.is_element()).find(|c| {
             let elt = c.borrow_element();
-            elt.get_cond(draw_ctx.user_language())
+            elt.get_cond(draw_ctx.user_language(), draw_ctx.session())
         });
 
         if let Some(child) = child_that_matches {
@@ -795,7 +795,7 @@ impl ElementTrait for Link {
 mod tests {
     use super::*;
 
-    use crate::accept_language::{LanguageTags, UserLanguage};
+    use crate::accept_language::UserLanguage;
     use crate::document::Document;
     use crate::dpi::Dpi;
     use crate::drawing_ctx::{RenderingConfiguration, SvgNesting};
@@ -832,7 +832,7 @@ mod tests {
         let config = RenderingConfiguration {
             dpi,
             cancellable: None,
-            user_language: UserLanguage::LanguageTags(LanguageTags::empty()),
+            user_language: UserLanguage::LanguageTags(crate::accept_language::LanguageTags::empty()),
             svg_nesting: SvgNesting::Standalone,
             measuring: false,
             testing: true,

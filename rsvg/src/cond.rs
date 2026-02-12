@@ -134,9 +134,9 @@ impl SystemLanguage {
     }
 
     /// Evaluate a systemLanguage value for conditional processing.
-    pub fn eval(&self, user_language: &UserLanguage) -> bool {
+    pub fn eval(&self, user_language: &UserLanguage, session: &Session) -> bool {
         match *self {
-            SystemLanguage::Valid(ref tags) => user_language.any_matches(tags),
+            SystemLanguage::Valid(ref tags) => user_language.any_matches(tags, session),
             SystemLanguage::Invalid => false,
         }
     }
@@ -144,8 +144,9 @@ impl SystemLanguage {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use locale_config::Locale;
+
+    use super::*;
 
     #[test]
     fn required_extensions() {
@@ -201,20 +202,20 @@ mod tests {
             SystemLanguage::Invalid
         ));
 
-        assert!(!SystemLanguage::from_attribute("fr", &session).eval(&user_language));
+        assert!(!SystemLanguage::from_attribute("fr", &session).eval(&user_language, &session));
 
-        assert!(!SystemLanguage::from_attribute("en", &session).eval(&user_language));
+        assert!(!SystemLanguage::from_attribute("en", &session).eval(&user_language, &session));
 
-        assert!(SystemLanguage::from_attribute("de", &session).eval(&user_language));
+        assert!(SystemLanguage::from_attribute("de", &session).eval(&user_language, &session));
 
-        assert!(SystemLanguage::from_attribute("en-US", &session).eval(&user_language));
+        assert!(SystemLanguage::from_attribute("en-US", &session).eval(&user_language, &session));
 
-        assert!(!SystemLanguage::from_attribute("en-GB", &session).eval(&user_language));
+        assert!(!SystemLanguage::from_attribute("en-GB", &session).eval(&user_language, &session));
 
-        assert!(SystemLanguage::from_attribute("DE", &session).eval(&user_language));
+        assert!(SystemLanguage::from_attribute("DE", &session).eval(&user_language, &session));
 
-        assert!(SystemLanguage::from_attribute("de-LU", &session).eval(&user_language));
+        assert!(SystemLanguage::from_attribute("de-LU", &session).eval(&user_language, &session));
 
-        assert!(SystemLanguage::from_attribute("fr, de", &session).eval(&user_language));
+        assert!(SystemLanguage::from_attribute("fr, de", &session).eval(&user_language, &session));
     }
 }

@@ -16,7 +16,7 @@ pub use crate::{
 
 // Don't merge these in the "pub use" above!  They are not part of the public API!
 use crate::{
-    accept_language::{LanguageTags, UserLanguage},
+    accept_language::UserLanguage,
     css::{Origin, Stylesheet},
     document::{Document, LoadOptions, NodeId, RenderingOptions},
     dpi::Dpi,
@@ -36,8 +36,6 @@ use std::sync::Arc;
 
 use gio::Cancellable;
 use gio::prelude::*; // Re-exposes glib's prelude as well
-
-use locale_config::{LanguageRange, Locale};
 
 /// Errors that can happen while rendering or measuring an SVG document.
 #[non_exhaustive]
@@ -480,44 +478,6 @@ pub struct IntrinsicDimensions {
     pub vbox: Option<cairo::Rectangle>,
 }
 
-/// Gets the user's preferred locale from the environment and
-/// translates it to a `Locale` with `LanguageRange` fallbacks.
-///
-/// The `Locale::current()` call only contemplates a single language,
-/// but glib is smarter, and `g_get_langauge_names()` can provide
-/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
-/// English and German).  This function converts the output of
-/// `g_get_language_names()` into a `Locale` with appropriate
-/// fallbacks.
-fn locale_from_environment() -> Locale {
-    let mut locale = Locale::invariant();
-
-    for name in glib::language_names() {
-        let name = name.as_str();
-        if let Ok(range) = LanguageRange::from_unix(name) {
-            locale.add(&range);
-        }
-    }
-
-    locale
-}
-
-impl UserLanguage {
-    fn new(language: &Language, session: &Session) -> UserLanguage {
-        match *language {
-            Language::FromEnvironment => UserLanguage::LanguageTags(
-                LanguageTags::from_locale(&locale_from_environment())
-                    .map_err(|s| {
-                        rsvg_log!(session, "could not convert locale to language tags: {}", s);
-                    })
-                    .unwrap_or_else(|_| LanguageTags::empty()),
-            ),
-
-            Language::AcceptLanguage(ref a) => UserLanguage::AcceptLanguage(a.clone()),
-        }
-    }
-}
-
 impl<'a> CairoRenderer<'a> {
     /// Creates a `CairoRenderer` for the specified `SvgHandle`.
     ///
@@ -526,12 +486,10 @@ impl<'a> CairoRenderer<'a> {
     ///
     /// [`with_dpi`]: #method.with_dpi
     pub fn new(handle: &'a SvgHandle) -> Self {
-        let session = &handle.session;
-
         CairoRenderer {
             handle,
             dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
-            user_language: UserLanguage::new(&Language::FromEnvironment, session),
+            user_language: UserLanguage::new(&Language::FromEnvironment),
             cancellable: None,
             is_testing: false,
         }
@@ -563,7 +521,7 @@ impl<'a> CairoRenderer<'a> {
     /// be obtained from the program's environment.  To set an explicit list of languages,
     /// you can use `Language::AcceptLanguage` instead.
     pub fn with_language(self, language: &Language) -> Self {
-        let user_language = UserLanguage::new(language, &self.handle.session);
+        let user_language = UserLanguage::new(language);
 
         CairoRenderer {
             user_language,
