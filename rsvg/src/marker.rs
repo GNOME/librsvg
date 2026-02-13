@@ -887,6 +887,8 @@ mod parser_tests {
 
 #[cfg(test)]
 mod directionality_tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::path_builder::PathBuilder;
 
@@ -1136,6 +1138,8 @@ mod directionality_tests {
 
 #[cfg(test)]
 mod marker_tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::path_builder::PathBuilder;
 
