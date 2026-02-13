@@ -92,6 +92,22 @@ pub struct Marker {
     vbox: Option<ViewBox>,
 }
 
+// From SVG's marker-start, marker-mid, marker-end properties
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum MarkerType {
+    Start,
+    Middle,
+    End,
+}
+
+/// Computed location and orientation for a marker.
+struct MarkerSpec {
+    marker_type: MarkerType,
+    x: f64,
+    y: f64,
+    angle: Angle,
+}
+
 impl Default for Marker {
     fn default() -> Marker {
         Marker {
@@ -115,12 +131,9 @@ impl Marker {
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        xpos: f64,
-        ypos: f64,
-        computed_angle: Angle,
+        spec: &MarkerSpec,
         line_width: f64,
         clipping: bool,
-        marker_type: MarkerType,
         marker: &layout::Marker,
     ) -> DrawResult {
         let mut cascaded = CascadedValues::new_from_node(node);
@@ -141,18 +154,18 @@ impl Marker {
         }
 
         let rotation = match self.orient {
-            MarkerOrient::Auto => computed_angle,
+            MarkerOrient::Auto => spec.angle,
             MarkerOrient::AutoStartReverse => {
-                if marker_type == MarkerType::Start {
-                    computed_angle.flip()
+                if spec.marker_type == MarkerType::Start {
+                    spec.angle.flip()
                 } else {
-                    computed_angle
+                    spec.angle
                 }
             }
             MarkerOrient::Angle(a) => a,
         };
 
-        let mut transform = Transform::new_translate(xpos, ypos).pre_rotate(rotation);
+        let mut transform = Transform::new_translate(spec.x, spec.y).pre_rotate(rotation);
 
         if self.units == MarkerUnits::StrokeWidth {
             transform = transform.pre_scale(line_width, line_width);
@@ -591,14 +604,6 @@ impl Segments {
     }
 }
 
-// From SVG's marker-start, marker-mid, marker-end properties
-#[derive(Debug, Copy, Clone, PartialEq)]
-enum MarkerType {
-    Start,
-    Middle,
-    End,
-}
-
 fn emit_marker_by_node(
     viewport: &Viewport,
     draw_ctx: &mut DrawingCtx,
@@ -617,17 +622,21 @@ fn emit_marker_by_node(
 
             let marker_elt = borrow_element_as!(node, Marker);
 
+            let spec = MarkerSpec {
+                marker_type,
+                x: xpos,
+                y: ypos,
+                angle: computed_angle,
+            };
+
             marker_elt.render(
                 node,
                 acquired_nodes,
                 viewport,
                 draw_ctx,
-                xpos,
-                ypos,
-                computed_angle,
+                &spec,
                 line_width,
                 clipping,
-                marker_type,
                 marker,
             )
         }
