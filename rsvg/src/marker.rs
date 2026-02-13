@@ -1299,4 +1299,75 @@ mod marker_tests {
             ]
         );
     }
+
+    #[test]
+    fn bug_1218_missing_end_markers_in_subpaths() {
+        let mut builder = PathBuilder::default();
+        builder
+            .parse("M 0,0 h 10 h 10 M 0,6 h 10 h 10 M 0,12 h 10 h 10")
+            .unwrap();
+        let path = builder.into_path();
+
+        let specs = emit_markers_for_path(&path);
+
+        assert_eq!(
+            specs,
+            vec![
+                MarkerSpec {
+                    marker_type: MarkerType::Start,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 20.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 0.0,
+                    y: 6.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 6.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 20.0,
+                    y: 6.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 0.0,
+                    y: 12.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 12.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::End,
+                    x: 20.0,
+                    y: 12.0,
+                    angle: Angle::new(0.0)
+                }
+            ]
+        );
+    }
 }
