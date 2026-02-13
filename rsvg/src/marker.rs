@@ -101,6 +101,7 @@ enum MarkerType {
 }
 
 /// Computed location and orientation for a marker.
+#[derive(Debug, PartialEq)]
 struct MarkerSpec {
     marker_type: MarkerType,
     x: f64,
@@ -652,7 +653,7 @@ fn emit_marker<E>(
     emit_fn: &mut E,
 ) -> DrawResult
 where
-    E: FnMut(MarkerType, f64, f64, Angle) -> DrawResult,
+    E: FnMut(MarkerSpec) -> DrawResult,
 {
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
@@ -663,7 +664,14 @@ where
         },
     };
 
-    emit_fn(marker_type, x, y, orient)
+    let spec = MarkerSpec {
+        marker_type,
+        x,
+        y,
+        angle: orient,
+    };
+
+    emit_fn(spec)
 }
 
 pub fn render_markers_for_shape(
@@ -687,19 +695,11 @@ pub fn render_markers_for_shape(
     emit_markers_for_path(
         &shape.path.path,
         viewport.empty_bbox(),
-        &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
-            let marker = match marker_type {
+        &mut |spec: MarkerSpec| {
+            let marker = match spec.marker_type {
                 MarkerType::Start => &shape.marker_start,
                 MarkerType::Middle => &shape.marker_mid,
                 MarkerType::End => &shape.marker_end,
-            };
-
-
-            let spec = MarkerSpec {
-                marker_type,
-                x,
-                y,
-                angle: computed_angle,
             };
 
             if marker.node_ref.is_some() {
@@ -725,7 +725,7 @@ fn emit_markers_for_path<E>(
     emit_fn: &mut E,
 ) -> DrawResult
 where
-    E: FnMut(MarkerType, f64, f64, Angle) -> DrawResult,
+    E: FnMut(MarkerSpec) -> DrawResult,
 {
     enum SubpathState {
         NoSubpath,
@@ -1179,12 +1179,8 @@ mod marker_tests {
             emit_markers_for_path(
                 &builder.into_path(),
                 Box::new(BoundingBox::new()),
-                &mut |marker_type: MarkerType,
-                      x: f64,
-                      y: f64,
-                      computed_angle: Angle|
-                 -> DrawResult {
-                    v.push((marker_type, x, y, computed_angle));
+                &mut |spec: MarkerSpec| -> DrawResult {
+                    v.push(spec);
                     Ok(Box::new(BoundingBox::new()))
                 }
             )
@@ -1194,10 +1190,30 @@ mod marker_tests {
         assert_eq!(
             v,
             vec![
-                (MarkerType::Start, 0.0, 0.0, Angle::new(0.0)),
-                (MarkerType::Middle, 1.0, 0.0, Angle::from_vector(1.0, 1.0)),
-                (MarkerType::Middle, 1.0, 1.0, Angle::from_vector(-1.0, 1.0)),
-                (MarkerType::End, 0.0, 1.0, Angle::from_vector(-1.0, 0.0)),
+                MarkerSpec {
+                    marker_type: MarkerType::Start,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 1.0,
+                    y: 0.0,
+                    angle: Angle::from_vector(1.0, 1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 1.0,
+                    y: 1.0,
+                    angle: Angle::from_vector(-1.0, 1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::End,
+                    x: 0.0,
+                    y: 1.0,
+                    angle: Angle::from_vector(-1.0, 0.0)
+                },
             ]
         );
     }
@@ -1217,12 +1233,8 @@ mod marker_tests {
             emit_markers_for_path(
                 &builder.into_path(),
                 Box::new(BoundingBox::new()),
-                &mut |marker_type: MarkerType,
-                      x: f64,
-                      y: f64,
-                      computed_angle: Angle|
-                 -> DrawResult {
-                    v.push((marker_type, x, y, computed_angle));
+                &mut |spec: MarkerSpec| -> DrawResult {
+                    v.push(spec);
                     Ok(Box::new(BoundingBox::new()))
                 }
             )
@@ -1232,11 +1244,36 @@ mod marker_tests {
         assert_eq!(
             v,
             vec![
-                (MarkerType::Start, 0.0, 0.0, Angle::new(0.0)),
-                (MarkerType::Middle, 1.0, 0.0, Angle::from_vector(1.0, 1.0)),
-                (MarkerType::Middle, 1.0, 1.0, Angle::from_vector(-1.0, 1.0)),
-                (MarkerType::Middle, 0.0, 1.0, Angle::from_vector(-1.0, -1.0)),
-                (MarkerType::End, 0.0, 0.0, Angle::from_vector(1.0, -1.0)),
+                MarkerSpec {
+                    marker_type: MarkerType::Start,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 1.0,
+                    y: 0.0,
+                    angle: Angle::from_vector(1.0, 1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 1.0,
+                    y: 1.0,
+                    angle: Angle::from_vector(-1.0, 1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 0.0,
+                    y: 1.0,
+                    angle: Angle::from_vector(-1.0, -1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::End,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::from_vector(1.0, -1.0)
+                },
             ]
         );
     }
