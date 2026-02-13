@@ -1,3 +1,15 @@
+Version 2.61.4
+==============
+
+librsvg crate version 2.61.4
+
+librsvg-rebind crate version 0.2.1
+
+- #1225: Update the time crate to 0.3.47 for RUSTSEC-2026-0009
+
+- Fix the check for cargo-cbuild in meson.build.
+
+
 Version 2.61.3
 ==============
 
