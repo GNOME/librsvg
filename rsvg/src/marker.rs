@@ -8,7 +8,6 @@ use markup5ever::{expanded_name, local_name, ns};
 
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
-use crate::bbox::BoundingBox;
 use crate::borrow_element_as;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
@@ -645,16 +644,12 @@ enum MarkerEndpoint {
     End,
 }
 
-fn emit_marker<E>(
+fn emit_marker(
     segment: &Segment,
     endpoint: MarkerEndpoint,
     marker_type: MarkerType,
     orient: Angle,
-    emit_fn: &mut E,
-) -> DrawResult
-where
-    E: FnMut(MarkerSpec) -> DrawResult,
-{
+) -> MarkerSpec {
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
 
@@ -664,14 +659,12 @@ where
         },
     };
 
-    let spec = MarkerSpec {
+    MarkerSpec {
         marker_type,
         x,
         y,
         angle: orient,
-    };
-
-    emit_fn(spec)
+    }
 }
 
 pub fn render_markers_for_shape(
@@ -692,47 +685,38 @@ pub fn render_markers_for_shape(
         return Ok(viewport.empty_bbox());
     }
 
-    emit_markers_for_path(
-        &shape.path.path,
-        viewport.empty_bbox(),
-        &mut |spec: MarkerSpec| {
-            let marker = match spec.marker_type {
-                MarkerType::Start => &shape.marker_start,
-                MarkerType::Middle => &shape.marker_mid,
-                MarkerType::End => &shape.marker_end,
-            };
+    let specs = emit_markers_for_path(&shape.path.path);
 
-            if marker.node_ref.is_some() {
-                emit_marker_by_node(
-                    viewport,
-                    draw_ctx,
-                    acquired_nodes,
-                    marker,
-                    &spec,
-                    shape.stroke.width,
-                    clipping,
-                )
-            } else {
-                Ok(viewport.empty_bbox())
-            }
-        },
-    )
+    for spec in specs {
+        let marker = match spec.marker_type {
+            MarkerType::Start => &shape.marker_start,
+            MarkerType::Middle => &shape.marker_mid,
+            MarkerType::End => &shape.marker_end,
+        };
+
+        if marker.node_ref.is_some() {
+            emit_marker_by_node(
+                viewport,
+                draw_ctx,
+                acquired_nodes,
+                marker,
+                &spec,
+                shape.stroke.width,
+                clipping,
+            )?;
+        }
+    }
+
+    Ok(viewport.empty_bbox())
 }
 
-fn emit_markers_for_path<E>(
-    path: &Path,
-    empty_bbox: Box<BoundingBox>,
-    emit_fn: &mut E,
-) -> DrawResult
-where
-    E: FnMut(MarkerSpec) -> DrawResult,
-{
+fn emit_markers_for_path(path: &Path) -> Vec<MarkerSpec> {
     enum SubpathState {
         NoSubpath,
         InSubpath,
     }
 
-    let mut bbox = empty_bbox;
+    let mut specs = Vec::new();
 
     // Convert the path to a list of segments and bare points
     let segments = Segments::from(path);
@@ -749,25 +733,21 @@ where
                     let angle = segments
                         .find_incoming_angle_backwards(i - 1)
                         .unwrap_or_else(|| Angle::new(0.0));
-                    let marker_bbox = emit_marker(
+                    specs.push(emit_marker(
                         &segments[i - 1],
                         MarkerEndpoint::End,
                         MarkerType::End,
                         angle,
-                        emit_fn,
-                    )?;
-                    bbox.insert(&marker_bbox);
+                    ));
                 }
 
                 // Render marker for the lone point; no directionality
-                let marker_bbox = emit_marker(
+                specs.push(emit_marker(
                     segment,
                     MarkerEndpoint::Start,
                     MarkerType::Middle,
                     Angle::new(0.0),
-                    emit_fn,
-                )?;
-                bbox.insert(&marker_bbox);
+                ));
 
                 subpath_state = SubpathState::NoSubpath;
             }
@@ -779,14 +759,12 @@ where
                         let angle = segments
                             .find_outgoing_angle_forwards(i)
                             .unwrap_or_else(|| Angle::new(0.0));
-                        let marker_bbox = emit_marker(
+                        specs.push(emit_marker(
                             segment,
                             MarkerEndpoint::Start,
                             MarkerType::Start,
                             angle,
-                            emit_fn,
-                        )?;
-                        bbox.insert(&marker_bbox);
+                        ));
 
                         subpath_state = SubpathState::InSubpath;
                     }
@@ -804,14 +782,12 @@ where
                             _ => Angle::new(0.0),
                         };
 
-                        let marker_bbox = emit_marker(
+                        specs.push(emit_marker(
                             segment,
                             MarkerEndpoint::Start,
                             MarkerType::Middle,
                             angle,
-                            emit_fn,
-                        )?;
-                        bbox.insert(&marker_bbox);
+                        ));
                     }
                 }
             }
@@ -837,18 +813,16 @@ where
                 }
             };
 
-            let marker_bbox = emit_marker(
+            specs.push(emit_marker(
                 segment,
                 MarkerEndpoint::End,
                 MarkerType::End,
                 angle,
-                emit_fn,
-            )?;
-            bbox.insert(&marker_bbox);
+            ));
         }
     }
 
-    Ok(bbox)
+    specs
 }
 
 #[cfg(test)]
@@ -1173,19 +1147,7 @@ mod marker_tests {
         builder.line_to(1.0, 1.0);
         builder.line_to(0.0, 1.0);
 
-        let mut v = Vec::new();
-
-        assert!(
-            emit_markers_for_path(
-                &builder.into_path(),
-                Box::new(BoundingBox::new()),
-                &mut |spec: MarkerSpec| -> DrawResult {
-                    v.push(spec);
-                    Ok(Box::new(BoundingBox::new()))
-                }
-            )
-            .is_ok()
-        );
+        let v = emit_markers_for_path(&builder.into_path());
 
         assert_eq!(
             v,
@@ -1227,19 +1189,7 @@ mod marker_tests {
         builder.line_to(0.0, 1.0);
         builder.close_path();
 
-        let mut v = Vec::new();
-
-        assert!(
-            emit_markers_for_path(
-                &builder.into_path(),
-                Box::new(BoundingBox::new()),
-                &mut |spec: MarkerSpec| -> DrawResult {
-                    v.push(spec);
-                    Ok(Box::new(BoundingBox::new()))
-                }
-            )
-            .is_ok()
-        );
+        let v = emit_markers_for_path(&builder.into_path());
 
         assert_eq!(
             v,
