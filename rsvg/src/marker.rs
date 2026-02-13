@@ -609,25 +609,15 @@ fn emit_marker_by_node(
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
     marker: &layout::Marker,
-    xpos: f64,
-    ypos: f64,
-    computed_angle: Angle,
+    spec: &MarkerSpec,
     line_width: f64,
     clipping: bool,
-    marker_type: MarkerType,
 ) -> DrawResult {
     match acquired_nodes.acquire_ref(marker.node_ref.as_ref().unwrap()) {
         Ok(acquired) => {
             let node = acquired.get();
 
             let marker_elt = borrow_element_as!(node, Marker);
-
-            let spec = MarkerSpec {
-                marker_type,
-                x: xpos,
-                y: ypos,
-                angle: computed_angle,
-            };
 
             marker_elt.render(
                 node,
@@ -704,18 +694,23 @@ pub fn render_markers_for_shape(
                 MarkerType::End => &shape.marker_end,
             };
 
+
+            let spec = MarkerSpec {
+                marker_type,
+                x,
+                y,
+                angle: computed_angle,
+            };
+
             if marker.node_ref.is_some() {
                 emit_marker_by_node(
                     viewport,
                     draw_ctx,
                     acquired_nodes,
                     marker,
-                    x,
-                    y,
-                    computed_angle,
+                    &spec,
                     shape.stroke.width,
                     clipping,
-                    marker_type,
                 )
             } else {
                 Ok(viewport.empty_bbox())
