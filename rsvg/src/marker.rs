@@ -430,6 +430,20 @@ impl From<&Path> for Segments {
 
             let path_command = &path_commands[i];
 
+            let needs_marker_at_end = if i == path_commands.len() - 1 {
+                true
+            } else {
+                // If the next command is a MoveTo, it means that the next Segment will be disconnected
+                // from the current one.  So, make a note to emit a marker for the current segment's
+                // endpoint.
+                //
+                // Normally we only emit markers for the start point of a Segment, since normally
+                // Segments are connected to each other.  They are disconnected only if there are
+                // subpaths.
+
+                matches!(path_commands[i + 1], PathCommand::MoveTo(..))
+            };
+
             match path_command {
                 &PathCommand::MoveTo(x, y) => {
                     cur_x = x;
@@ -472,7 +486,13 @@ impl From<&Path> for Segments {
                     cur_x = x;
                     cur_y = y;
 
-                    segments.push(Segment::line(last_x, last_y, cur_x, cur_y, false));
+                    segments.push(Segment::line(
+                        last_x,
+                        last_y,
+                        cur_x,
+                        cur_y,
+                        needs_marker_at_end,
+                    ));
 
                     state = SegmentState::InSubpath;
                 }
@@ -487,7 +507,15 @@ impl From<&Path> for Segments {
                     cur_y = to.1;
 
                     segments.push(Segment::curve(
-                        last_x, last_y, x2, y2, x3, y3, cur_x, cur_y, false,
+                        last_x,
+                        last_y,
+                        x2,
+                        y2,
+                        x3,
+                        y3,
+                        cur_x,
+                        cur_y,
+                        needs_marker_at_end,
                     ));
 
                     state = SegmentState::InSubpath;
@@ -517,13 +545,27 @@ impl From<&Path> for Segments {
                             let (x2, y2) = segment1.pt1;
                             let (x3, y3) = segment2.pt2;
                             segments.push(Segment::curve(
-                                last_x, last_y, x2, y2, x3, y3, cur_x, cur_y, false,
+                                last_x,
+                                last_y,
+                                x2,
+                                y2,
+                                x3,
+                                y3,
+                                cur_x,
+                                cur_y,
+                                needs_marker_at_end,
                             ));
 
                             state = SegmentState::InSubpath;
                         }
                         ArcParameterization::LineTo => {
-                            segments.push(Segment::line(last_x, last_y, cur_x, cur_y, false));
+                            segments.push(Segment::line(
+                                last_x,
+                                last_y,
+                                cur_x,
+                                cur_y,
+                                needs_marker_at_end,
+                            ));
 
                             state = SegmentState::InSubpath;
                         }
@@ -535,7 +577,13 @@ impl From<&Path> for Segments {
                     cur_x = subpath_start_x;
                     cur_y = subpath_start_y;
 
-                    segments.push(Segment::line(last_x, last_y, cur_x, cur_y, false));
+                    segments.push(Segment::line(
+                        last_x,
+                        last_y,
+                        cur_x,
+                        cur_y,
+                        needs_marker_at_end,
+                    ));
 
                     state = SegmentState::ClosedSubpath;
                 }
@@ -927,7 +975,7 @@ mod directionality_tests {
     fn path_to_segments_handles_open_path() {
         let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0, false),
-            Segment::line(20.0, 10.0, 20.0, 20.0, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, true),
         ]);
 
         assert_eq!(setup_open_path(), expected_segments);
@@ -952,10 +1000,10 @@ mod directionality_tests {
     fn path_to_segments_handles_multiple_open_subpaths() {
         let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0, false),
-            Segment::line(20.0, 10.0, 20.0, 20.0, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, true),
             Segment::line(30.0, 30.0, 40.0, 30.0, false),
             Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0, false),
-            Segment::line(70.0, 70.0, 80.0, 90.0, false),
+            Segment::line(70.0, 70.0, 80.0, 90.0, true),
         ]);
 
         assert_eq!(setup_multiple_open_subpaths(), expected_segments);
@@ -978,7 +1026,7 @@ mod directionality_tests {
         let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0, false),
             Segment::line(20.0, 10.0, 20.0, 20.0, false),
-            Segment::line(20.0, 20.0, 10.0, 10.0, false),
+            Segment::line(20.0, 20.0, 10.0, 10.0, true),
         ]);
 
         assert_eq!(setup_closed_subpath(), expected_segments);
@@ -1008,11 +1056,11 @@ mod directionality_tests {
         let expected_segments: Segments = Segments(vec![
             Segment::line(10.0, 10.0, 20.0, 10.0, false),
             Segment::line(20.0, 10.0, 20.0, 20.0, false),
-            Segment::line(20.0, 20.0, 10.0, 10.0, false),
+            Segment::line(20.0, 20.0, 10.0, 10.0, true),
             Segment::line(30.0, 30.0, 40.0, 30.0, false),
             Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0, false),
             Segment::line(70.0, 70.0, 80.0, 90.0, false),
-            Segment::line(80.0, 90.0, 30.0, 30.0, false),
+            Segment::line(80.0, 90.0, 30.0, 30.0, true),
         ]);
 
         assert_eq!(setup_multiple_closed_subpaths(), expected_segments);
@@ -1039,7 +1087,7 @@ mod directionality_tests {
             Segment::line(10.0, 10.0, 20.0, 10.0, false),
             Segment::line(20.0, 10.0, 20.0, 20.0, false),
             Segment::line(20.0, 20.0, 10.0, 10.0, false),
-            Segment::line(10.0, 10.0, 40.0, 30.0, false),
+            Segment::line(10.0, 10.0, 40.0, 30.0, true),
         ]);
 
         assert_eq!(setup_no_moveto_after_closepath(), expected_segments);
