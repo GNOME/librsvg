@@ -409,12 +409,16 @@ impl From<&Path> for Segments {
         let mut segments = Vec::new();
         let mut state = SegmentState::Initial;
 
-        for path_command in path.iter() {
+        let path_commands: Vec<PathCommand> = path.iter().collect();
+
+        for i in 0..path_commands.len() {
             last_x = cur_x;
             last_y = cur_y;
 
+            let path_command = &path_commands[i];
+
             match path_command {
-                PathCommand::MoveTo(x, y) => {
+                &PathCommand::MoveTo(x, y) => {
                     cur_x = x;
                     cur_y = y;
 
@@ -451,7 +455,7 @@ impl From<&Path> for Segments {
                     }
                 }
 
-                PathCommand::LineTo(x, y) => {
+                &PathCommand::LineTo(x, y) => {
                     cur_x = x;
                     cur_y = y;
 
@@ -465,7 +469,7 @@ impl From<&Path> for Segments {
                         pt1: (x2, y2),
                         pt2: (x3, y3),
                         to,
-                    } = curve;
+                    } = *curve;
                     cur_x = to.0;
                     cur_y = to.1;
 
