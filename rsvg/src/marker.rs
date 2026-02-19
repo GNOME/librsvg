@@ -285,6 +285,7 @@ enum Segment {
         y3: f64,
         x4: f64,
         y4: f64,
+        is_subpath_start: bool,
         is_subpath_end: bool,
     },
 }
@@ -303,6 +304,7 @@ impl Segment {
         y3: f64,
         x4: f64,
         y4: f64,
+        is_subpath_start: bool,
         is_subpath_end: bool,
     ) -> Segment {
         Segment::LineOrCurve {
@@ -314,12 +316,13 @@ impl Segment {
             y3,
             x4,
             y4,
+            is_subpath_start,
             is_subpath_end,
         }
     }
 
-    fn line(x1: f64, y1: f64, x2: f64, y2: f64, is_subpath_end: bool) -> Segment {
-        Segment::curve(x1, y1, x2, y2, x1, y1, x2, y2, is_subpath_end)
+    fn line(x1: f64, y1: f64, x2: f64, y2: f64, is_subpath_start: bool, is_subpath_end: bool) -> Segment {
+        Segment::curve(x1, y1, x2, y2, x1, y1, x2, y2, is_subpath_start, is_subpath_end)
     }
 
     // If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
@@ -430,6 +433,8 @@ impl From<&Path> for Segments {
 
             let path_command = &path_commands[i];
 
+            let is_subpath_start = matches!(state, SegmentState::NewSubpath);
+
             let is_subpath_end = if i == path_commands.len() - 1 {
                 true
             } else {
@@ -453,7 +458,7 @@ impl From<&Path> for Segments {
                     subpath_start_y = cur_y;
 
                     match state {
-                        SegmentState::Initial | SegmentState::InSubpath => {
+                        SegmentState::Initial | SegmentState::InSubpath | SegmentState::ClosedSubpath => {
                             // Ignore the very first moveto in a sequence (Initial state),
                             // or if we were already drawing within a subpath, start
                             // a new subpath.
@@ -467,18 +472,6 @@ impl From<&Path> for Segments {
                             segments.push(Segment::degenerate(last_x, last_y));
                             state = SegmentState::NewSubpath;
                         }
-
-                        SegmentState::ClosedSubpath => {
-                            // Cairo outputs a moveto after every closepath, so that subsequent
-                            // lineto/curveto commands will start at the closed vertex.
-                            // We don't want to actually emit a point (a degenerate segment) in
-                            // that artificial-moveto case.
-                            //
-                            // We'll reset to the Initial state so that a subsequent "real"
-                            // moveto will be handled as the beginning of a new subpath, or a
-                            // degenerate point, as usual.
-                            state = SegmentState::Initial;
-                        }
                     }
                 }
 
@@ -491,6 +484,7 @@ impl From<&Path> for Segments {
                         last_y,
                         cur_x,
                         cur_y,
+                        is_subpath_start,
                         is_subpath_end,
                     ));
 
@@ -515,6 +509,7 @@ impl From<&Path> for Segments {
                         y3,
                         cur_x,
                         cur_y,
+                        is_subpath_start,
                         is_subpath_end,
                     ));
 
@@ -544,6 +539,7 @@ impl From<&Path> for Segments {
 
                             let (x2, y2) = segment1.pt1;
                             let (x3, y3) = segment2.pt2;
+
                             segments.push(Segment::curve(
                                 last_x,
                                 last_y,
@@ -553,17 +549,20 @@ impl From<&Path> for Segments {
                                 y3,
                                 cur_x,
                                 cur_y,
+                                is_subpath_start,
                                 is_subpath_end,
                             ));
 
                             state = SegmentState::InSubpath;
                         }
                         ArcParameterization::LineTo => {
+
                             segments.push(Segment::line(
                                 last_x,
                                 last_y,
                                 cur_x,
                                 cur_y,
+                                is_subpath_start,
                                 is_subpath_end,
                             ));
 
@@ -582,6 +581,7 @@ impl From<&Path> for Segments {
                         last_y,
                         cur_x,
                         cur_y,
+                        is_subpath_start,
                         is_subpath_end,
                     ));
 
@@ -974,8 +974,8 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_open_path() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0, false),
-            Segment::line(20.0, 10.0, 20.0, 20.0, true),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, true),
         ]);
 
         assert_eq!(setup_open_path(), expected_segments);
@@ -999,11 +999,11 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_multiple_open_subpaths() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0, false),
-            Segment::line(20.0, 10.0, 20.0, 20.0, true),
-            Segment::line(30.0, 30.0, 40.0, 30.0, false),
-            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0, false),
-            Segment::line(70.0, 70.0, 80.0, 90.0, true),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, true),
+            Segment::line(30.0, 30.0, 40.0, 30.0, true, false),
+            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0, false, false),
+            Segment::line(70.0, 70.0, 80.0, 90.0, false, true),
         ]);
 
         assert_eq!(setup_multiple_open_subpaths(), expected_segments);
@@ -1024,9 +1024,9 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_closed_subpath() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0, false),
-            Segment::line(20.0, 10.0, 20.0, 20.0, false),
-            Segment::line(20.0, 20.0, 10.0, 10.0, true),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, false),
+            Segment::line(20.0, 20.0, 10.0, 10.0, false, true),
         ]);
 
         assert_eq!(setup_closed_subpath(), expected_segments);
@@ -1054,13 +1054,13 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_multiple_closed_subpaths() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0, false),
-            Segment::line(20.0, 10.0, 20.0, 20.0, false),
-            Segment::line(20.0, 20.0, 10.0, 10.0, true),
-            Segment::line(30.0, 30.0, 40.0, 30.0, false),
-            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0, false),
-            Segment::line(70.0, 70.0, 80.0, 90.0, false),
-            Segment::line(80.0, 90.0, 30.0, 30.0, true),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, false),
+            Segment::line(20.0, 20.0, 10.0, 10.0, false, true),
+            Segment::line(30.0, 30.0, 40.0, 30.0, true, false),
+            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0, false, false),
+            Segment::line(70.0, 70.0, 80.0, 90.0, false, false),
+            Segment::line(80.0, 90.0, 30.0, 30.0, false, true),
         ]);
 
         assert_eq!(setup_multiple_closed_subpaths(), expected_segments);
@@ -1084,10 +1084,10 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_no_moveto_after_closepath() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0, false),
-            Segment::line(20.0, 10.0, 20.0, 20.0, false),
-            Segment::line(20.0, 20.0, 10.0, 10.0, false),
-            Segment::line(10.0, 10.0, 40.0, 30.0, true),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, false),
+            Segment::line(20.0, 20.0, 10.0, 10.0, false, false),
+            Segment::line(10.0, 10.0, 40.0, 30.0, false, true),
         ]);
 
         assert_eq!(setup_no_moveto_after_closepath(), expected_segments);
@@ -1135,7 +1135,7 @@ mod directionality_tests {
 
     #[test]
     fn line_segment_has_directionality() {
-        let s = Segment::line(1.0, 2.0, 3.0, 4.0, false);
+        let s = Segment::line(1.0, 2.0, 3.0, 4.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((2.0, 2.0), (v2x, v2y));
@@ -1143,13 +1143,13 @@ mod directionality_tests {
 
     #[test]
     fn line_segment_with_coincident_ends_has_no_directionality() {
-        let s = Segment::line(1.0, 2.0, 1.0, 2.0, false);
+        let s = Segment::line(1.0, 2.0, 1.0, 2.0, false, false);
         assert!(s.get_directionalities().is_none());
     }
 
     #[test]
     fn curve_has_directionality() {
-        let s = Segment::curve(1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0, false);
+        let s = Segment::curve(1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 3.0), (v1x, v1y));
         assert_eq!((12.0, 20.0), (v2x, v2y));
@@ -1157,17 +1157,17 @@ mod directionality_tests {
 
     #[test]
     fn curves_with_loops_and_coincident_ends_have_directionality() {
-        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0, false);
+        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-4.0, -4.0), (v2x, v2y));
 
-        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0, false);
+        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
 
-        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0, false);
+        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
@@ -1175,13 +1175,13 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_coincident_control_points_has_no_directionality() {
-        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, false);
+        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, false, false);
         assert!(s.get_directionalities().is_none());
     }
 
     #[test]
     fn curve_with_123_coincident_has_directionality() {
-        let s = Segment::curve(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0, false);
+        let s = Segment::curve(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((20.0, 40.0), (v1x, v1y));
         assert_eq!((20.0, 40.0), (v2x, v2y));
@@ -1189,7 +1189,7 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_234_coincident_has_directionality() {
-        let s = Segment::curve(20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false);
+        let s = Segment::curve(20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((-20.0, -40.0), (v1x, v1y));
         assert_eq!((-20.0, -40.0), (v2x, v2y));
@@ -1197,7 +1197,7 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_12_34_coincident_has_directionality() {
-        let s = Segment::curve(20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0, false);
+        let s = Segment::curve(20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((40.0, 30.0), (v1x, v1y));
         assert_eq!((40.0, 30.0), (v2x, v2y));
