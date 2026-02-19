@@ -1,0 +1,13 @@
+github:
+  owner: "your-org"
+  repo: "librsvg"
+  base_branch: "main"
+
+runner:
+  repo_path: "/path/to/local/librsvg-fork"
+  evaluations_file: "../pr_evaluations.json"
+  max_wait_seconds: 300
+  poll_interval: 5
+
+validation:
+  criteria: "strict"

@@ -1,0 +1,845 @@
+{
+  "dataset_name": "librsvg_pr_review_golden_dataset",
+  "description": "Golden dataset for testing PR review assistant agents on librsvg codebase",
+  "version": "1.0",
+  "total_evaluations": 25,
+  "evaluations": [
+    {
+      "id": 1,
+      "pr_title": "Refactor clamp function to use standard library",
+      "pr_description": "Replace custom clamp implementation with std::cmp::Clamp trait for better idiomatic Rust code.",
+      "branch": "feature/use-cmp-clamp",
+      "target_branch": "main",
+      "difficulty": "easy",
+      "categories": ["code_style", "rust_idioms"],
+      "changes": [
+        {
+          "file": "rsvg/src/util.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/util.rs\n+++ b/rsvg/src/util.rs\n@@ -74,11 +74,12 @@ pub unsafe fn cstr<'a>(s: *const libc::c_char) -> Cow<'a, str> {\n }\n \n pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {\n-    if val < low {\n-        low\n-    } else if val > high {\n-        high\n-    } else {\n-        val\n-    }\n+    use std::cmp::Ordering;\n+    match val.cmp(&low) {\n+        Ordering::Less => low,\n+        _ => match val.cmp(&high) {\n+            Ordering::Greater => high,\n+            _ => val,\n+        },\n+    }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "76-87"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Use of std::cmp::Clamp trait",
+          "PartialOrd trait bounds",
+          "Code clarity vs conciseness"
+        ],
+        "suggestions": [
+          "Consider using val.clamp(&low, &high) if using Clamp requires nightly or specific version",
+          "The current implementation is already readable; verify new version has no regression"
+        ],
+        "potential_issues": [
+          "New implementation adds nested matches which may be less readable"
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "pr_title": "Add null check safety improvements to utf8_cstr",
+      "pr_description": "Improve safety invariants in unsafe UTF-8 conversion functions with better null checks.",
+      "branch": "feature/safe-utf8-checks",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["memory_safety", "security"],
+      "changes": [
+        {
+          "file": "rsvg/src/util.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/util.rs\n+++ b/rsvg/src/util.rs\n@@ -13,7 +13,9 @@ use std::str;\n ///\n /// Safety: `s` must be a nul-terminated, valid UTF-8 string of bytes.\n pub unsafe fn utf8_cstr<'a>(s: *const libc::c_char) -> &'a str {\n-    assert!(!s.is_null());\n+    if s.is_null() {\n+        return \"\";\n+    }\n \n     unsafe { str::from_utf8_unchecked(CStr::from_ptr(s).to_bytes()) }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "15-20"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Unsafe code invariants",
+          "Return value contracts",
+          "Documentation consistency"
+        ],
+        "suggestions": [
+          "Returning empty string on null changes the contract - document this behavior",
+          "Consider using Option<&str> return type instead for better type safety",
+          "The assert! was intentional to catch programming errors early"
+        ],
+        "potential_issues": [
+          "Silently returning empty string may hide bugs",
+          "Breaking change for callers expecting panics on null"
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "pr_title": "Optimize bounding box combine operation",
+      "pr_description": "Improve performance of bounding box combination by avoiding unnecessary unwrap calls.",
+      "branch": "feature/bbox-combine-optimize",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["performance"],
+      "changes": [
+        {
+          "file": "rsvg/src/bbox.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/bbox.rs\n+++ b/rsvg/src/bbox.rs\n@@ -38,11 +38,14 @@ impl BoundingBox {\n             return;\n         }\n \n-        // this will panic!() if it's not invertible... should we check on our own?\n-        let transform = self\n-            .transform\n-            .invert()\n-            .unwrap()\n-            .pre_transform(&src.transform);\n+        let invert_result = self.transform.invert();\n+        if invert_result.is_none() {\n+            return;\n+        }\n+\n+        let transform = invert_result\n+            .unwrap()\n+            .pre_transform(&src.transform);\n \n         self.rect = combine_rects(self.rect, src.rect, &transform, clip);\n         self.ink_rect = combine_rects(self.ink_rect, src.ink_rect, &transform, clip);\n",
+          "context_lines": 5,
+          "changed_lines": "36-53"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Panic vs error handling",
+          "Performance implications",
+          "Logic correctness"
+        ],
+        "suggestions": [
+          "Consider logging a warning when transform is not invertible",
+          "Verify behavior change is acceptable for callers",
+          "The original code may have intentionally panicked for debugging"
+        ],
+        "potential_issues": [
+          "Silent return may hide valid transform errors",
+          "Need to verify this doesn't break existing error handling"
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "pr_title": "Add comprehensive error context to parse failures",
+      "pr_description": "Enhance error messages in parsers to include more context for debugging.",
+      "branch": "feature/parse-error-context",
+      "target_branch": "main",
+      "difficulty": "easy",
+      "categories": ["error_handling", "debugging"],
+      "changes": [
+        {
+          "file": "rsvg/src/parsers.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/parsers.rs\n+++ b/rsvg/src/parsers.rs\n@@ -97,10 +97,12 @@ impl Parse for NonNegative {\n     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {\n         let loc = parser.current_source_location();\n         let n = Parse::parse(parser)?;\n-        if n >= 0.0 {\n-            Ok(NonNegative(n))\n-        } else {\n-            Err(loc.new_custom_error(ValueErrorKind::value_error(\"expected non negative number\")))\n+        match n >= 0.0 {\n+            true => Ok(NonNegative(n)),\n+            false => Err(loc.new_custom_error(ValueErrorKind::value_error(\n+                format!(\"expected non-negative number, got {}\", n)\n+            ))),\n         }\n     }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "97-108"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Error message quality",
+          "Debugging experience",
+          "Performance of string formatting"
+        ],
+        "suggestions": [
+          "Using format! in error path is fine since errors are exceptional",
+          "Consider using write! with a buffer for consistency with other errors"
+        ],
+        "potential_issues": [
+          "None - this is a pure improvement"
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "pr_title": "Add SVG filter: color matrix enhancement",
+      "pr_description": "Implement additional color matrix presets for SVG filters.",
+      "branch": "feature/color-matrix-presets",
+      "target_branch": "main",
+      "difficulty": "hard",
+      "categories": ["new_feature", "api_design"],
+      "changes": [
+        {
+          "file": "rsvg/src/filters/color_matrix.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/filters/color_matrix.rs\n+++ b/rsvg/src/filters/color_matrix.rs\n@@ -1,5 +1,20 @@\n \n //! SVG feColorMatrix filter implementation.\n \n+use crate::error::ValueErrorKind;\n use crate::filters::context::FilterContext;\n use crate::filters::Result;\n+\n+/// Type of color matrix operation.\n+#[derive(Debug, Clone, Copy, PartialEq)]\n+pub enum ColorMatrixType {\n+    Matrix,\n+    Saturate,\n+    HueRotate,\n+    LuminanceToAlpha,\n+    /// Custom preset for grayscale\n+    Grayscale,\n+    /// Custom preset for sepia tone\n+    Sepia,\n+}\n",
+          "context_lines": 5,
+          "changed_lines": "1-20"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "API design for presets",
+          "Backward compatibility",
+          "Test coverage needs"
+        ],
+        "suggestions": [
+          "Ensure presets match SVG spec values exactly",
+          "Add comprehensive tests for new presets",
+          "Document preset behavior in module doc"
+        ],
+        "potential_issues": [
+          "New enum variants require updating any match statements",
+          "Need to verify no conflicts with existing filter behavior"
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "pr_title": "Fix path parser floating point overflow",
+      "pr_description": "Add overflow checking to path parser number conversion.",
+      "branch": "fix/path-parser-overflow",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["security", "bug_fix"],
+      "changes": [
+        {
+          "file": "rsvg/src/path_parser.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/path_parser.rs\n+++ b/rsvg/src/path_parser.rs\n@@ -130,10 +130,16 @@ impl<'a> Lexer<'_> {\n         // avoid re-validating all the chars, and std::str::parse<i*>\n         // calls are\n         // faster than std::str::parse<f64> for numbers that are not floats.\n+        let num_str = std::str::from_utf8(&self.input[start_pos..end_pos])\n+            .map_err(|_| LexError::ParseFloatError)?;\n+\n+        // Check for overflow before parsing\n+        if num_str.len() > 320 {\n+            return Err(LexError::ParseFloatError);\n+        }\n \n         // bare unwrap here should be safe since we've already checked all the bytes\n         // in the range\n-        match std::str::from_utf8(&self.input[start_pos..end_pos])\n-            .unwrap()\n-            .parse::<f64>()\n+        match num_str\n+            .parse::<f64>()\n         {\n             Ok(n) => Ok(Number(n)),\n             Err(_e) => Err(LexError::ParseFloatError),\n",
+          "context_lines": 5,
+          "changed_lines": "130-150"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Input validation",
+          "DoS prevention",
+          "Error handling"
+        ],
+        "suggestions": [
+          "Consider using saturating_parse instead for more predictable behavior",
+          "The 320 character limit seems arbitrary - document the rationale"
+        ],
+        "potential_issues": [
+          "Length check doesn't prevent all overflow scenarios",
+          "Using ? changes error type from unwrap panic to error"
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "pr_title": "Add unit tests for transform module",
+      "pr_description": "Increase test coverage for transformation matrix operations.",
+      "branch": "test/transform-coverage",
+      "target_branch": "main",
+      "difficulty": "easy",
+      "categories": ["testing"],
+      "changes": [
+        {
+          "file": "rsvg/src/transform.rs",
+          "change_type": "add",
+          "diff": "--- a/rsvg/src/transform.rs\n+++ b/rsvg/src/transform.rs\n@@ -750,5 +750,45 @@ mod tests {\n         let t = Transform::new(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);\n         assert!(t.is_invertible());\n     }\n+\n+    #[test]\n+    fn test_transform_compose() {\n+        let t1 = Transform::new(1.0, 0.0, 0.0, 1.0, 10.0, 20.0);\n+        let t2 = Transform::new(2.0, 0.0, 0.0, 2.0, 0.0, 0.0);\n+        let composed = t1.pre_transform(&t2);\n+        assert_eq!(composed.xx, 2.0);\n+        assert_eq!(composed.x0, 20.0);\n+    }\n+\n+    #[test]\n+    fn test_transform_invert_invalid() {\n+        let t = Transform::new(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);\n+        assert!(!t.is_invertible());\n+    }\n+\n+    #[test]\n+    fn test_transform_round_trip() {\n+        let t = Transform::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);\n+        let inverted = t.invert().unwrap();\n+        let combined = t.pre_transform(&inverted);\n+        // Should be approximately identity\n+        assert!((combined.xx - 1.0).abs() < 1e-10);\n+        assert!((combined.yy - 1.0).abs() < 1e-10);\n+    }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "750-795"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Test coverage completeness",
+          "Test quality and assertions",
+          "Edge case handling"
+        ],
+        "suggestions": [
+          "Add tests for degenerate cases",
+          "Consider using proptest for property-based testing"
+        ],
+        "potential_issues": [
+          "None - test additions are low risk"
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "pr_title": "Refactor error type to use thiserror",
+      "pr_description": "Replace manual Error implementations with thiserror derive for cleaner code.",
+      "branch": "refactor/thiserror-impl",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["rust_idioms", "code_style"],
+      "changes": [
+        {
+          "file": "rsvg/src/error.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/error.rs\n+++ b/rsvg/src/error.rs\n@@ -1,5 +1,7 @@\n //! Error types.\n \n+// TODO: Add thiserror dependency to Cargo.toml\n use std::error;\n use std::fmt;\n \n@@ -50,15 +52,12 @@ impl ValueErrorKind {\n     }\n }\n\n-impl fmt::Display for ValueErrorKind {\n-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n-        match *self {\n-            ValueErrorKind::UnknownProperty => write!(f, \"unknown property name\"),\n-\n-            ValueErrorKind::Parse(ref s) => write!(f, \"parse error: {s}\"),\n-\n-            ValueErrorKind::Value(ref s) => write!(f, \"invalid value: {s}\"),\n-        }\n-    }\n+#[derive(thiserror::Error, Debug, Clone)]\n+pub enum ValueErrorKind {\n+    #[error(\"unknown property name\")]\n+    UnknownProperty,\n+    #[error(\"parse error: {0}\")]\n+    Parse(String),\n+    #[error(\"invalid value: {0}\")]\n+    Value(String),\n }\n",
+          "context_lines": 5,
+          "changed_lines": "50-65"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Dependency management",
+          "Breaking changes",
+          "Macro usage"
+        ],
+        "suggestions": [
+          "Verify thiserror is already in dependencies or add it",
+          "Ensure Display output matches exactly for backward compatibility"
+        ],
+        "potential_issues": [
+          "May change error message formatting slightly",
+          "Adds new dependency to crate"
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "pr_title": "Add documentation examples for length module",
+      "pr_description": "Improve API documentation with runnable examples.",
+      "branch": "docs/length-examples",
+      "target_branch": "main",
+      "difficulty": "easy",
+      "categories": ["documentation"],
+      "changes": [
+        {
+          "file": "rsvg/src/length.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/length.rs\n+++ b/rsvg/src/length.rs\n@@ -55,6 +55,30 @@ use crate::viewbox::ViewBox;\n ///\n /// For example, the implementation of [`Circle`][crate::shapes::Circle] defines this\n /// structure with fields for the `(center_x, center_y, radius)`:\n+\n+/// # Examples\n+\n+/// Basic usage:\n+\n+/// ```\n+/// use rsvg::length::CssLength;\n+/// use rsvg::length::Horizontal;\n+\n+/// let length = CssLength::<Horizontal>::parse_str(\"50%\").unwrap();\n+/// assert!(length.is_percentage());\n+/// ```\n+\n+/// Parsing different units:\n+\n+/// ```\n+/// use rsvg::length::{CssLength, Horizontal, Px};\n+\n+/// let px = CssLength::<Horizontal, Px>::parse_str(\"100px\").unwrap();\n+/// let em = CssLength::<Horizontal>::parse_str(\"2em\").unwrap();\n+/// ```\n+\n+///\n+/// ```\n+/// # use rsvg::doctest_only::{Length,ULength,Horizontal,Vertical,Both};\n /// pub struct Circle {\n ///     cx: Length<Horizontal>,\n ///     cy: Length<Vertical>,\n",
+          "context_lines": 5,
+          "changed_lines": "55-85"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Doc test correctness",
+          "Example quality",
+          "API usability"
+        ],
+        "suggestions": [
+          "Verify examples compile with cargo test --doc",
+          "Consider adding doctest for error cases too"
+        ],
+        "potential_issues": [
+          "Module path in doctest may need adjustment"
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "pr_title": "Implement cache for gradient rendering",
+      "pr_description": "Add caching layer to avoid recomputing gradient patterns on every render.",
+      "branch": "perf/gradient-cache",
+      "target_branch": "main",
+      "difficulty": "hard",
+      "categories": ["performance", "optimization"],
+      "changes": [
+        {
+          "file": "rsvg/src/gradient.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/gradient.rs\n+++ b/rsvg/src/gradient.rs\n@@ -1,5 +1,7 @@\n //! SVG gradient implementations.\n \n+use std::collections::HashMap;\n use std::sync::Arc;\n+\n+lazy_static! {\n+    static ref GRADIENT_CACHE: HashMap<String, Arc<CachedGradient>> = HashMap::new();\n+}\n \n pub struct Gradient {\n     stops: Vec<GradientStop>,\n@@ -50,6 +52,19 @@ impl Gradient {\n         let pattern = Self::create_pattern(gradient);\n         let key = Self::cache_key(gradient);\n \n-        Ok(pattern)\n+        if let Some(cached) = GRADIENT_CACHE.get(&key) {\n+            return Ok(cached.pattern.clone());\n+        }\n+\n+        let cached = Arc::new(CachedGradient {\n+            pattern: pattern.clone(),\n+            access_count: 0,\n+        });\n+\n+        GRADIENT_CACHE.insert(key, cached.clone());\n+        Ok(pattern)\n     }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "1-70"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Thread safety",
+          "Cache invalidation",
+          "Memory management"
+        ],
+        "suggestions": [
+          "Use RwLock for concurrent read access",
+          "Add cache size limit to prevent unbounded growth",
+          "Implement LRU eviction policy"
+        ],
+        "potential_issues": [
+          "No cache invalidation - gradients never expire",
+          "HashMap not thread-safe without synchronization",
+          "May cause memory leaks in long-running processes"
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "pr_title": "Add concurrency support with rayon for parallel rendering",
+      "pr_description": "Implement parallel rendering using rayon for multi-core performance.",
+      "branch": "perf/parallel-render",
+      "target_branch": "main",
+      "difficulty": "hard",
+      "categories": ["performance", "concurrency"],
+      "changes": [
+        {
+          "file": "rsvg/src/drawing_ctx.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/drawing_ctx.rs\n+++ b/rsvg/src/drawing_ctx.rs\n@@ -1,5 +1,7 @@\n //! Drawing context for SVG rendering.\n \n+use rayon::prelude::*;\n use std::sync::Arc;\n+\n impl RsvgDrawingCtx {\n     /// Render all children in parallel\n     pub fn render_children_parallel(&mut self) {\n@@ -20,9 +22,15 @@ impl RsvgDrawingCtx {\n \n     fn render_node(&self, node: &Node) {\n         // ... existing rendering logic\n     }\n+\n+    fn parallelize_render(&self, nodes: &[Node]) {\n+        nodes.par_iter().for_each(|node| {\n+            self.render_node(node);\n+        });\n+    }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "1-35"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Thread safety",
+          "Data race prevention",
+          "Synchronization overhead"
+        ],
+        "suggestions": [
+          "Use scoped threads to avoid static lifetime issues",
+          "Consider work-stealing for load balancing",
+          "Add benchmarking to verify parallelization helps"
+        ],
+        "potential_issues": [
+          "Cairo context is not thread-safe",
+          "Nodes may have interior mutability",
+          "Need to ensure proper synchronization"
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "pr_title": "Fix URL resolution path traversal vulnerability",
+      "pr_description": "Add validation to prevent path traversal attacks in URL resolution.",
+      "branch": "fix/url-traversal",
+      "target_branch": "main",
+      "difficulty": "hard",
+      "categories": ["security", "bug_fix"],
+      "changes": [
+        {
+          "file": "rsvg/src/url_resolver.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/url_resolver.rs\n+++ b/rsvg/src/url_resolver.rs\n@@ -50,6 +50,19 @@ impl UrlResolver {\n     pub fn resolve(&self, base_path: &Path) -> Result<PathBuf, UrlError> {\n         let url = self.parse()?;\n \n-        // Direct path construction from URL\n-        let path = base_path.parent().unwrap().join(url.path());\n+        let url_path = url.path();\n+\n+        // Validate path does not escape base directory\n+        let resolved = base_path.parent().unwrap().join(url_path);\n+        let resolved = resolved.canonicalize()?;\n+        let base = base_path.canonicalize()?;\n+\n+        if !resolved.starts_with(&base) {\n+            return Err(UrlError::Security(\"Path traversal detected\".into()));\n+        }\n+\n+        // Additional check for .. in path\n+        for component in url_path.components() {\n+            if let std::path::Component::ParentDir = component {\n+                return Err(UrlError::Security(\"Parent directory reference not allowed\".into()));\n+            }\n+        }\n+\n+        let path = resolved;\n         Ok(path)\n     }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "50-80"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Security analysis",
+          "Error handling",
+          "Race condition possibilities"
+        ],
+        "suggestions": [
+          "Use canonicalize early to prevent TOCTOU races",
+          "Consider allowing symlinks in allowed paths",
+          "Add integration tests for path traversal cases"
+        ],
+        "potential_issues": [
+          "canonicalize may fail for non-existent paths",
+          "Need to handle permission errors gracefully"
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "pr_title": "Simplify Node API with builder pattern",
+      "pr_description": "Refactor Node creation to use builder pattern for better ergonomics.",
+      "branch": "refactor/node-builder",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["api_design", "rust_idioms"],
+      "changes": [
+        {
+          "file": "rsvg/src/node.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/node.rs\n+++ b/rsvg/src/node.rs\n@@ -100,20 +100,45 @@ impl Node {\n     }\n }\n\n-/// Create a new element node\n-pub fn create_element(name: &str, attrs: &HashMap<String, String>) -> Node {\n-    Node {\n-        name: name.to_string(),\n-        attributes: attrs.clone(),\n-        children: Vec::new(),\n-        parent: None,\n-    }\n+/// Builder for creating nodes\n+pub struct NodeBuilder {\n+    name: String,\n+    attributes: HashMap<String, String>,\n+    children: Vec<Node>,\n+    parent: Option<Weak<Node>>,\n+}\n+\n+impl NodeBuilder {\n+    pub fn new(name: &str) -> Self {\n+        NodeBuilder {\n+            name: name.to_string(),\n+            attributes: HashMap::new(),\n+            children: Vec::new(),\n+            parent: None,\n+        }\n+    }\n+\n+    pub fn with_attribute(mut self, key: &str, value: &str) -> Self {\n+        self.attributes.insert(key.to_string(), value.to_string());\n+        self\n+    }\n+\n+    pub fn with_child(mut self, child: Node) -> Self {\n+        self.children.push(child);\n+        self\n+    }\n+\n+    pub fn build(self) -> Node {\n+        Node {\n+            name: self.name,\n+            attributes: self.attributes,\n+            children: self.children,\n+            parent: self.parent,\n+        }\n+    }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "100-145"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "API ergonomics",
+          "Backward compatibility",
+          "Implementation completeness"
+        ],
+        "suggestions": [
+          "Keep old create_element for backward compatibility",
+          "Consider using derive_builder crate",
+          "Add tests for builder pattern"
+        ],
+        "potential_issues": [
+          "Breaking change if create_element is removed",
+          "Need to update all call sites"
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "pr_title": "Add logging for debugging rendering issues",
+      "pr_description": "Add debug logging to trace rendering pipeline for troubleshooting.",
+      "branch": "debug/log-render",
+      "target_branch": "main",
+      "difficulty": "easy",
+      "categories": ["debugging", "logging"],
+      "changes": [
+        {
+          "file": "rsvg/src/drawing_ctx.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/drawing_ctx.rs\n+++ b/rsvg/src/drawing_ctx.rs\n@@ -1,5 +1,7 @@\n //! Drawing context for SVG rendering.\n \n+#[cfg(feature = \"debug\")]\n+use log::{debug, info};\n \n impl RsvgDrawingCtx {\n     pub fn render_element(&mut self, node: &Node) {\n+        #[cfg(feature = \"debug\")]\n+        info!(\"Rendering element: {} at {:?}\", node.name(), node.bounds());\n+\n         // ... existing logic\n     }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "1-15"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Logging best practices",
+          "Performance impact",
+          "Feature flagging"
+        ],
+        "suggestions": [
+          "Use appropriate log levels (debug vs info)",
+          "Consider using match or if cfg! for better compile-time optimization",
+          "Ensure no PII in log output"
+        ],
+        "potential_issues": [
+          "Conditional compilation may miss edge cases",
+          "Logs may expose sensitive paths in error messages"
+        ]
+      }
+    },
+    {
+      "id": 15,
+      "pr_title": "Fix memory leak in image loading",
+      "pr_description": "Fix potential memory leak when loading raster images in SVG.",
+      "branch": "fix/image-leak",
+      "target_branch": "main",
+      "difficulty": "hard",
+      "categories": ["memory_safety", "bug_fix"],
+      "changes": [
+        {
+          "file": "rsvg/src/image.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/image.rs\n+++ b/rsvg/src/image.rs\n@@ -80,10 +80,15 @@ impl ImageLoader {\n     pub fn load(&mut self, url: &Url) -> Result<ImageData, ImageError> {\n         let data = self.fetch_image(url)?;\n         let surface = self.create_surface(&data)?;\n+\n+        // Old code - missing cleanup\n+        // return Ok(ImageData { surface, data });\n+\n+        // Fixed: properly manage image buffer lifetime\n         let image = ImageBuffer::from_surface(&surface)?;\n+\n         Ok(ImageData {\n             surface,\n             image: Some(image),\n-            // Missing: data should be kept alive while image is used\n+            data: Some(data),\n         })\n     }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "80-95"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Resource lifetime management",
+          "RAII patterns",
+          "Memory safety"
+        ],
+        "suggestions": [
+          "Consider using Arc for shared data ownership",
+          "Ensure Drop impl cleans up resources",
+          "Add tests for resource cleanup"
+        ],
+        "potential_issues": [
+          "Need to verify all ImageData consumers handle the new field",
+          "May affect API consumers"
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "pr_title": "Add clippy suggestions implementation",
+      "pr_description": "Apply clippy lint suggestions from codebase analysis.",
+      "branch": "style/clippy-fixes",
+      "target_branch": "main",
+      "difficulty": "easy",
+      "categories": ["code_style", "rust_idioms"],
+      "changes": [
+        {
+          "file": "rsvg/src/unit_interval.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/unit_interval.rs\n+++ b/rsvg/src/unit_interval.rs\n@@ -40,10 +40,10 @@ impl UnitInterval {\n     /// Returns the value as a f64\n     pub fn value(&self) -> f64 {\n         // Old: return self.0;\n-        self.0\n+        self.0\n     }\n\n     /// Check if value is in valid range\n     pub fn is_valid(&self) -> bool {\n-        self.0 >= 0.0 && self.0 <= 1.0\n+        (0.0..=1.0).contains(&self.0)\n     }\n }\n",
+          "context_lines": 5,
+          "changed_lines": "40-50"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Clippy recommendations",
+          "Code clarity",
+          "Range API usage"
+        ],
+        "suggestions": [
+          "The range change is idiomatic but verify performance",
+          "Consider keeping explicit comparison for clarity"
+        ],
+        "potential_issues": [
+          "None - style improvements"
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "pr_title": "Add filter primitives implementation",
+      "pr_description": "Implement additional SVG filter primitives: feBlend, feComposite.",
+      "branch": "feature/more-filters",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["new_feature"],
+      "changes": [
+        {
+          "file": "rsvg/src/filters/blend.rs",
+          "change_type": "add",
+          "diff": "--- /dev/null\n+++ b/rsvg/src/filters/blend.rs\n@@ -0,0 +1,80 @@\n+//! SVG feBlend filter primitive.\n+//!\n+//! Implements blend modes for combining filter inputs.\n+//! See: https://www.w3.org/TR/SVG11/filters.html#feBlend\n+\n+use crate::filters::context::FilterContext;\n+use crate::filters::Result;\n+use crate::surface_utils::shared_surface::SharedImageSurface;\n+\n+/// Blend modes supported by feBlend.\n+#[derive(Debug, Clone, Copy, PartialEq)]\n+pub enum BlendMode {\n+    Normal,\n+    Multiply,\n+    Screen,\n+    Overlay,\n+    Darken,\n+    Lighten,\n+    ColorDodge,\n+    ColorBurn,\n+    HardLight,\n+    SoftLight,\n+    Difference,\n+    Exclusion,\n+}\n+\n+pub struct Blend {\n+    in1: String,\n+    in2: String,\n+    mode: BlendMode,\n+}\n+\n+impl Blend {\n+    pub fn new(in1: &str, in2: &str, mode: BlendMode) -> Self {\n+        Blend {\n+            in1: in1.to_string(),\n+            in2: in2.to_string(),\n+            mode,\n+        }\n+    }\n+\n+    pub fn render(&self, ctx: &FilterContext) -> Result<SharedImageSurface> {\n+        // Implementation\n+        // ...\n+        todo!()\n+    }\n+}\n",
+          "context_lines": 5,
+          "changed_lines": "1-80"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "SVG spec compliance",
+          "API completeness",
+          "Test coverage needs"
+        ],
+        "suggestions": [
+          "Add unit tests for all blend modes",
+          "Verify implementation matches W3C spec exactly",
+          "Add to filter module exports"
+        ],
+        "potential_issues": [
+          "Need to implement render method",
+          "Missing tests will cause CI failures"
+        ]
+      }
+    },
+    {
+      "id": 18,
+      "pr_title": "Refactor text rendering module organization",
+      "pr_description": "Split large text.rs into smaller focused modules.",
+      "branch": "refactor/text-module",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["code_organization"],
+      "changes": [
+        {
+          "file": "rsvg/src/text.rs",
+          "change_type": "split",
+          "diff": "--- a/rsvg/src/text.rs\n+++ b/rsvg/src/text.rs\n@@ -1,200 @@\n-//! Text rendering implementation.\n-//!\n-//! This module handles all text-related SVG elements including:\n-//! - <text>\n-//! - <tspan>\n-//! - <textPath>\n-//! - <tref>\n+//! Text rendering - main entry point.\n+//!\n+//! This module re-exports text-related functionality from submodules.\n \n-mod text_layout;\n-mod text_font;\n-mod text_path;\n+pub mod text_layout;\n+pub mod text_font;\n+pub mod text_path;\n \n-pub use self::text_layout::*;\n-pub use self::text_font::*;\n-pub use self::text_path::*;\n+\n+/// Main text element handler\n+pub struct Text { /* ... */ }\n+\n+/* Original text.rs content moved to submodules: */\n+/* - text_layout.rs: Text positioning and layout */\n+/* - text_font.rs: Font selection and metrics */\n+/* - text_path.rs: Text on path implementation */\n",
+          "context_lines": 5,
+          "changed_lines": "1-30"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Module boundaries",
+          "Public API surface",
+          "Import paths"
+        ],
+        "suggestions": [
+          "Update all internal imports to use new paths",
+          "Ensure no public API breakage",
+          "Add module documentation"
+        ],
+        "potential_issues": [
+          "May break external dependents",
+          "Need comprehensive testing"
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "pr_title": "Add pixel iterator for efficient image processing",
+      "pr_description": "Implement streaming pixel iterator to reduce memory usage.",
+      "branch": "feature/pixel-iterator",
+      "target_branch": "main",
+      "difficulty": "hard",
+      "categories": ["performance", "api_design"],
+      "changes": [
+        {
+          "file": "rsvg/src/surface_utils/iterators.rs",
+          "change_type": "add",
+          "diff": "--- a/rsvg/src/surface_utils/iterators.rs\n+++ b/rsvg/src/surface_utils/iterators.rs\n@@ -1,5 +1,7 @@\n //! Iterator utilities for surface processing.\n \n+use crate::surface_utils::shared_surface::SharedImageSurface;\n \n+/// Iterator over pixels in an image surface.\n pub struct PixelIterator<'a> {\n     surface: &'a SharedImageSurface,\n     x: u32,\n@@ -40,3 +42,40 @@ impl<'a> Iterator for PixelIterator<'a> {\n         self.height = height;\n     }\n }\n+\n+impl<'a> SharedImageSurface {\n+    /// Returns an iterator over pixels.\n+    pub fn pixels(&self) -> PixelIterator {\n+        PixelIterator {\n+            surface: self,\n+            x: 0,\n+            y: 0,\n+            width: self.width(),\n+            height: self.height(),\n+        }\n+    }\n+\n+    /// Returns pixels within a specified region.\n+    pub fn pixels_region(&self, x: u32, y: u32, width: u32, height: u32) -> PixelIterator {\n+        PixelIterator {\n+            surface: self,\n+            x,\n+            y,\n+            width,\n+            height,\n+        }\n+    }\n+}\n",
+          "context_lines": 5,
+          "changed_lines": "1-80"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Iterator implementation",
+          "Memory efficiency",
+          "API ergonomics"
+        ],
+        "suggestions": [
+          "Consider DoubleEndedIterator implementation",
+          "Add ExactSizeIterator if possible",
+          "Document iteration order"
+        ],
+        "potential_issues": [
+          "Need to verify iteration order matches expectations",
+          "Consider bounds checking behavior"
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "pr_title": "Add CSS @import security restrictions",
+      "pr_description": "Implement security limits for CSS @import to prevent information disclosure.",
+      "branch": "security/css-import-limit",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["security"],
+      "changes": [
+        {
+          "file": "rsvg/src/css.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/css.rs\n+++ b/rsvg/src/css.rs\n@@ -100,10 +100,25 @@ impl Stylesheet {\n     fn parse_import_rules(&mut self, parser: &mut Parser) -> Result<(), ParseError> {\n         while !parser.is_exhausted() {\n             let location = parser.current_source_location();\n-            let url = parser.expect_url()?;\n-\n-            self.imports.push(url.into());\n+            let url_result = parser.try_parse(|p| p.expect_url());\n+\n+            match url_result {\n+                Ok(url) => {\n+                    // Security: prevent SSRF\n+                    if self.import_depth >= MAX_CSS_IMPORT limit import depth to_DEPTH {\n+                        return Err(location.new_custom_error(\n+                            ValueErrorKind::value_error(\"CSS import depth exceeded\")\n+                        ));\n+                    }\n+\n+                    let mut new_stylesheet = Stylesheet::new();\n+                    new_stylesheet.import_depth = self.import_depth + 1;\n+                    self.imports.push((url.into(), new_stylesheet));\n+                }\n+                Err(_) => break,\n+            }\n         }\n         Ok(())\n     }\n }\n+\n+const MAX_CSS_IMPORT_DEPTH: usize = 3;\n",
+          "context_lines": 5,
+          "changed_lines": "100-125"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Security considerations",
+          "Error handling",
+          "Resource limits"
+        ],
+        "suggestions": [
+          "Document security model in module docs",
+          "Consider adding total size limits",
+          "Add tests for depth limit behavior"
+        ],
+        "potential_issues": [
+          "Need to ensure recursive imports are tracked properly",
+          "May affect legitimate use cases"
+        ]
+      }
+    },
+    {
+      "id": 21,
+      "pr_title": "Fix clippy warning: redundant closure",
+      "pr_description": "Remove unnecessary closure in filter implementation.",
+      "branch": "style/clippy-redundant-closure",
+      "target_branch": "main",
+      "difficulty": "easy",
+      "categories": ["code_style"],
+      "changes": [
+        {
+          "file": "rsvg/src/filters/gaussian_blur.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/filters/gaussian_blur.rs\n+++ b/rsvg/src/filters/gaussian_blur.rs\n@@ -30,10 +30,10 @@ impl GaussianBlur {\n         // Apply blur using box blur approximation\n         let kernel = self.compute_kernel();\n \n-        input.pixels().map(|(x, y, pixel)| {\n+        input.pixels().map(|(x, y, pixel)| {\n             let blurred = self.compute_blurred_pixel(input, x, y, &kernel);\n             blurred\n-        }).collect()\n+        })\n     }\n\n     fn compute_kernel(&self) -> Vec<f64> {\n",
+          "context_lines": 5,
+          "changed_lines": "30-40"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Clippy suggestions",
+          "Closure ergonomics"
+        ],
+        "suggestions": [
+          "Verify the change compiles correctly",
+          "Consider inline for small closures"
+        ],
+        "potential_issues": [
+          "None - straightforward style fix"
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "pr_title": "Add property-based tests for path parsing",
+      "pr_description": "Use proptest to add property-based testing for path parser.",
+      "branch": "test/property-path",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["testing"],
+      "changes": [
+        {
+          "file": "rsvg/src/path_parser.rs",
+          "change_type": "add",
+          "diff": "--- a/rsvg/src/path_parser.rs\n+++ b/rsvg/src/path_parser.rs\n@@ -900,3 +900,30 @@ mod tests {\n         assert_eq!(result.len(), 4);\n     }\n }\n+\n+#[cfg(test)]\n+mod proptest_tests {\n+    use super::*;\n+    use proptest::prelude::*;\n+\n+    proptest! {\n+        #[test]\n+        fn test_valid_path_doesnt_panic(s in \"[MmLlHhVvCcSsQqTtAaZz 0-9.,-]+\") {\n+            let result = std::panic::catch_unwind(|| {\n+                let lexer = Lexer::new(&s);\n+                for _ in lexer {}\n+            });\n+            prop_assert!(result.is_ok());\n+        }\n+\n+        #[test]\n+        fn test_path_roundtrip(s in \"M 10 10 L 20 20 Z\") {\n+            let lexer = Lexer::new(&s);\n+            let tokens: Result<Vec<_>, _> = lexer.collect();\n+            prop_assert!(tokens.is_ok() || tokens.as_ref().err() == Some(&LexError::UnexpectedEof));\n+        }\n+    }\n+}\n",
+          "context_lines": 5,
+          "changed_lines": "900-930"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Property-based testing",
+          "Test coverage",
+          "Proptest usage"
+        ],
+        "suggestions": [
+          "Add proptest to dev-dependencies if not present",
+          "Consider more sophisticated generators",
+          "Add edge case coverage"
+        ],
+        "potential_issues": [
+          "Test may be slow - consider using proptest::proptest!",
+          "Need to ensure test compiles"
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "pr_title": "Add Arc to share expensive objects between threads",
+      "pr_description": "Use Arc for sharing gradient and filter objects across thread boundaries.",
+      "branch": "perf/shared-arc",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["concurrency", "performance"],
+      "changes": [
+        {
+          "file": "rsvg/src/pattern.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/pattern.rs\n+++ b/rsvg/src/pattern.rs\n@@ -10,12 +10,14 @@ use crate::rect::Rect;\n use crate::viewbox::ViewBox;\n\n pub struct Pattern {\n-    tiles: Vec<Tile>,\n+    // Changed from Vec<Tile> to Arc<Vec<Tile>> for thread-safe sharing\n+    tiles: Arc<Vec<Tile>>,\n     x: f64,\n     y: f64,\n     width: f64,\n     height: f64,\n     pattern_units: Units,\n }\n+\n+// Implement Clone for Pattern using Arc\n+impl Clone for Pattern {\n+    fn clone(&self) -> Self {\n+        Pattern {\n+            tiles: Arc::clone(&self.tiles),\n+            x: self.x,\n+            y: self.y,\n+            width: self.width,\n+            height: self.height,\n+            pattern_units: self.pattern_units,\n+        }\n+    }\n+}\n",
+          "context_lines": 5,
+          "changed_lines": "10-35"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Arc usage",
+          "Thread safety",
+          "Performance implications"
+        ],
+        "suggestions": [
+          "Ensure Arc overhead is justified by sharing frequency",
+          "Consider RwLock for read-heavy workloads",
+          "Document thread-safety guarantees"
+        ],
+        "potential_issues": [
+          "Arc adds small overhead for single-threaded use",
+          "Need to verify all Pattern consumers work with Arc"
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "pr_title": "Add deprecation notice for legacy API",
+      "pr_description": "Mark old render API as deprecated in favor of new streaming API.",
+      "branch": "deprecate/legacy-render",
+      "target_branch": "main",
+      "difficulty": "easy",
+      "categories": ["api_design", "documentation"],
+      "changes": [
+        {
+          "file": "rsvg/src/api.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/api.rs\n+++ b/rsvg/src/api.rs\n@@ -100,10 +100,20 @@ pub struct CairoRenderer<'a> {\n     handle: &'a RsvgHandle,\n }\n\n+/// Renders an SVG to a Cairo context.\n+\n+/// WARNING: This method has quadratic time complexity for complex SVGs.\n+\n+/// Consider using `render_document_streaming` for better performance.\n impl<'a> CairoRenderer<'a> {\n     pub fn render_document(\n         &self,\n         cr: &cairo::Context,\n         viewport: &cairo::Rectangle,\n     ) -> Result<(), RenderingError> {\n         // ... implementation\n     }\n+\n+    /// New streaming renderer with O(n) complexity.\n+    #[allow(deprecated)]\n+    #[deprecated(since = \"2.63.0\", note = \"Use render_document_streaming instead\")]\n+    pub fn render_document_deprecated = render_document;\n }\n",
+          "context_lines": 5,
+          "changed_lines": "100-125"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Deprecation policy",
+          "Documentation quality",
+          "Migration path"
+        ],
+        "suggestions": [
+          "Include migration guide in deprecation message",
+          "Set timeline for removal (e.g., 2 major versions)",
+          "Add alternate_text or similar for tooling"
+        ],
+        "potential_issues": [
+          "Need to ensure alternate method exists before deprecation",
+          "May affect external dependents"
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "pr_title": "Fix panic in rect intersection with near-zero values",
+      "pr_description": "Handle floating point edge cases in rect intersection calculations.",
+      "branch": "fix/rect-float-edge",
+      "target_branch": "main",
+      "difficulty": "medium",
+      "categories": ["bug_fix", "numerical"],
+      "changes": [
+        {
+          "file": "rsvg/src/rect.rs",
+          "change_type": "modify",
+          "diff": "--- a/rsvg/src/rect.rs\n+++ b/rsvg/src/rect.rs\n@@ -45,10 +45,18 @@ impl Rect {\n     }\n\n     pub fn intersection(&self, other: &Rect) -> Option<Rect> {\n-        let x1 = self.x.max(other.x);\n-        let y1 = self.y.max(other.y);\n-        let x2 = (self.x + self.width).min(other.x + other.width);\n-        let y2 = (self.y + self.height).min(other.y + other.height);\n+        let x1 = self.x.max(other.x);\n+        let y1 = self.y.max(other.y);\n+        let x2 = (self.x + self.width).min(other.x + other.width);\n+        let y2 = (self.y + self.height).min(other.y + other.height);\n+\n+        // Handle near-zero dimensions due to floating point errors\n+        let epsilon = 1e-10;\n+        if x2 - x1 < epsilon || y2 - y1 < epsilon {\n+            return None;\n+        }\n+\n         if x1 < x2 && y1 < y2 {\n             Some(Rect::new(x1, y1, x2 - x1, y2 - y1))\n         } else {\n",
+          "context_lines": 5,
+          "changed_lines": "45-65"
+        }
+      ],
+      "expected_review": {
+        "focus_areas": [
+          "Floating point handling",
+          "Numerical stability",
+          "Edge case coverage"
+        ],
+        "suggestions": [
+          "Consider using ulps comparison for more robust epsilon",
+          "Document the epsilon value choice",
+          "Add tests for near-zero edge cases"
+        ],
+        "potential_issues": [
+          "Epsilon value may need tuning",
+          "May affect valid very-small rects"
+        ]
+      }
+    }
+  ]
+}

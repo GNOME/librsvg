@@ -1,0 +1,280 @@
+{
+  "results": [
+    {
+      "evaluation_id": 1,
+      "pr_title": "Refactor clamp function to use standard library",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 2,
+      "pr_title": "Add null check safety improvements to utf8_cstr",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 3,
+      "pr_title": "Optimize bounding box combine operation",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 4,
+      "pr_title": "Add comprehensive error context to parse failures",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 5,
+      "pr_title": "Add SVG filter: color matrix enhancement",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 6,
+      "pr_title": "Fix path parser floating point overflow",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 7,
+      "pr_title": "Add unit tests for transform module",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 8,
+      "pr_title": "Refactor error type to use thiserror",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 9,
+      "pr_title": "Add documentation examples for length module",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 10,
+      "pr_title": "Implement cache for gradient rendering",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 11,
+      "pr_title": "Add concurrency support with rayon for parallel rendering",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 12,
+      "pr_title": "Fix URL resolution path traversal vulnerability",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 13,
+      "pr_title": "Simplify Node API with builder pattern",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 14,
+      "pr_title": "Add logging for debugging rendering issues",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 15,
+      "pr_title": "Fix memory leak in image loading",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 16,
+      "pr_title": "Add clippy suggestions implementation",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 17,
+      "pr_title": "Add filter primitives implementation",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 18,
+      "pr_title": "Refactor text rendering module organization",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 19,
+      "pr_title": "Add pixel iterator for efficient image processing",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 20,
+      "pr_title": "Add CSS @import security restrictions",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 21,
+      "pr_title": "Fix clippy warning: redundant closure",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 22,
+      "pr_title": "Add property-based tests for path parsing",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 23,
+      "pr_title": "Add Arc to share expensive objects between threads",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 24,
+      "pr_title": "Add deprecation notice for legacy API",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    },
+    {
+      "evaluation_id": 25,
+      "pr_title": "Fix panic in rect intersection with near-zero values",
+      "status": "error",
+      "pr_number": null,
+      "pr_url": null,
+      "agent_comment": null,
+      "parsed_output": null,
+      "validation": null,
+      "error": "[Errno 2] No such file or directory: '/path/to/local/librsvg-fork'"
+    }
+  ],
+  "timestamp": "2026-02-18T16:23:07.803130"
+}
