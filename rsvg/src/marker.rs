@@ -285,7 +285,7 @@ enum Segment {
         y3: f64,
         x4: f64,
         y4: f64,
-        needs_marker_at_end: bool,
+        is_subpath_end: bool,
     },
 }
 
@@ -303,7 +303,7 @@ impl Segment {
         y3: f64,
         x4: f64,
         y4: f64,
-        needs_marker_at_end: bool,
+        is_subpath_end: bool,
     ) -> Segment {
         Segment::LineOrCurve {
             x1,
@@ -314,12 +314,12 @@ impl Segment {
             y3,
             x4,
             y4,
-            needs_marker_at_end,
+            is_subpath_end,
         }
     }
 
-    fn line(x1: f64, y1: f64, x2: f64, y2: f64, needs_marker_at_end: bool) -> Segment {
-        Segment::curve(x1, y1, x2, y2, x1, y1, x2, y2, needs_marker_at_end)
+    fn line(x1: f64, y1: f64, x2: f64, y2: f64, is_subpath_end: bool) -> Segment {
+        Segment::curve(x1, y1, x2, y2, x1, y1, x2, y2, is_subpath_end)
     }
 
     // If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
@@ -430,7 +430,7 @@ impl From<&Path> for Segments {
 
             let path_command = &path_commands[i];
 
-            let needs_marker_at_end = if i == path_commands.len() - 1 {
+            let is_subpath_end = if i == path_commands.len() - 1 {
                 true
             } else {
                 // If the next command is a MoveTo, it means that the next Segment will be disconnected
@@ -491,7 +491,7 @@ impl From<&Path> for Segments {
                         last_y,
                         cur_x,
                         cur_y,
-                        needs_marker_at_end,
+                        is_subpath_end,
                     ));
 
                     state = SegmentState::InSubpath;
@@ -515,7 +515,7 @@ impl From<&Path> for Segments {
                         y3,
                         cur_x,
                         cur_y,
-                        needs_marker_at_end,
+                        is_subpath_end,
                     ));
 
                     state = SegmentState::InSubpath;
@@ -553,7 +553,7 @@ impl From<&Path> for Segments {
                                 y3,
                                 cur_x,
                                 cur_y,
-                                needs_marker_at_end,
+                                is_subpath_end,
                             ));
 
                             state = SegmentState::InSubpath;
@@ -564,7 +564,7 @@ impl From<&Path> for Segments {
                                 last_y,
                                 cur_x,
                                 cur_y,
-                                needs_marker_at_end,
+                                is_subpath_end,
                             ));
 
                             state = SegmentState::InSubpath;
@@ -582,7 +582,7 @@ impl From<&Path> for Segments {
                         last_y,
                         cur_x,
                         cur_y,
-                        needs_marker_at_end,
+                        is_subpath_end,
                     ));
 
                     state = SegmentState::ClosedSubpath;
