@@ -1379,4 +1379,51 @@ mod marker_tests {
             ]
         );
     }
+
+    #[test]
+    fn does_not_duplicate_end_marker() {
+        let mut builder = PathBuilder::default();
+        builder
+            .parse("M 0,0 h 10 v 10 h -10 Z")
+            .unwrap();
+        let path = builder.into_path();
+
+        let specs = emit_markers_for_path(&path);
+
+        assert_eq!(
+            specs,
+            vec![
+                MarkerSpec {
+                    marker_type: MarkerType::Start,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 0.0,
+                    angle: Angle::from_degrees(45.0)
+                },
+                MarkerSpec {
+                  marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 10.0,
+                    angle: Angle::from_degrees(135.0)
+                },
+                MarkerSpec {
+                  marker_type: MarkerType::Middle,
+                    x: 0.0,
+                    y: 10.0,
+                    angle: Angle::from_degrees(225.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::End,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::from_degrees(315.0)
+                },
+            ]
+        );
+    }
 }
