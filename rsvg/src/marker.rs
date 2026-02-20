@@ -711,7 +711,7 @@ fn emit_marker_by_node(
                 acquired_nodes,
                 viewport,
                 draw_ctx,
-                &spec,
+                spec,
                 line_width,
                 clipping,
                 marker,
