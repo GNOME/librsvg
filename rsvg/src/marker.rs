@@ -820,7 +820,7 @@ fn emit_markers_for_path(path: &Path) -> Vec<MarkerSpec> {
                 subpath_state = SubpathState::NoSubpath;
             }
 
-            Segment::LineOrCurve { .. } => {
+            Segment::LineOrCurve { is_subpath_end, .. } => {
                 // Not a degenerate segment
                 match subpath_state {
                     SubpathState::NoSubpath => {
@@ -856,6 +856,15 @@ fn emit_markers_for_path(path: &Path) -> Vec<MarkerSpec> {
                             MarkerType::Middle,
                             angle,
                         ));
+
+                        if is_subpath_end && i + 1 < segments.len() {
+                            specs.push(emit_marker(
+                                segment,
+                                MarkerEndpoint::End,
+                                MarkerType::Middle,
+                                outgoing.unwrap_or_else(|| Angle::new(0.0)),
+                            ));
+                        }
                     }
                 }
             }
