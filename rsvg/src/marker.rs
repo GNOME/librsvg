@@ -321,8 +321,26 @@ impl Segment {
         }
     }
 
-    fn line(x1: f64, y1: f64, x2: f64, y2: f64, is_subpath_start: bool, is_subpath_end: bool) -> Segment {
-        Segment::curve(x1, y1, x2, y2, x1, y1, x2, y2, is_subpath_start, is_subpath_end)
+    fn line(
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+        is_subpath_start: bool,
+        is_subpath_end: bool,
+    ) -> Segment {
+        Segment::curve(
+            x1,
+            y1,
+            x2,
+            y2,
+            x1,
+            y1,
+            x2,
+            y2,
+            is_subpath_start,
+            is_subpath_end,
+        )
     }
 
     // If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
@@ -458,7 +476,9 @@ impl From<&Path> for Segments {
                     subpath_start_y = cur_y;
 
                     match state {
-                        SegmentState::Initial | SegmentState::InSubpath | SegmentState::ClosedSubpath => {
+                        SegmentState::Initial
+                        | SegmentState::InSubpath
+                        | SegmentState::ClosedSubpath => {
                             // Ignore the very first moveto in a sequence (Initial state),
                             // or if we were already drawing within a subpath, start
                             // a new subpath.
@@ -556,7 +576,6 @@ impl From<&Path> for Segments {
                             state = SegmentState::InSubpath;
                         }
                         ArcParameterization::LineTo => {
-
                             segments.push(Segment::line(
                                 last_x,
                                 last_y,
@@ -1383,9 +1402,7 @@ mod marker_tests {
     #[test]
     fn does_not_duplicate_end_marker() {
         let mut builder = PathBuilder::default();
-        builder
-            .parse("M 0,0 h 10 v 10 h -10 Z")
-            .unwrap();
+        builder.parse("M 0,0 h 10 v 10 h -10 Z").unwrap();
         let path = builder.into_path();
 
         let specs = emit_markers_for_path(&path);
@@ -1406,13 +1423,13 @@ mod marker_tests {
                     angle: Angle::from_degrees(45.0)
                 },
                 MarkerSpec {
-                  marker_type: MarkerType::Middle,
+                    marker_type: MarkerType::Middle,
                     x: 10.0,
                     y: 10.0,
                     angle: Angle::from_degrees(135.0)
                 },
                 MarkerSpec {
-                  marker_type: MarkerType::Middle,
+                    marker_type: MarkerType::Middle,
                     x: 0.0,
                     y: 10.0,
                     angle: Angle::from_degrees(225.0)
