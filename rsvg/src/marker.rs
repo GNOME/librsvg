@@ -8,7 +8,6 @@ use markup5ever::{expanded_name, local_name, ns};
 
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
-use crate::bbox::BoundingBox;
 use crate::borrow_element_as;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
@@ -92,6 +91,23 @@ pub struct Marker {
     vbox: Option<ViewBox>,
 }
 
+// From SVG's marker-start, marker-mid, marker-end properties
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum MarkerType {
+    Start,
+    Middle,
+    End,
+}
+
+/// Computed location and orientation for a marker.
+#[derive(Debug, PartialEq)]
+struct MarkerSpec {
+    marker_type: MarkerType,
+    x: f64,
+    y: f64,
+    angle: Angle,
+}
+
 impl Default for Marker {
     fn default() -> Marker {
         Marker {
@@ -115,12 +131,9 @@ impl Marker {
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        xpos: f64,
-        ypos: f64,
-        computed_angle: Angle,
+        spec: &MarkerSpec,
         line_width: f64,
         clipping: bool,
-        marker_type: MarkerType,
         marker: &layout::Marker,
     ) -> DrawResult {
         let mut cascaded = CascadedValues::new_from_node(node);
@@ -141,18 +154,18 @@ impl Marker {
         }
 
         let rotation = match self.orient {
-            MarkerOrient::Auto => computed_angle,
+            MarkerOrient::Auto => spec.angle,
             MarkerOrient::AutoStartReverse => {
-                if marker_type == MarkerType::Start {
-                    computed_angle.flip()
+                if spec.marker_type == MarkerType::Start {
+                    spec.angle.flip()
                 } else {
-                    computed_angle
+                    spec.angle
                 }
             }
             MarkerOrient::Angle(a) => a,
         };
 
-        let mut transform = Transform::new_translate(xpos, ypos).pre_rotate(rotation);
+        let mut transform = Transform::new_translate(spec.x, spec.y).pre_rotate(rotation);
 
         if self.units == MarkerUnits::StrokeWidth {
             transform = transform.pre_scale(line_width, line_width);
@@ -272,6 +285,8 @@ enum Segment {
         y3: f64,
         x4: f64,
         y4: f64,
+        is_subpath_start: bool,
+        is_subpath_end: bool,
     },
 }
 
@@ -280,7 +295,18 @@ impl Segment {
         Segment::Degenerate { x, y }
     }
 
-    fn curve(x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) -> Segment {
+    fn curve(
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+        x3: f64,
+        y3: f64,
+        x4: f64,
+        y4: f64,
+        is_subpath_start: bool,
+        is_subpath_end: bool,
+    ) -> Segment {
         Segment::LineOrCurve {
             x1,
             y1,
@@ -290,11 +316,31 @@ impl Segment {
             y3,
             x4,
             y4,
+            is_subpath_start,
+            is_subpath_end,
         }
     }
 
-    fn line(x1: f64, y1: f64, x2: f64, y2: f64) -> Segment {
-        Segment::curve(x1, y1, x2, y2, x1, y1, x2, y2)
+    fn line(
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+        is_subpath_start: bool,
+        is_subpath_end: bool,
+    ) -> Segment {
+        Segment::curve(
+            x1,
+            y1,
+            x2,
+            y2,
+            x1,
+            y1,
+            x2,
+            y2,
+            is_subpath_start,
+            is_subpath_end,
+        )
     }
 
     // If the segment has directionality, returns two vectors (v1x, v1y, v2x, v2y); otherwise,
@@ -315,6 +361,7 @@ impl Segment {
                 y3,
                 x4,
                 y4,
+                ..
             } => {
                 let coincide_1_and_2 = points_equal(x1, y1, x2, y2);
                 let coincide_1_and_3 = points_equal(x1, y1, x3, y3);
@@ -396,12 +443,32 @@ impl From<&Path> for Segments {
         let mut segments = Vec::new();
         let mut state = SegmentState::Initial;
 
-        for path_command in path.iter() {
+        let path_commands: Vec<PathCommand> = path.iter().collect();
+
+        for i in 0..path_commands.len() {
             last_x = cur_x;
             last_y = cur_y;
 
+            let path_command = &path_commands[i];
+
+            let is_subpath_start = matches!(state, SegmentState::NewSubpath);
+
+            let is_subpath_end = if i == path_commands.len() - 1 {
+                true
+            } else {
+                // If the next command is a MoveTo, it means that the next Segment will be disconnected
+                // from the current one.  So, make a note to emit a marker for the current segment's
+                // endpoint.
+                //
+                // Normally we only emit markers for the start point of a Segment, since normally
+                // Segments are connected to each other.  They are disconnected only if there are
+                // subpaths.
+
+                matches!(path_commands[i + 1], PathCommand::MoveTo(..))
+            };
+
             match path_command {
-                PathCommand::MoveTo(x, y) => {
+                &PathCommand::MoveTo(x, y) => {
                     cur_x = x;
                     cur_y = y;
 
@@ -409,7 +476,9 @@ impl From<&Path> for Segments {
                     subpath_start_y = cur_y;
 
                     match state {
-                        SegmentState::Initial | SegmentState::InSubpath => {
+                        SegmentState::Initial
+                        | SegmentState::InSubpath
+                        | SegmentState::ClosedSubpath => {
                             // Ignore the very first moveto in a sequence (Initial state),
                             // or if we were already drawing within a subpath, start
                             // a new subpath.
@@ -423,26 +492,21 @@ impl From<&Path> for Segments {
                             segments.push(Segment::degenerate(last_x, last_y));
                             state = SegmentState::NewSubpath;
                         }
-
-                        SegmentState::ClosedSubpath => {
-                            // Cairo outputs a moveto after every closepath, so that subsequent
-                            // lineto/curveto commands will start at the closed vertex.
-                            // We don't want to actually emit a point (a degenerate segment) in
-                            // that artificial-moveto case.
-                            //
-                            // We'll reset to the Initial state so that a subsequent "real"
-                            // moveto will be handled as the beginning of a new subpath, or a
-                            // degenerate point, as usual.
-                            state = SegmentState::Initial;
-                        }
                     }
                 }
 
-                PathCommand::LineTo(x, y) => {
+                &PathCommand::LineTo(x, y) => {
                     cur_x = x;
                     cur_y = y;
 
-                    segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
+                    segments.push(Segment::line(
+                        last_x,
+                        last_y,
+                        cur_x,
+                        cur_y,
+                        is_subpath_start,
+                        is_subpath_end,
+                    ));
 
                     state = SegmentState::InSubpath;
                 }
@@ -452,11 +516,22 @@ impl From<&Path> for Segments {
                         pt1: (x2, y2),
                         pt2: (x3, y3),
                         to,
-                    } = curve;
+                    } = *curve;
                     cur_x = to.0;
                     cur_y = to.1;
 
-                    segments.push(Segment::curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
+                    segments.push(Segment::curve(
+                        last_x,
+                        last_y,
+                        x2,
+                        y2,
+                        x3,
+                        y3,
+                        cur_x,
+                        cur_y,
+                        is_subpath_start,
+                        is_subpath_end,
+                    ));
 
                     state = SegmentState::InSubpath;
                 }
@@ -484,13 +559,31 @@ impl From<&Path> for Segments {
 
                             let (x2, y2) = segment1.pt1;
                             let (x3, y3) = segment2.pt2;
-                            segments
-                                .push(Segment::curve(last_x, last_y, x2, y2, x3, y3, cur_x, cur_y));
+
+                            segments.push(Segment::curve(
+                                last_x,
+                                last_y,
+                                x2,
+                                y2,
+                                x3,
+                                y3,
+                                cur_x,
+                                cur_y,
+                                is_subpath_start,
+                                is_subpath_end,
+                            ));
 
                             state = SegmentState::InSubpath;
                         }
                         ArcParameterization::LineTo => {
-                            segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
+                            segments.push(Segment::line(
+                                last_x,
+                                last_y,
+                                cur_x,
+                                cur_y,
+                                is_subpath_start,
+                                is_subpath_end,
+                            ));
 
                             state = SegmentState::InSubpath;
                         }
@@ -502,7 +595,14 @@ impl From<&Path> for Segments {
                     cur_x = subpath_start_x;
                     cur_y = subpath_start_y;
 
-                    segments.push(Segment::line(last_x, last_y, cur_x, cur_y));
+                    segments.push(Segment::line(
+                        last_x,
+                        last_y,
+                        cur_x,
+                        cur_y,
+                        is_subpath_start,
+                        is_subpath_end,
+                    ));
 
                     state = SegmentState::ClosedSubpath;
                 }
@@ -591,25 +691,14 @@ impl Segments {
     }
 }
 
-// From SVG's marker-start, marker-mid, marker-end properties
-#[derive(Debug, Copy, Clone, PartialEq)]
-enum MarkerType {
-    Start,
-    Middle,
-    End,
-}
-
 fn emit_marker_by_node(
     viewport: &Viewport,
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
     marker: &layout::Marker,
-    xpos: f64,
-    ypos: f64,
-    computed_angle: Angle,
+    spec: &MarkerSpec,
     line_width: f64,
     clipping: bool,
-    marker_type: MarkerType,
 ) -> DrawResult {
     match acquired_nodes.acquire_ref(marker.node_ref.as_ref().unwrap()) {
         Ok(acquired) => {
@@ -622,12 +711,9 @@ fn emit_marker_by_node(
                 acquired_nodes,
                 viewport,
                 draw_ctx,
-                xpos,
-                ypos,
-                computed_angle,
+                spec,
                 line_width,
                 clipping,
-                marker_type,
                 marker,
             )
         }
@@ -645,16 +731,12 @@ enum MarkerEndpoint {
     End,
 }
 
-fn emit_marker<E>(
+fn emit_marker(
     segment: &Segment,
     endpoint: MarkerEndpoint,
     marker_type: MarkerType,
     orient: Angle,
-    emit_fn: &mut E,
-) -> DrawResult
-where
-    E: FnMut(MarkerType, f64, f64, Angle) -> DrawResult,
-{
+) -> MarkerSpec {
     let (x, y) = match *segment {
         Segment::Degenerate { x, y } => (x, y),
 
@@ -664,7 +746,12 @@ where
         },
     };
 
-    emit_fn(marker_type, x, y, orient)
+    MarkerSpec {
+        marker_type,
+        x,
+        y,
+        angle: orient,
+    }
 }
 
 pub fn render_markers_for_shape(
@@ -685,50 +772,38 @@ pub fn render_markers_for_shape(
         return Ok(viewport.empty_bbox());
     }
 
-    emit_markers_for_path(
-        &shape.path.path,
-        viewport.empty_bbox(),
-        &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
-            let marker = match marker_type {
-                MarkerType::Start => &shape.marker_start,
-                MarkerType::Middle => &shape.marker_mid,
-                MarkerType::End => &shape.marker_end,
-            };
+    let specs = emit_markers_for_path(&shape.path.path);
 
-            if marker.node_ref.is_some() {
-                emit_marker_by_node(
-                    viewport,
-                    draw_ctx,
-                    acquired_nodes,
-                    marker,
-                    x,
-                    y,
-                    computed_angle,
-                    shape.stroke.width,
-                    clipping,
-                    marker_type,
-                )
-            } else {
-                Ok(viewport.empty_bbox())
-            }
-        },
-    )
+    for spec in specs {
+        let marker = match spec.marker_type {
+            MarkerType::Start => &shape.marker_start,
+            MarkerType::Middle => &shape.marker_mid,
+            MarkerType::End => &shape.marker_end,
+        };
+
+        if marker.node_ref.is_some() {
+            emit_marker_by_node(
+                viewport,
+                draw_ctx,
+                acquired_nodes,
+                marker,
+                &spec,
+                shape.stroke.width,
+                clipping,
+            )?;
+        }
+    }
+
+    Ok(viewport.empty_bbox())
 }
 
-fn emit_markers_for_path<E>(
-    path: &Path,
-    empty_bbox: Box<BoundingBox>,
-    emit_fn: &mut E,
-) -> DrawResult
-where
-    E: FnMut(MarkerType, f64, f64, Angle) -> DrawResult,
-{
+fn emit_markers_for_path(path: &Path) -> Vec<MarkerSpec> {
     enum SubpathState {
         NoSubpath,
         InSubpath,
     }
 
-    let mut bbox = empty_bbox;
+    let mut specs = Vec::new();
 
     // Convert the path to a list of segments and bare points
     let segments = Segments::from(path);
@@ -745,44 +820,38 @@ where
                     let angle = segments
                         .find_incoming_angle_backwards(i - 1)
                         .unwrap_or_else(|| Angle::new(0.0));
-                    let marker_bbox = emit_marker(
+                    specs.push(emit_marker(
                         &segments[i - 1],
                         MarkerEndpoint::End,
                         MarkerType::End,
                         angle,
-                        emit_fn,
-                    )?;
-                    bbox.insert(&marker_bbox);
+                    ));
                 }
 
                 // Render marker for the lone point; no directionality
-                let marker_bbox = emit_marker(
+                specs.push(emit_marker(
                     segment,
                     MarkerEndpoint::Start,
                     MarkerType::Middle,
                     Angle::new(0.0),
-                    emit_fn,
-                )?;
-                bbox.insert(&marker_bbox);
+                ));
 
                 subpath_state = SubpathState::NoSubpath;
             }
 
-            Segment::LineOrCurve { .. } => {
+            Segment::LineOrCurve { is_subpath_end, .. } => {
                 // Not a degenerate segment
                 match subpath_state {
                     SubpathState::NoSubpath => {
                         let angle = segments
                             .find_outgoing_angle_forwards(i)
                             .unwrap_or_else(|| Angle::new(0.0));
-                        let marker_bbox = emit_marker(
+                        specs.push(emit_marker(
                             segment,
                             MarkerEndpoint::Start,
                             MarkerType::Start,
                             angle,
-                            emit_fn,
-                        )?;
-                        bbox.insert(&marker_bbox);
+                        ));
 
                         subpath_state = SubpathState::InSubpath;
                     }
@@ -800,14 +869,21 @@ where
                             _ => Angle::new(0.0),
                         };
 
-                        let marker_bbox = emit_marker(
+                        specs.push(emit_marker(
                             segment,
                             MarkerEndpoint::Start,
                             MarkerType::Middle,
                             angle,
-                            emit_fn,
-                        )?;
-                        bbox.insert(&marker_bbox);
+                        ));
+
+                        if is_subpath_end && i + 1 < segments.len() {
+                            specs.push(emit_marker(
+                                segment,
+                                MarkerEndpoint::End,
+                                MarkerType::Middle,
+                                outgoing.unwrap_or_else(|| Angle::new(0.0)),
+                            ));
+                        }
                     }
                 }
             }
@@ -833,18 +909,16 @@ where
                 }
             };
 
-            let marker_bbox = emit_marker(
+            specs.push(emit_marker(
                 segment,
                 MarkerEndpoint::End,
                 MarkerType::End,
                 angle,
-                emit_fn,
-            )?;
-            bbox.insert(&marker_bbox);
+            ));
         }
     }
 
-    Ok(bbox)
+    specs
 }
 
 #[cfg(test)]
@@ -909,6 +983,8 @@ mod parser_tests {
 
 #[cfg(test)]
 mod directionality_tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::path_builder::PathBuilder;
 
@@ -926,8 +1002,8 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_open_path() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0),
-            Segment::line(20.0, 10.0, 20.0, 20.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, true),
         ]);
 
         assert_eq!(setup_open_path(), expected_segments);
@@ -951,11 +1027,11 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_multiple_open_subpaths() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0),
-            Segment::line(20.0, 10.0, 20.0, 20.0),
-            Segment::line(30.0, 30.0, 40.0, 30.0),
-            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
-            Segment::line(70.0, 70.0, 80.0, 90.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, true),
+            Segment::line(30.0, 30.0, 40.0, 30.0, true, false),
+            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0, false, false),
+            Segment::line(70.0, 70.0, 80.0, 90.0, false, true),
         ]);
 
         assert_eq!(setup_multiple_open_subpaths(), expected_segments);
@@ -976,9 +1052,9 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_closed_subpath() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0),
-            Segment::line(20.0, 10.0, 20.0, 20.0),
-            Segment::line(20.0, 20.0, 10.0, 10.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, false),
+            Segment::line(20.0, 20.0, 10.0, 10.0, false, true),
         ]);
 
         assert_eq!(setup_closed_subpath(), expected_segments);
@@ -1006,13 +1082,13 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_multiple_closed_subpaths() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0),
-            Segment::line(20.0, 10.0, 20.0, 20.0),
-            Segment::line(20.0, 20.0, 10.0, 10.0),
-            Segment::line(30.0, 30.0, 40.0, 30.0),
-            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0),
-            Segment::line(70.0, 70.0, 80.0, 90.0),
-            Segment::line(80.0, 90.0, 30.0, 30.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, false),
+            Segment::line(20.0, 20.0, 10.0, 10.0, false, true),
+            Segment::line(30.0, 30.0, 40.0, 30.0, true, false),
+            Segment::curve(40.0, 30.0, 50.0, 35.0, 60.0, 60.0, 70.0, 70.0, false, false),
+            Segment::line(70.0, 70.0, 80.0, 90.0, false, false),
+            Segment::line(80.0, 90.0, 30.0, 30.0, false, true),
         ]);
 
         assert_eq!(setup_multiple_closed_subpaths(), expected_segments);
@@ -1036,10 +1112,10 @@ mod directionality_tests {
     #[test]
     fn path_to_segments_handles_no_moveto_after_closepath() {
         let expected_segments: Segments = Segments(vec![
-            Segment::line(10.0, 10.0, 20.0, 10.0),
-            Segment::line(20.0, 10.0, 20.0, 20.0),
-            Segment::line(20.0, 20.0, 10.0, 10.0),
-            Segment::line(10.0, 10.0, 40.0, 30.0),
+            Segment::line(10.0, 10.0, 20.0, 10.0, true, false),
+            Segment::line(20.0, 10.0, 20.0, 20.0, false, false),
+            Segment::line(20.0, 20.0, 10.0, 10.0, false, false),
+            Segment::line(10.0, 10.0, 40.0, 30.0, false, true),
         ]);
 
         assert_eq!(setup_no_moveto_after_closepath(), expected_segments);
@@ -1087,7 +1163,7 @@ mod directionality_tests {
 
     #[test]
     fn line_segment_has_directionality() {
-        let s = Segment::line(1.0, 2.0, 3.0, 4.0);
+        let s = Segment::line(1.0, 2.0, 3.0, 4.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((2.0, 2.0), (v2x, v2y));
@@ -1095,13 +1171,13 @@ mod directionality_tests {
 
     #[test]
     fn line_segment_with_coincident_ends_has_no_directionality() {
-        let s = Segment::line(1.0, 2.0, 1.0, 2.0);
+        let s = Segment::line(1.0, 2.0, 1.0, 2.0, false, false);
         assert!(s.get_directionalities().is_none());
     }
 
     #[test]
     fn curve_has_directionality() {
-        let s = Segment::curve(1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0);
+        let s = Segment::curve(1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 20.0, 33.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 3.0), (v1x, v1y));
         assert_eq!((12.0, 20.0), (v2x, v2y));
@@ -1109,17 +1185,17 @@ mod directionality_tests {
 
     #[test]
     fn curves_with_loops_and_coincident_ends_have_directionality() {
-        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0);
+        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 1.0, 2.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-4.0, -4.0), (v2x, v2y));
 
-        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0);
+        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
 
-        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0);
+        let s = Segment::curve(1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 1.0, 2.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((2.0, 2.0), (v1x, v1y));
         assert_eq!((-2.0, -2.0), (v2x, v2y));
@@ -1127,13 +1203,13 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_coincident_control_points_has_no_directionality() {
-        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0);
+        let s = Segment::curve(1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0, false, false);
         assert!(s.get_directionalities().is_none());
     }
 
     #[test]
     fn curve_with_123_coincident_has_directionality() {
-        let s = Segment::curve(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0);
+        let s = Segment::curve(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 40.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((20.0, 40.0), (v1x, v1y));
         assert_eq!((20.0, 40.0), (v2x, v2y));
@@ -1141,7 +1217,7 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_234_coincident_has_directionality() {
-        let s = Segment::curve(20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let s = Segment::curve(20.0, 40.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((-20.0, -40.0), (v1x, v1y));
         assert_eq!((-20.0, -40.0), (v2x, v2y));
@@ -1149,7 +1225,7 @@ mod directionality_tests {
 
     #[test]
     fn curve_with_12_34_coincident_has_directionality() {
-        let s = Segment::curve(20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0);
+        let s = Segment::curve(20.0, 40.0, 20.0, 40.0, 60.0, 70.0, 60.0, 70.0, false, false);
         let (v1x, v1y, v2x, v2y) = s.get_directionalities().unwrap();
         assert_eq!((40.0, 30.0), (v1x, v1y));
         assert_eq!((40.0, 30.0), (v2x, v2y));
@@ -1158,6 +1234,8 @@ mod directionality_tests {
 
 #[cfg(test)]
 mod marker_tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::path_builder::PathBuilder;
 
@@ -1169,31 +1247,35 @@ mod marker_tests {
         builder.line_to(1.0, 1.0);
         builder.line_to(0.0, 1.0);
 
-        let mut v = Vec::new();
-
-        assert!(
-            emit_markers_for_path(
-                &builder.into_path(),
-                Box::new(BoundingBox::new()),
-                &mut |marker_type: MarkerType,
-                      x: f64,
-                      y: f64,
-                      computed_angle: Angle|
-                 -> DrawResult {
-                    v.push((marker_type, x, y, computed_angle));
-                    Ok(Box::new(BoundingBox::new()))
-                }
-            )
-            .is_ok()
-        );
+        let v = emit_markers_for_path(&builder.into_path());
 
         assert_eq!(
             v,
             vec![
-                (MarkerType::Start, 0.0, 0.0, Angle::new(0.0)),
-                (MarkerType::Middle, 1.0, 0.0, Angle::from_vector(1.0, 1.0)),
-                (MarkerType::Middle, 1.0, 1.0, Angle::from_vector(-1.0, 1.0)),
-                (MarkerType::End, 0.0, 1.0, Angle::from_vector(-1.0, 0.0)),
+                MarkerSpec {
+                    marker_type: MarkerType::Start,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 1.0,
+                    y: 0.0,
+                    angle: Angle::from_vector(1.0, 1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 1.0,
+                    y: 1.0,
+                    angle: Angle::from_vector(-1.0, 1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::End,
+                    x: 0.0,
+                    y: 1.0,
+                    angle: Angle::from_vector(-1.0, 0.0)
+                },
             ]
         );
     }
@@ -1207,32 +1289,157 @@ mod marker_tests {
         builder.line_to(0.0, 1.0);
         builder.close_path();
 
-        let mut v = Vec::new();
-
-        assert!(
-            emit_markers_for_path(
-                &builder.into_path(),
-                Box::new(BoundingBox::new()),
-                &mut |marker_type: MarkerType,
-                      x: f64,
-                      y: f64,
-                      computed_angle: Angle|
-                 -> DrawResult {
-                    v.push((marker_type, x, y, computed_angle));
-                    Ok(Box::new(BoundingBox::new()))
-                }
-            )
-            .is_ok()
-        );
+        let v = emit_markers_for_path(&builder.into_path());
 
         assert_eq!(
             v,
             vec![
-                (MarkerType::Start, 0.0, 0.0, Angle::new(0.0)),
-                (MarkerType::Middle, 1.0, 0.0, Angle::from_vector(1.0, 1.0)),
-                (MarkerType::Middle, 1.0, 1.0, Angle::from_vector(-1.0, 1.0)),
-                (MarkerType::Middle, 0.0, 1.0, Angle::from_vector(-1.0, -1.0)),
-                (MarkerType::End, 0.0, 0.0, Angle::from_vector(1.0, -1.0)),
+                MarkerSpec {
+                    marker_type: MarkerType::Start,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 1.0,
+                    y: 0.0,
+                    angle: Angle::from_vector(1.0, 1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 1.0,
+                    y: 1.0,
+                    angle: Angle::from_vector(-1.0, 1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 0.0,
+                    y: 1.0,
+                    angle: Angle::from_vector(-1.0, -1.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::End,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::from_vector(1.0, -1.0)
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn bug_1218_missing_end_markers_in_subpaths() {
+        let mut builder = PathBuilder::default();
+        builder
+            .parse("M 0,0 h 10 h 10 M 0,6 h 10 h 10 M 0,12 h 10 h 10")
+            .unwrap();
+        let path = builder.into_path();
+
+        let specs = emit_markers_for_path(&path);
+
+        assert_eq!(
+            specs,
+            vec![
+                MarkerSpec {
+                    marker_type: MarkerType::Start,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 20.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 0.0,
+                    y: 6.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 6.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 20.0,
+                    y: 6.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 0.0,
+                    y: 12.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 12.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::End,
+                    x: 20.0,
+                    y: 12.0,
+                    angle: Angle::new(0.0)
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn does_not_duplicate_end_marker() {
+        let mut builder = PathBuilder::default();
+        builder.parse("M 0,0 h 10 v 10 h -10 Z").unwrap();
+        let path = builder.into_path();
+
+        let specs = emit_markers_for_path(&path);
+
+        assert_eq!(
+            specs,
+            vec![
+                MarkerSpec {
+                    marker_type: MarkerType::Start,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::new(0.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 0.0,
+                    angle: Angle::from_degrees(45.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 10.0,
+                    y: 10.0,
+                    angle: Angle::from_degrees(135.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::Middle,
+                    x: 0.0,
+                    y: 10.0,
+                    angle: Angle::from_degrees(225.0)
+                },
+                MarkerSpec {
+                    marker_type: MarkerType::End,
+                    x: 0.0,
+                    y: 0.0,
+                    angle: Angle::from_degrees(315.0)
+                },
             ]
         );
     }

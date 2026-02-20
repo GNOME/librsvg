@@ -89,6 +89,7 @@ lopdf.workspace = true
 matches.workspace = true
 png.workspace = true
 predicates.workspace = true
+pretty_assertions.workspace = true
 proptest.workspace = true
 quick-error.workspace = true
 serde = { workspace = true, features = ["derive"] }
