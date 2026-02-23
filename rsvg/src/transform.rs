@@ -940,6 +940,15 @@ mod tests {
     }
 
     #[test]
+    fn garbage_transform_attr_is_error() {
+        assert!(parse_transform_attr("123").is_err());
+        assert!(parse_transform_attr("translate").is_err());
+        assert!(parse_transform_attr("&").is_err());
+        assert!(parse_transform_attr("plonk()").is_err());
+        assert!(parse_transform_attr("plonk ()").is_err());
+    }
+
+    #[test]
     fn test_parse_transform_property_none() {
         assert_eq!(
             parse_transform_prop("none").unwrap(),
@@ -962,6 +971,14 @@ mod tests {
         // <transform-list> = <transform-function>+
         //                                        ^ one or more required
         assert!(parse_transform_prop("").is_err());
+    }
+
+    #[test]
+    fn garbage_transform_property_is_error() {
+        assert!(parse_transform_prop("123").is_err());
+        assert!(parse_transform_prop("translate").is_err());
+        assert!(parse_transform_prop("&").is_err());
+        assert!(parse_transform_prop("plonk()").is_err());
     }
 
     #[test]
