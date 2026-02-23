@@ -723,7 +723,7 @@ mod tests {
             .pre_translate(-tx, -ty)
     }
 
-    fn parse_transform(s: &str) -> Result<Transform, ParseError<'_>> {
+    fn parse_transform_attr(s: &str) -> Result<Transform, ParseError<'_>> {
         let transform_attr = TransformAttribute::parse_str(s)?;
         Ok(transform_attr.to_transform())
     }
@@ -804,13 +804,13 @@ mod tests {
 
         let a = Transform::multiply(&s, &t);
         assert_transform_eq(
-            &parse_transform("translate(20, 30), scale (10) rotate (30 10 10)").unwrap(),
+            &parse_transform_attr("translate(20, 30), scale (10) rotate (30 10 10)").unwrap(),
             &Transform::multiply(&r, &a),
         );
     }
 
     fn assert_parse_error(s: &str) {
-        assert!(parse_transform(s).is_err());
+        assert!(parse_transform_attr(s).is_err());
     }
 
     #[test]
@@ -828,17 +828,17 @@ mod tests {
     #[test]
     fn parses_matrix() {
         assert_transform_eq(
-            &parse_transform("matrix (1 2 3 4 5 6)").unwrap(),
+            &parse_transform_attr("matrix (1 2 3 4 5 6)").unwrap(),
             &Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
         );
 
         assert_transform_eq(
-            &parse_transform("matrix(1,2,3,4 5 6)").unwrap(),
+            &parse_transform_attr("matrix(1,2,3,4 5 6)").unwrap(),
             &Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
         );
 
         assert_transform_eq(
-            &parse_transform("matrix (1,2.25,-3.25e2,4 5 6)").unwrap(),
+            &parse_transform_attr("matrix (1,2.25,-3.25e2,4 5 6)").unwrap(),
             &Transform::new_unchecked(1.0, 2.25, -325.0, 4.0, 5.0, 6.0),
         );
     }
@@ -846,17 +846,17 @@ mod tests {
     #[test]
     fn parses_translate() {
         assert_transform_eq(
-            &parse_transform("translate(-1 -2)").unwrap(),
+            &parse_transform_attr("translate(-1 -2)").unwrap(),
             &Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
         );
 
         assert_transform_eq(
-            &parse_transform("translate(-1, -2)").unwrap(),
+            &parse_transform_attr("translate(-1, -2)").unwrap(),
             &Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
         );
 
         assert_transform_eq(
-            &parse_transform("translate(-1)").unwrap(),
+            &parse_transform_attr("translate(-1)").unwrap(),
             &Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, -1.0, 0.0),
         );
     }
@@ -864,17 +864,17 @@ mod tests {
     #[test]
     fn parses_scale() {
         assert_transform_eq(
-            &parse_transform("scale (-1)").unwrap(),
+            &parse_transform_attr("scale (-1)").unwrap(),
             &Transform::new_unchecked(-1.0, 0.0, 0.0, -1.0, 0.0, 0.0),
         );
 
         assert_transform_eq(
-            &parse_transform("scale(-1 -2)").unwrap(),
+            &parse_transform_attr("scale(-1 -2)").unwrap(),
             &Transform::new_unchecked(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
         );
 
         assert_transform_eq(
-            &parse_transform("scale(-1, -2)").unwrap(),
+            &parse_transform_attr("scale(-1, -2)").unwrap(),
             &Transform::new_unchecked(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
         );
     }
@@ -882,15 +882,15 @@ mod tests {
     #[test]
     fn parses_rotate() {
         assert_transform_eq(
-            &parse_transform("rotate (30)").unwrap(),
+            &parse_transform_attr("rotate (30)").unwrap(),
             &rotation_transform(30.0, 0.0, 0.0),
         );
         assert_transform_eq(
-            &parse_transform("rotate (30,-1,-2)").unwrap(),
+            &parse_transform_attr("rotate (30,-1,-2)").unwrap(),
             &rotation_transform(30.0, -1.0, -2.0),
         );
         assert_transform_eq(
-            &parse_transform("rotate(30, -1, -2)").unwrap(),
+            &parse_transform_attr("rotate(30, -1, -2)").unwrap(),
             &rotation_transform(30.0, -1.0, -2.0),
         );
     }
@@ -898,7 +898,7 @@ mod tests {
     #[test]
     fn parses_skew_x() {
         assert_transform_eq(
-            &parse_transform("skewX (30)").unwrap(),
+            &parse_transform_attr("skewX (30)").unwrap(),
             &Transform::new_skew(Angle::from_degrees(30.0), Angle::new(0.0)),
         );
     }
@@ -906,7 +906,7 @@ mod tests {
     #[test]
     fn parses_skew_y() {
         assert_transform_eq(
-            &parse_transform("skewY (30)").unwrap(),
+            &parse_transform_attr("skewY (30)").unwrap(),
             &Transform::new_skew(Angle::new(0.0), Angle::from_degrees(30.0)),
         );
     }
@@ -918,25 +918,25 @@ mod tests {
         let r = rotation_transform(30.0, 10.0, 10.0);
 
         assert_transform_eq(
-            &parse_transform("scale(10)rotate(30, 10, 10)").unwrap(),
+            &parse_transform_attr("scale(10)rotate(30, 10, 10)").unwrap(),
             &Transform::multiply(&r, &s),
         );
 
         assert_transform_eq(
-            &parse_transform("translate(20, 30), scale (10)").unwrap(),
+            &parse_transform_attr("translate(20, 30), scale (10)").unwrap(),
             &Transform::multiply(&s, &t),
         );
 
         let a = Transform::multiply(&s, &t);
         assert_transform_eq(
-            &parse_transform("translate(20, 30), scale (10) rotate (30 10 10)").unwrap(),
+            &parse_transform_attr("translate(20, 30), scale (10) rotate (30 10 10)").unwrap(),
             &Transform::multiply(&r, &a),
         );
     }
 
     #[test]
     fn parses_empty() {
-        assert_transform_eq(&parse_transform("").unwrap(), &Transform::identity());
+        assert_transform_eq(&parse_transform_attr("").unwrap(), &Transform::identity());
     }
 
     #[test]
