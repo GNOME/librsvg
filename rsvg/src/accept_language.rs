@@ -6,9 +6,12 @@ use locale_config::{LanguageRange, Locale};
 use std::error;
 use std::fmt;
 use std::str::FromStr;
+use std::sync::{Arc, OnceLock};
 
 #[cfg(doc)]
 use crate::api::CairoRenderer;
+use crate::rsvg_log;
+use crate::session::Session;
 
 /// Used to set the language for rendering.
 ///
@@ -39,6 +42,7 @@ pub enum Language {
 pub enum UserLanguage {
     LanguageTags(LanguageTags),
     AcceptLanguage(AcceptLanguage),
+    FromEnvironment(Arc<OnceLock<LanguageTags>>),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -248,7 +252,17 @@ impl LanguageTags {
 }
 
 impl UserLanguage {
-    pub fn any_matches(&self, tags: &LanguageTags) -> bool {
+    pub fn new(language: &crate::api::Language) -> UserLanguage {
+        match *language {
+            crate::api::Language::FromEnvironment => {
+                UserLanguage::FromEnvironment(Arc::new(OnceLock::new()))
+            }
+
+            crate::api::Language::AcceptLanguage(ref a) => UserLanguage::AcceptLanguage(a.clone()),
+        }
+    }
+
+    pub fn any_matches(&self, tags: &LanguageTags, session: &Session) -> bool {
         match *self {
             UserLanguage::LanguageTags(ref language_tags) => {
                 tags.iter().any(|tag| language_tags.any_matches(tag))
@@ -256,8 +270,39 @@ impl UserLanguage {
             UserLanguage::AcceptLanguage(ref accept_language) => {
                 tags.iter().any(|tag| accept_language.any_matches(tag))
             }
+            UserLanguage::FromEnvironment(ref once_lock) => {
+                let language_tags =
+                    once_lock.get_or_init(|| get_language_tags_from_environment(session));
+                tags.iter().any(|tag| language_tags.any_matches(tag))
+            }
         }
     }
+}
+
+/// Gets language tags from the environment.
+///
+/// This function is thread-safe.
+fn get_language_tags_from_environment(session: &Session) -> LanguageTags {
+    LanguageTags::from_locale(&locale_from_environment())
+        .map_err(|s| {
+            rsvg_log!(session, "could not convert locale to language tags: {}", s);
+        })
+        .unwrap_or_else(|_| LanguageTags::empty())
+}
+
+/// Gets the user's preferred locale from the environment and
+/// translates it to a `Locale` with `LanguageRange` fallbacks.
+fn locale_from_environment() -> Locale {
+    let mut locale = Locale::invariant();
+
+    for name in glib::language_names() {
+        let name = name.as_str();
+        if let Ok(range) = LanguageRange::from_unix(name) {
+            locale.add(&range);
+        }
+    }
+
+    locale
 }
 
 #[cfg(test)]

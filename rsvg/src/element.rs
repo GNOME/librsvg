@@ -374,7 +374,7 @@ impl Element {
         self.values = values.clone();
     }
 
-    pub fn get_cond(&self, user_language: &UserLanguage) -> bool {
+    pub fn get_cond(&self, user_language: &UserLanguage, session: &Session) -> bool {
         self.required_extensions
             .as_ref()
             .map(|v| v.eval())
@@ -387,7 +387,7 @@ impl Element {
             && self
                 .system_language
                 .as_ref()
-                .map(|v| v.eval(user_language))
+                .map(|v| v.eval(user_language, session))
                 .unwrap_or(true)
     }
 
