@@ -1,3 +1,20 @@
+Version 2.61.92
+===============
+
+librsvg crate version 2.62.0-beta.2
+
+librsvg-rebind crate version 0.3.0-beta.0
+
+- #1218: Fix rendering of markers at the end of open subpaths.
+
+- #1216: Small optimization for userLanguage so regexes only get
+  compiled if needed (Adetoye Anointing).
+
+- #1225: Update the time crate to 0.3.47 for RUSTSEC-2026-0009
+
+- #1226: Switch to Rust/Cargo edition=2024.
+
+
 Version 2.61.91
 ===============
 
