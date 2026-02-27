@@ -4,10 +4,10 @@
 // DO NOT EDIT
 #![allow(deprecated)]
 
-use crate::{ffi, HandleFlags, Rectangle};
+use crate::{HandleFlags, Rectangle, ffi};
 use glib::{
     prelude::*,
-    signal::{connect_raw, SignalHandlerId},
+    signal::{SignalHandlerId, connect_raw},
     translate::*,
 };
 use std::boxed::Box as Box_;
