@@ -10,7 +10,7 @@ documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg_rebind
 categories = ["api-bindings"]
 version = "0.3.0"
 keywords = ["svg"]
-edition = "2021"
+edition = "2024"
 
 exclude = ["Gir.toml"]
 
