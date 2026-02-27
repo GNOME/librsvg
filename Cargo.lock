@@ -1542,7 +1542,7 @@ dependencies = [
 
 [[package]]
 name = "librsvg-rebind"
-version = "0.3.0-beta.0"
+version = "0.3.0"
 dependencies = [
  "bitflags",
  "cairo-rs",
@@ -1554,7 +1554,7 @@ dependencies = [
 
 [[package]]
 name = "librsvg-rebind-sys"
-version = "0.3.0-beta.0"
+version = "0.3.0"
 dependencies = [
  "cairo-sys-rs",
  "gdk-pixbuf-sys",

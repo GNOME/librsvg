@@ -1,7 +1,7 @@
 [package]
 name = "librsvg-rebind-sys"
 authors = ["Sophie Herold <sophie@hemio.de>"]
-version = "0.3.0-beta.0"
+version = "0.3.0"
 description = "FFI bindings for librsvg"
 homepage = "https://gitlab.gnome.org/GNOME/librsvg"
 license = "MIT"
