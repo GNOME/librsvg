@@ -29,6 +29,8 @@ off items while making a release.
 - ☐ If the bindings have changed from the last version, increase the package version in
    - ☐ librsvg-rebind/librsvg-rebind/Cargo.toml
    - ☐ librsvg-rebind/librsvg-rebind/sys/Cargo.toml
+- ☐ For .0 releases, don't forget to update the librsvg-rebind{,sys} version number if it's still a beta.
+- For either of those version updates, ``cargo update -p librsvg-rebind-sys -p librsvg-rebind``
 
 **Release notes:**
 
