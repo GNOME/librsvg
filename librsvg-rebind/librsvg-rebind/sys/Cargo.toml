@@ -1,14 +1,14 @@
 [package]
 name = "librsvg-rebind-sys"
 authors = ["Sophie Herold <sophie@hemio.de>"]
-version = "0.3.0-beta.0"
+version = "0.3.0"
 description = "FFI bindings for librsvg"
 homepage = "https://gitlab.gnome.org/GNOME/librsvg"
 license = "MIT"
 repository = "https://gitlab.gnome.org/GNOME/librsvg"
 documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg_rebind_sys/"
 categories = ["api-bindings"]
-edition = "2021"
+edition = "2024"
 build = "build.rs"
 keywords = ["svg"]
 exclude = ["Gir.toml", "tests/"]

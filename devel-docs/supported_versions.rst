@@ -3,8 +3,8 @@ Supported versions
 
 Only these versions are supported:
 
-* 2.60.x
 * 2.61.x
+* 2.62.x
 
 Older versions are not supported.  Please try a newer version before
 reporting bugs or missing features.
