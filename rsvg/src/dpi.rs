@@ -1,5 +1,6 @@
 //! Resolution for rendering (dots per inch = DPI).
 
+/// Resolution for rendering (dots per inch = DPI).
 #[derive(Debug, Copy, Clone)]
 pub struct Dpi {
     pub x: f64,
