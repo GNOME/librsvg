@@ -42,6 +42,28 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
     }
 }
 
+/// Trait used to parse attribute values concisely.
+///
+/// Most of the code to parse an SVG element's attributes looks like this:
+///
+/// ```ignore
+///         for (attr, value) in attrs.iter() {
+///            match attr.expanded() {
+///                expanded_name!("", "foo") => {
+///                    set_attribute(&mut self.foo, attr.parse(value), session);
+///                }
+///                // ...
+///            }
+///         }
+/// ```
+///
+/// This trait is so that `attr.parse(value)` and the surrounding call
+/// to [crate::element::set_attribute()] can be written in that way:  `attr.parse(value)`
+/// returns a `Result`, and then `set_attribute()` modifies `self.foo` based on whether
+/// the result is `Ok()` or not.
+///
+/// This trait is only implemented for [QualName], which is how individual attributes are
+/// represented.
 pub trait ParseValue<T: Parse> {
     /// Parses a `value` string into a type `T`.
     fn parse(&self, value: &str) -> Result<T, ElementError>;

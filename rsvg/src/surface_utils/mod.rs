@@ -121,6 +121,10 @@ pub trait ImageSurfaceDataExt {
 /// A pixel consisting of R, G, B and A values.
 pub type Pixel = rgb::RGBA8;
 
+/// Various operations on pixel values.
+///
+/// This is done as a trait so that we can implement additional methods on [rgb::RGBA8],
+/// which is aliased to the [Pixel] type.
 pub trait PixelOps {
     fn premultiply(self) -> Self;
     fn unpremultiply(self) -> Self;

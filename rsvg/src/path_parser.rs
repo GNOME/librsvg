@@ -18,6 +18,9 @@ pub enum Token {
 
 use crate::path_parser::Token::{Comma, Command, Flag, Number};
 
+/// Splits an input string from a `path`'s `d` attribute into tokens.
+///
+/// `Lexer` implements the [Iterator] trait; that's how calling code iterates over tokens.
 #[derive(Debug)]
 pub struct Lexer<'a> {
     // pub to allow benchmarking

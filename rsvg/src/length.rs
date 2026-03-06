@@ -176,11 +176,19 @@ pub trait Validate {
     }
 }
 
+/// Used to implement `CssLength<N, Signed>`.
+///
+/// Signed lengths do not require validation, so they use the default implementation of of
+/// [Validate].
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Signed;
 
 impl Validate for Signed {}
 
+/// Used to implement `CssLength<N, Unsigned>`.
+///
+/// Unsigned lengths need validation to ensure that their value is non-negative,
+/// so they have a custom implementation of [Validate].
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Unsigned;
 
