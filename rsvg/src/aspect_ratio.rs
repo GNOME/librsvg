@@ -77,6 +77,9 @@ struct Align {
     fit: FitMode,
 }
 
+/// Representation of `preserveAspectRatio` values.
+///
+/// <https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
     defer: bool,
