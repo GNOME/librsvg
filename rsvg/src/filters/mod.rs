@@ -84,11 +84,18 @@ pub struct FilterSpec {
 /// the `drop_shadow()` function will expand to the few primitives used to implement a
 /// drop shadow.
 ///
-/// Each filter spec will be rendered within a [`FilterContext`], so that the context can maintain
-/// the list of named outputs within a `<filter>` element.
+/// Each filter spec will be rendered within a [`FilterContext`], so that the context can
+/// maintain the list of named outputs within a `<filter>` element, so that primitives can
+/// feed their inputs and outputs into each other.
 ///
 /// While rendering all those [`FilterContext`]s, there are some immutable parameters.
-/// This `FilterPlan` struct contains those parameters.
+/// This `FilterPlan` struct contains those parameters.  If at least one of the filter
+/// primitives involved has an [`in`
+/// attribute](https://www.w3.org/TR/filter-effects/#element-attrdef-filter-primitive-in)
+/// with a value of `BackgroundImage`/`StrokePaint`/`FillPaint`, then this struct will
+/// also contain a pre-rendered image surface with the appropriate content.  Pre-computing
+/// those required "filler" images makes the code simple, since then the filters do not
+/// need to call out again to the rendering code.
 pub struct FilterPlan {
     session: Session,
 
@@ -153,16 +160,30 @@ impl FilterPlan {
 /// This struct holds the requirements for which such surfaces are needed.  The caller is
 /// expected to construct it from an array of [`FilterSpec`], and then to create the
 /// corresponding [`Input`] to create a [`FilterPlan`].
+///
+/// See the [`in`
+/// attribute](https://www.w3.org/TR/filter-effects/#element-attrdef-filter-primitive-in)
+/// from the Filter Effects Module Level 1.
 #[derive(Debug, Default, PartialEq)]
 pub struct InputRequirements {
+    /// At least one input is `in=SourceAlpha`.
     pub needs_source_alpha: bool,
+
+    /// At least one input is `in=BackgroundImage`.
     pub needs_background_image: bool,
+
+    /// At least one input is `in=BackgroundAlpha`.
     pub needs_background_alpha: bool,
+
+    /// At least one input is `in=StrokePaint`.
     pub needs_stroke_paint_image: bool,
+
+    /// At least one input is `in=FillPaint`.
     pub needs_fill_paint_image: bool,
 }
 
 impl InputRequirements {
+    /// Scans a list of [FilterSpec] to find out which contents need to be pre-rendered to process the filters.
     pub fn new_from_filter_specs(specs: &[FilterSpec]) -> InputRequirements {
         specs
             .iter()
@@ -298,6 +319,13 @@ pub enum Input {
 }
 
 impl Input {
+    /// Returns what kind of pre-computed image is needed as the input for a filter primitive.
+    ///
+    /// In a [filter value list][crate::filter::FilterValueList], some primitives may
+    /// reference a particular kind of source content with the
+    /// [`in` attribute](https://www.w3.org/TR/filter-effects/#element-attrdef-filter-primitive-in).
+    /// The code flow becomes easier by being able to render this source content before
+    /// processing the filter value list.
     pub fn get_requirements(&self) -> InputRequirements {
         use Input::*;
 

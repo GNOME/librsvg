@@ -97,6 +97,20 @@ impl ElementTrait for Filter {
     }
 }
 
+/// A component in a `<filter-value-list>` from the Filter Effects Module Level 1
+///
+/// <https://www.w3.org/TR/filter-effects/#typedef-filter-value-list>
+///
+/// A `<filter-value-list>` is an [array of filter values][FilterValueList] and has this syntax:
+///
+/// ```text
+/// <filter-value-list> = [ <filter-function> | <url> ]+
+/// ```
+///
+/// That is, each filter value can be a [FilterFunction] or an URL.  We represent the
+/// latter as a [NodeId].
+///
+/// For the actual collection of values, see the [FilterValueList] type.
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterValue {
     Url(NodeId),
@@ -269,14 +283,19 @@ fn filter_spec_from_filter_node(
         })
 }
 
+/// A `<filter-value-list>` from the Filter Effects Module Level 1
+///
+/// <https://www.w3.org/TR/filter-effects/#typedef-filter-value-list>
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct FilterValueList(Vec<FilterValue>);
 
 impl FilterValueList {
+    /// Returns `true` if the list has zero elements.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
+    /// Returns an iterator over the [FilterValue] items in the list.
     pub fn iter(&self) -> Iter<'_, FilterValue> {
         self.0.iter()
     }
