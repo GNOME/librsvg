@@ -21,6 +21,7 @@ overflow-checks = true
 [workspace]
 members = [
     "ci",
+    "fuzz",
     "gdk-pixbuf-loader",
     "librsvg-c",
     "librsvg-rebind/librsvg-rebind",
@@ -30,7 +31,7 @@ members = [
     "rsvg-bench",
 ]
 default-members = ["rsvg", "rsvg_convert"]
-exclude = ["afl-fuzz", "librsvg-rebind/gir", "fuzz"]
+exclude = ["afl-fuzz", "librsvg-rebind/gir"]
 resolver = "3"
 
 [workspace.dependencies]
