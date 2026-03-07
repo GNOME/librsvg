@@ -47,6 +47,7 @@ ignore = [
 allow = [
     "LGPL-2.1-or-later",
     "MIT",
+    "NCSA",
     "BSD-3-Clause",
     "Unicode-3.0",
     "Apache-2.0",
