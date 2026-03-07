@@ -2,7 +2,7 @@
 
 use cairo;
 use glib;
-use libfuzzer_sys::{fuzz_target, Corpus};
+use libfuzzer_sys::{Corpus, fuzz_target};
 use rsvg;
 
 fuzz_target!(|data: &[u8]| -> Corpus {
