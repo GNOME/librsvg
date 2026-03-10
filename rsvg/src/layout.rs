@@ -30,7 +30,7 @@ use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::transform::Transform;
+use crate::transform::{Transform, ValidTransform};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 use crate::{borrow_element_as, is_element_of_type};
@@ -393,6 +393,147 @@ fn path_from_text(
     Ok(result)
 }
 
+fn path_from_use_referenced_from_clip_path(
+    use_node: &Node,
+    session: &Session,
+    font_options: &FontOptions,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    viewport: &Viewport,
+) -> Option<ClipPathItem> {
+    // FIXME: the following is copied from DrawingCtx::draw_from_use_node().  We need to
+    // refactor this; maybe by making AcquiredNode carry the acquire_ref()'ed <use> node as well.
+
+    let _use_acquired = match acquired_nodes.acquire_ref(use_node) {
+        Ok(n) => n,
+
+        Err(AcquireError::CircularReference(circular)) => {
+            rsvg_log!(session, "circular reference in element {}", circular);
+            return None;
+        }
+
+        _ => unreachable!(),
+    };
+
+    let use_element = use_node.borrow_element();
+    let use_element_name = format!("{use_element}");
+    let use_element_data = borrow_element_as!(use_node, Use);
+
+    let acquired = if let Some(link) = use_element_data.get_link() {
+        match acquired_nodes.acquire(&use_element_name, &link) {
+            Ok(acquired) => acquired,
+
+            Err(AcquireError::CircularReference(_)) => {
+                return None;
+            }
+
+            Err(AcquireError::MaxReferencesExceeded) => {
+                // FIXME: early exit with Err
+                return None;
+            }
+
+            Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
+
+            Err(AcquireError::LinkNotFound(_)) => {
+                return None;
+            }
+        }
+    } else {
+        return None;
+    };
+
+    let use_values = use_element.get_computed_values();
+    let use_params = NormalizeParams::new(use_values, viewport);
+
+    // width or height set to 0 disables rendering of the element
+    // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
+
+    let use_rect = use_element_data.get_rect(&use_params);
+    if use_rect.is_empty() {
+        return None;
+    }
+
+    let child = acquired.get();
+    if !element_can_be_used_inside_use_inside_clip_path(&child.borrow_element()) {
+        return None;
+    }
+
+    let child_cascaded = CascadedValues::new_from_values(
+        child, use_values, None, // fill_paint, not used in clipping
+        None, // stroke_paint, not used in clipping
+    );
+    let child_values = child_cascaded.get();
+
+    if !child_values.is_displayed() || !child_values.is_visible() {
+        // https://www.w3.org/TR/css-masking-1/#ClipPathElement
+        //
+        // "If a child element [of the clipPath element] is made invisible by display or
+        // visibility it does not contribute to the clipping path."
+
+        return None;
+    }
+
+    let use_transform = ValidTransform::try_from(
+        use_values
+            .transform()
+            .pre_translate(use_rect.x0, use_rect.y0)
+            .pre_transform(&child_values.transform()),
+    )
+    .ok()?;
+
+    match viewport.with_composed_transform(use_transform) {
+        Ok(use_viewport) => {
+            let params = NormalizeParams::new(&child_values, &use_viewport);
+            let child_data = child.borrow_element_data();
+
+            let path = match *child_data {
+                ElementData::Path(ref e) => e.make_path(&params, child_values).to_cairo_path(false),
+                ElementData::Polygon(ref e) => {
+                    e.make_path(&params, child_values).to_cairo_path(false)
+                }
+                ElementData::Polyline(ref e) => {
+                    e.make_path(&params, child_values).to_cairo_path(false)
+                }
+                ElementData::Line(ref e) => e.make_path(&params, child_values).to_cairo_path(false),
+                ElementData::Rect(ref e) => e.make_path(&params, child_values).to_cairo_path(false),
+                ElementData::Circle(ref e) => {
+                    e.make_path(&params, child_values).to_cairo_path(false)
+                }
+                ElementData::Ellipse(ref e) => {
+                    e.make_path(&params, child_values).to_cairo_path(false)
+                }
+                ElementData::Text(ref e) => {
+                    // FIXME: do we need to pass the child_cascaded down here?
+                    path_from_text(e, child, session, font_options, acquired_nodes, viewport)
+                        .ok()?
+                }
+                _ => unreachable!(
+                    "we already checked the allowed types of elements in <use> in <clipPath>"
+                ),
+            };
+
+            Some(ClipPathItem {
+                transform: *use_transform,
+                path,
+                clip_rule: child_values.clip_rule(),
+                clip_path: layout_clip_path(
+                    session,
+                    &child.borrow_element(),
+                    font_options,
+                    acquired_nodes,
+                    &params,
+                    &use_viewport,
+                )
+                .map(Box::new),
+            })
+        }
+
+        Err(e) => {
+            rsvg_log!(session, "ignoring {use_node} inside clipPath: {e}");
+            None
+        }
+    }
+}
+
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
 pub fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
     use ElementData::*;
@@ -424,35 +565,47 @@ fn clip_path_item_from_node(
         return None;
     }
 
-    let path = match *data {
-        ElementData::Path(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Polygon(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Polyline(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Line(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Rect(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Circle(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Ellipse(ref e) => e.make_path(params, values).to_cairo_path(false),
-        ElementData::Text(ref e) => {
-            path_from_text(e, node, session, font_options, acquired_nodes, viewport).ok()?
-        }
-        ElementData::Use(ref e) => return None, // FIXME
-        _ => return None,
-    };
-
-    Some(ClipPathItem {
-        transform: values.transform(),
-        path,
-        clip_rule: values.clip_rule(),
-        clip_path: layout_clip_path(
+    if let ElementData::Use(_) = *data {
+        // FIXME: the following implies that we need to return a Result, likely everywhere,
+        // to deal with MaxReferencesExceeded and such.
+        path_from_use_referenced_from_clip_path(
+            node,
             session,
-            &elt,
             font_options,
             acquired_nodes,
-            params,
             viewport,
         )
-        .map(Box::new),
-    })
+    } else {
+        let path = match *data {
+            ElementData::Path(ref e) => e.make_path(params, values).to_cairo_path(false),
+            ElementData::Polygon(ref e) => e.make_path(params, values).to_cairo_path(false),
+            ElementData::Polyline(ref e) => e.make_path(params, values).to_cairo_path(false),
+            ElementData::Line(ref e) => e.make_path(params, values).to_cairo_path(false),
+            ElementData::Rect(ref e) => e.make_path(params, values).to_cairo_path(false),
+            ElementData::Circle(ref e) => e.make_path(params, values).to_cairo_path(false),
+            ElementData::Ellipse(ref e) => e.make_path(params, values).to_cairo_path(false),
+            ElementData::Text(ref e) => {
+                path_from_text(e, node, session, font_options, acquired_nodes, viewport).ok()?
+            }
+
+            _ => return None,
+        };
+
+        Some(ClipPathItem {
+            transform: values.transform(),
+            path,
+            clip_rule: values.clip_rule(),
+            clip_path: layout_clip_path(
+                session,
+                &elt,
+                font_options,
+                acquired_nodes,
+                params,
+                viewport,
+            )
+            .map(Box::new),
+        })
+    }
 }
 
 fn layout_paths_for_clip_path(
@@ -933,5 +1086,49 @@ mod tests {
         .expect("find a clipPath node");
 
         assert_eq!(clip_path.paths.len(), 0);
+    }
+
+    #[test]
+    fn clip_path_can_have_use_children() {
+        let document = Document::load_from_bytes(
+            br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <defs>
+    <rect id="rect" x="20" y="20" width="60" height="60"/>
+    <clipPath id="clip1">
+      <use href="#rect" x="20" y="20"/>/>
+    </clipPath>
+  </defs>
+
+  <rect width="100%" height="100%" fill="white"/>
+
+  <rect id="foo" x="20" y="20" width="60" height="60" fill="#00ff00" clip-path="url(#clip1)"/>
+</svg>
+"##,
+        );
+
+        let node = document.lookup_internal_node("foo").unwrap();
+        let elt = node.borrow_element();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let font_options = FontOptions::new(true);
+        let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
+        let clip_path = layout_clip_path(
+            &session,
+            &elt,
+            &font_options,
+            &mut acquired,
+            &params,
+            &viewport,
+        )
+        .expect("find a clipPath node");
+
+        assert_eq!(clip_path.paths.len(), 1);
+
+        let item = &clip_path.paths[0];
+
+        assert_eq!(item.transform, Transform::new_translate(20.0, 20.0));
     }
 }
