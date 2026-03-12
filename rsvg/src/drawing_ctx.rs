@@ -1975,12 +1975,6 @@ impl DrawingCtx {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(circular)) => {
-                rsvg_log!(
-                    self.session,
-                    "circular reference from {} to element {}",
-                    node,
-                    circular
-                );
                 return Err(Box::new(InternalRenderingError::CircularReference(
                     circular,
                 )));
@@ -1994,13 +1988,7 @@ impl DrawingCtx {
 
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
 
-            Err(AcquireError::LinkNotFound(node_id)) => {
-                rsvg_log!(
-                    self.session,
-                    "element {} references nonexistent \"{}\"",
-                    node,
-                    node_id
-                );
+            Err(AcquireError::LinkNotFound(_)) => {
                 return Ok(viewport.empty_bbox());
             }
         };

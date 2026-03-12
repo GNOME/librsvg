@@ -925,14 +925,20 @@ impl<'i> AcquiredNodes<'i> {
     /// where the `node_id` is being referenced from.
     pub fn acquire(
         &mut self,
-        _referencing_element_name: &str,
+        referencing_element_name: &str,
         node_id: &NodeId,
     ) -> Result<AcquiredNode, AcquireError> {
+        let session = &self.document.session;
+
         self.num_elements_acquired += 1;
 
         // This is a mitigation for SVG files that try to instance a huge number of
         // elements via <use>, recursive patterns, etc.  See limits.rs for details.
         if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            rsvg_log!(
+                session,
+                "maximum number of referenced elements exceeded in {referencing_element_name}"
+            );
             return Err(AcquireError::MaxReferencesExceeded);
         }
 
@@ -946,9 +952,21 @@ impl<'i> AcquiredNodes<'i> {
         let node = self
             .document
             .lookup_node(node_id, self.cancellable.as_ref())
-            .ok_or_else(|| AcquireError::LinkNotFound(node_id.clone()))?;
+            .ok_or_else(|| {
+                rsvg_log!(
+                    session,
+                    "reference \"{}\" does not exist, referenced from {referencing_element_name}",
+                    node_id
+                );
+
+                AcquireError::LinkNotFound(node_id.clone())
+            })?;
 
         if self.nodes_with_cycles.contains(&node) {
+            rsvg_log!(
+                session,
+                "circular reference from {referencing_element_name} to element {node}",
+            );
             return Err(AcquireError::CircularReference(node.clone()));
         }
 
