@@ -251,7 +251,7 @@ fn filter_spec_from_filter_node(
     let filter_viewport = ViewportGen::new(viewport);
 
     acquired_nodes
-        .acquire(node_id)
+        .acquire(node_being_filtered_name, node_id)
         .map_err(|e| {
             rsvg_log!(
                 *session,

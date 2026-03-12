@@ -566,8 +566,11 @@ impl ElementTrait for Use {
             let params = NormalizeParams::new(values, viewport);
             let rect = self.get_rect(&params);
 
+            let use_node_name = format!("{node}");
+
             let stroke_paint = values.stroke().0.resolve(
                 acquired_nodes,
+                &use_node_name,
                 values.stroke_opacity().0,
                 values.color().0,
                 cascaded.context_fill.clone(),
@@ -577,6 +580,7 @@ impl ElementTrait for Use {
 
             let fill_paint = values.fill().0.resolve(
                 acquired_nodes,
+                &use_node_name,
                 values.fill_opacity().0,
                 values.color().0,
                 cascaded.context_fill.clone(),

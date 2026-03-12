@@ -74,9 +74,11 @@ fn draw_basic_shape(
     };
 
     let paint_order = values.paint_order();
+    let shape_element_name = format!("{node}");
 
     let stroke_paint = values.stroke().0.resolve(
         acquired_nodes,
+        &shape_element_name,
         values.stroke_opacity().0,
         values.color().0,
         cascaded.context_fill.clone(),
@@ -86,6 +88,7 @@ fn draw_basic_shape(
 
     let fill_paint = values.fill().0.resolve(
         acquired_nodes,
+        &shape_element_name,
         values.fill_opacity().0,
         values.color().0,
         cascaded.context_fill.clone(),
@@ -102,9 +105,24 @@ fn draw_basic_shape(
     let marker_end_node;
 
     if shape_def.markers == Markers::Yes {
-        marker_start_node = acquire_marker(session, acquired_nodes, &values.marker_start().0);
-        marker_mid_node = acquire_marker(session, acquired_nodes, &values.marker_mid().0);
-        marker_end_node = acquire_marker(session, acquired_nodes, &values.marker_end().0);
+        marker_start_node = acquire_marker(
+            session,
+            &shape_element_name,
+            acquired_nodes,
+            &values.marker_start().0,
+        );
+        marker_mid_node = acquire_marker(
+            session,
+            &shape_element_name,
+            acquired_nodes,
+            &values.marker_mid().0,
+        );
+        marker_end_node = acquire_marker(
+            session,
+            &shape_element_name,
+            acquired_nodes,
+            &values.marker_end().0,
+        );
     } else {
         marker_start_node = None;
         marker_mid_node = None;
@@ -203,12 +221,13 @@ macro_rules! impl_draw {
 
 fn acquire_marker(
     session: &Session,
+    referencing_element_name: &str,
     acquired_nodes: &mut AcquiredNodes<'_>,
     iri: &Iri,
 ) -> Option<Node> {
     iri.get().and_then(|id| {
         acquired_nodes
-            .acquire(id)
+            .acquire(referencing_element_name, id)
             .map_err(|e| {
                 rsvg_log!(session, "cannot render marker: {}", e);
             })

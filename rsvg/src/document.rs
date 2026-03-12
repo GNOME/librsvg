@@ -920,7 +920,14 @@ impl<'i> AcquiredNodes<'i> {
     ///
     /// This is typically used during an "early resolution" stage, when XML `id`s are being
     /// resolved to node references.
-    pub fn acquire(&mut self, node_id: &NodeId) -> Result<AcquiredNode, AcquireError> {
+    ///
+    /// The `referencing_element_name` is just used for logging error messages, to identify
+    /// where the `node_id` is being referenced from.
+    pub fn acquire(
+        &mut self,
+        _referencing_element_name: &str,
+        node_id: &NodeId,
+    ) -> Result<AcquiredNode, AcquireError> {
         self.num_elements_acquired += 1;
 
         // This is a mitigation for SVG files that try to instance a huge number of

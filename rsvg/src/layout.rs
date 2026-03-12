@@ -219,6 +219,7 @@ pub struct Filter {
 fn get_filter(
     values: &ComputedValues,
     acquired_nodes: &mut AcquiredNodes<'_>,
+    referencing_element_name: &str,
     session: &Session,
 ) -> Option<Filter> {
     match values.filter() {
@@ -227,6 +228,7 @@ fn get_filter(
         properties::Filter::List(filter_list) => Some(get_filter_from_filter_list(
             filter_list,
             acquired_nodes,
+            referencing_element_name,
             values,
             session,
         )),
@@ -236,6 +238,7 @@ fn get_filter(
 fn get_filter_from_filter_list(
     filter_list: FilterValueList,
     acquired_nodes: &mut AcquiredNodes<'_>,
+    referencing_element_name: &str,
     values: &ComputedValues,
     session: &Session,
 ) -> Filter {
@@ -243,6 +246,7 @@ fn get_filter_from_filter_list(
 
     let stroke_paint_source = values.stroke().0.resolve(
         acquired_nodes,
+        referencing_element_name,
         values.stroke_opacity().0,
         current_color,
         None,
@@ -252,6 +256,7 @@ fn get_filter_from_filter_list(
 
     let fill_paint_source = values.fill().0.resolve(
         acquired_nodes,
+        referencing_element_name,
         values.fill_opacity().0,
         current_color,
         None,
@@ -278,7 +283,8 @@ fn acquire_clip_path(
     let clip_path_prop = values.clip_path();
 
     if let Some(node_id) = clip_path_prop.0.get() {
-        let acquired = acquired_nodes.acquire(node_id)?;
+        let source_element_name = format!("{source_element}");
+        let acquired = acquired_nodes.acquire(&source_element_name, node_id)?;
 
         let candidate_clip_path_node = acquired.get().clone();
 
@@ -467,13 +473,14 @@ fn layout_paths_for_clip_path(
 fn resolve_clip_path(
     values: &ComputedValues,
     acquired_nodes: &mut AcquiredNodes<'_>,
+    referencing_element_name: &str,
 ) -> (Option<Node>, Option<Node>) {
     let clip_path = values.clip_path();
     let clip_uri = clip_path.0.get();
     let (clip_in_user_space, clip_in_object_space) = clip_uri
         .and_then(|node_id| {
             acquired_nodes
-                .acquire(node_id)
+                .acquire(referencing_element_name, node_id)
                 .ok()
                 .filter(|a| is_element_of_type!(*a.get(), ClipPath))
         })
@@ -528,7 +535,7 @@ impl StackingContext {
 
             _ => {
                 opacity = values.opacity();
-                filter = get_filter(values, acquired_nodes, &session);
+                filter = get_filter(values, acquired_nodes, &element_name, &session);
             }
         }
 
@@ -544,10 +551,13 @@ impl StackingContext {
             viewport,
         );
 
-        let (clip_in_user_space, clip_in_object_space) = resolve_clip_path(values, acquired_nodes);
+        let element_name = format!("{element}");
+
+        let (clip_in_user_space, clip_in_object_space) =
+            resolve_clip_path(values, acquired_nodes, &element_name);
 
         let mask = values.mask().0.get().and_then(|mask_id| {
-            if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
+            if let Ok(acquired) = acquired_nodes.acquire(&element_name, mask_id) {
                 let node = acquired.get();
                 match *node.borrow_element_data() {
                     ElementData::Mask(_) => Some(node.clone()),

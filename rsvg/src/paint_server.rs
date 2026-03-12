@@ -135,6 +135,7 @@ impl PaintServer {
     pub fn resolve(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        referencing_element_name: &str,
         opacity: UnitInterval,
         current_color: Color,
         context_fill: Option<Rc<PaintSource>>,
@@ -143,7 +144,7 @@ impl PaintServer {
     ) -> Rc<PaintSource> {
         match self {
             PaintServer::Iri { iri, alternate } => acquired_nodes
-                .acquire(iri)
+                .acquire(referencing_element_name, iri)
                 .and_then(|acquired| {
                     let node = acquired.get();
                     assert!(node.is_element());

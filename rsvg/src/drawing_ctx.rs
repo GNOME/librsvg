@@ -1968,7 +1968,10 @@ impl DrawingCtx {
             _ => unreachable!(),
         };
 
-        let acquired = match acquired_nodes.acquire(link) {
+        let use_element = node.borrow_element();
+        let use_element_name = format!("{use_element}");
+
+        let acquired = match acquired_nodes.acquire(&use_element_name, link) {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(circular)) => {
@@ -2016,8 +2019,6 @@ impl DrawingCtx {
 
         let use_transform = ValidTransform::try_from(values.transform())?;
         let use_viewport = viewport.with_composed_transform(use_transform)?;
-
-        let use_element = node.borrow_element();
 
         let defines_a_viewport = if is_element_of_type!(child, Symbol) {
             let symbol = borrow_element_as!(child, Symbol);

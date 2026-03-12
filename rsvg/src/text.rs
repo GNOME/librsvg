@@ -83,6 +83,7 @@ struct Span {
     dy: f64,
     _depth: usize,
     link_target: Option<String>,
+    span_element_name: Rc<String>,
 }
 
 struct MeasuredSpan {
@@ -93,6 +94,7 @@ struct MeasuredSpan {
     dx: f64,
     dy: f64,
     link_target: Option<String>,
+    span_element_name: Rc<String>,
 }
 
 struct PositionedSpan {
@@ -101,6 +103,7 @@ struct PositionedSpan {
     rendered_position: (f64, f64),
     next_span_position: (f64, f64),
     link_target: Option<String>,
+    span_element_name: Rc<String>,
 }
 
 /// A laid-out and resolved text span.
@@ -239,6 +242,7 @@ impl PositionedChunk {
                 rendered_position,
                 next_span_position: (x, y),
                 link_target: mspan.link_target.clone(),
+                span_element_name: mspan.span_element_name.clone(),
             };
 
             positioned.push(positioned_span);
@@ -385,6 +389,7 @@ fn text_anchor_offset(
 impl Span {
     fn new(
         text: &str,
+        span_element_name: Rc<String>,
         values: Rc<ComputedValues>,
         dx: f64,
         dy: f64,
@@ -398,6 +403,7 @@ impl Span {
             dy,
             _depth: depth,
             link_target,
+            span_element_name,
         }
     }
 }
@@ -453,6 +459,7 @@ impl MeasuredSpan {
                 dx: span.dx,
                 dy: span.dy,
                 link_target: span.link_target.clone(),
+                span_element_name: span.span_element_name.clone(),
             })
         } else {
             None
@@ -523,6 +530,7 @@ impl PositionedSpan {
 
         let stroke_paint = self.values.stroke().0.resolve(
             acquired_nodes,
+            &self.span_element_name,
             self.values.stroke_opacity().0,
             self.values.color().0,
             None,
@@ -532,6 +540,7 @@ impl PositionedSpan {
 
         let fill_paint = self.values.fill().0.resolve(
             acquired_nodes,
+            &self.span_element_name,
             self.values.fill_opacity().0,
             self.values.color().0,
             None,
@@ -577,11 +586,14 @@ fn children_to_chunks(
     let mut dx = dx;
     let mut dy = dy;
 
+    let node_name = Rc::new(format!("{node}"));
+
     for child in node.children() {
         if child.is_chars() {
             let values = cascaded.get();
             child.borrow_chars().to_chunks(
                 &child,
+                node_name.clone(),
                 Rc::new(values.clone()),
                 chunks,
                 dx,
@@ -720,6 +732,7 @@ impl Chars {
     fn make_span(
         &self,
         node: &Node,
+        span_element_name: Rc<String>,
         values: Rc<ComputedValues>,
         dx: f64,
         dy: f64,
@@ -730,6 +743,7 @@ impl Chars {
 
         Span::new(
             self.space_normalized.borrow().as_ref().unwrap(),
+            span_element_name,
             values,
             dx,
             dy,
@@ -741,6 +755,7 @@ impl Chars {
     fn to_chunks(
         &self,
         node: &Node,
+        span_element_name: Rc<String>,
         values: Rc<ComputedValues>,
         chunks: &mut [Chunk],
         dx: f64,
@@ -748,7 +763,7 @@ impl Chars {
         depth: usize,
         link_target: Option<String>,
     ) {
-        let span = self.make_span(node, values, dx, dy, depth, link_target);
+        let span = self.make_span(node, span_element_name, values, dx, dy, depth, link_target);
         let num_chunks = chunks.len();
         assert!(num_chunks > 0);
 
@@ -1029,7 +1044,9 @@ impl TRef {
             return;
         }
 
-        if let Ok(acquired) = acquired_nodes.acquire(link) {
+        let tref_element_name = format!("{node}");
+
+        if let Ok(acquired) = acquired_nodes.acquire(&tref_element_name, link) {
             let c = acquired.get();
             extract_chars_children_to_chunks_recursively(chunks, c, Rc::new(values.clone()), depth);
         } else {
@@ -1053,9 +1070,17 @@ fn extract_chars_children_to_chunks_recursively(
         let values = values.clone();
 
         if child.is_chars() {
-            child
-                .borrow_chars()
-                .to_chunks(&child, values, chunks, 0.0, 0.0, depth, None)
+            let span_element_name = Rc::new(format!("{node}"));
+            child.borrow_chars().to_chunks(
+                &child,
+                span_element_name,
+                values,
+                chunks,
+                0.0,
+                0.0,
+                depth,
+                None,
+            )
         } else {
             extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1)
         }

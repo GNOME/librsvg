@@ -585,7 +585,8 @@ macro_rules! impl_gradient {
 
                 while !gradient.is_resolved() {
                     if let Some(node_id) = fallback {
-                        let acquired = acquired_nodes.acquire(&node_id)?;
+                        let node_name = format!("{node}");
+                        let acquired = acquired_nodes.acquire(&node_name, &node_id)?;
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
