@@ -512,6 +512,10 @@ impl Use {
 
         Rect::new(x, y, x + w, y + h)
     }
+
+    pub fn get_link(&self) -> Option<NodeId> {
+        self.link.clone()
+    }
 }
 
 impl Default for Use {
