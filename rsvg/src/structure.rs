@@ -504,7 +504,7 @@ pub struct Use {
 }
 
 impl Use {
-    fn get_rect(&self, params: &NormalizeParams) -> Rect {
+    pub fn get_rect(&self, params: &NormalizeParams) -> Rect {
         let x = self.x.to_user(params);
         let y = self.y.to_user(params);
         let w = self.width.to_user(params);
