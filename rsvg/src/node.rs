@@ -180,13 +180,6 @@ impl<'a> CascadedValues<'a> {
             CascadedInner::FromNode(ref e) => e.get_computed_values(),
             CascadedInner::FromValues(ref v) => v,
         }
-
-        // if values.fill == "context-fill" {
-        //     values.fill=self.context_fill
-        // }
-        // if values.stroke == "context-stroke" {
-        //     values.stroke=self.context_stroke
-        // }
     }
 }
 
