@@ -209,6 +209,12 @@ box_error!(cairo::Error);
 #[derive(Debug, PartialEq)]
 pub struct InvalidTransform;
 
+impl fmt::Display for InvalidTransform {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "invalid transform")
+    }
+}
+
 /// Errors from [`crate::document::AcquiredNodes`].
 pub enum AcquireError {
     /// An element with the specified id was not found.
