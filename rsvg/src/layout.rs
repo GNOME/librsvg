@@ -393,6 +393,16 @@ fn path_from_text(
     Ok(result)
 }
 
+// https://www.w3.org/TR/css-masking-1/#ClipPathElement
+pub fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
+    use ElementData::*;
+
+    matches!(
+        element.element_data,
+        Circle(_) | Ellipse(_) | Line(_) | Path(_) | Polygon(_) | Polyline(_) | Rect(_) | Text(_)
+    )
+}
+
 fn clip_path_item_from_node(
     session: &Session,
     node: &Node,

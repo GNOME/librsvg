@@ -23,7 +23,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
     ClipPath, Filter, Group, Image, Layer, LayerKind, LayoutViewport, Shape, StackingContext,
-    Stroke, Text, TextSpan,
+    Stroke, Text, TextSpan, element_can_be_used_inside_use_inside_clip_path,
 };
 use crate::length::*;
 use crate::limits;
@@ -2272,16 +2272,6 @@ fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
             | Rect(_)
             | Text(_)
             | Use(_)
-    )
-}
-
-// https://www.w3.org/TR/css-masking-1/#ClipPathElement
-fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
-    use ElementData::*;
-
-    matches!(
-        element.element_data,
-        Circle(_) | Ellipse(_) | Line(_) | Path(_) | Polygon(_) | Polyline(_) | Rect(_) | Text(_)
     )
 }
 
