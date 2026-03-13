@@ -1244,3 +1244,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/clip-path-use-transform-element-transform.svg",
     "tests/fixtures/reftests/clip-path-use-transform-element-transform-ref.svg"
 );
+
+test_svg_reference!(
+    clip_path_use_x_y_transform_element_transform,
+    "tests/fixtures/reftests/clip-path-use-x-y-transform-element-transform.svg",
+    "tests/fixtures/reftests/clip-path-use-x-y-transform-element-transform-ref.svg"
+);
