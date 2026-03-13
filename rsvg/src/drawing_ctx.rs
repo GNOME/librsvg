@@ -1955,7 +1955,7 @@ impl DrawingCtx {
         // another <use> which references the first one, etc.).  So,
         // we acquire the <use> element itself so that circular
         // references can be caught.
-        let _self_acquired = match acquired_nodes.acquire_ref(node) {
+        let _use_acquired = match acquired_nodes.acquire_ref(node) {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(circular)) => {
