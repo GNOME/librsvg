@@ -482,7 +482,7 @@ fn path_from_use_referenced_from_clip_path(
 
     match viewport.with_composed_transform(use_transform) {
         Ok(use_viewport) => {
-            let params = NormalizeParams::new(&child_values, &use_viewport);
+            let params = NormalizeParams::new(child_values, &use_viewport);
             let child_data = child.borrow_element_data();
 
             let path = match *child_data {
