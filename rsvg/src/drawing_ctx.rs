@@ -897,10 +897,10 @@ impl DrawingCtx {
                     clip_to_rectangle(&self.cr, &viewport.transform, rect);
                 }
 
-                if let Some(ref clip_path) = stacking_ctx.clip_path {
-                    if clip_path.clip_units == CoordUnits::UserSpaceOnUse {
-                        self.apply_clip_path(&viewport, clip_path)?;
-                    }
+                if let Some(ref clip_path) = stacking_ctx.clip_path
+                    && clip_path.clip_units == CoordUnits::UserSpaceOnUse
+                {
+                    self.apply_clip_path(&viewport, clip_path)?;
                 }
 
                 // Here we are clipping in user space, so the bbox doesn't matter
