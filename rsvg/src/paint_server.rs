@@ -151,7 +151,7 @@ impl PaintServer {
 
                     match *node.borrow_element_data() {
                         ElementData::LinearGradient(ref g) => {
-                            g.resolve(node, acquired_nodes, opacity).map(|g| {
+                            g.resolve(node, acquired_nodes, opacity, session).map(|g| {
                                 Rc::new(PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, &current_color)),
@@ -167,14 +167,17 @@ impl PaintServer {
                             })
                         }
                         ElementData::RadialGradient(ref g) => {
-                            g.resolve(node, acquired_nodes, opacity).map(|g| {
+                            g.resolve(node, acquired_nodes, opacity, session).map(|g| {
                                 Rc::new(PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, &current_color)),
                                 ))
                             })
                         }
-                        _ => Err(AcquireError::InvalidLinkType(iri.as_ref().clone())),
+                        _ => {
+                            rsvg_log!(session, "{node} is not a gradient or pattern, ignoring");
+                            Err(AcquireError::InvalidLinkType(iri.as_ref().clone()))
+                        }
                     }
                 })
                 .unwrap_or_else(|_| match alternate {

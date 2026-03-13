@@ -484,7 +484,10 @@ impl Pattern {
 
                                 stack.push(acquired_node);
                             }
-                            _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),
+                            _ => {
+                                rsvg_log!(session, "{acquired_node} is not a pattern; ignoring");
+                                return Err(AcquireError::InvalidLinkType(node_id.clone()));
+                            }
                         }
                     }
 
