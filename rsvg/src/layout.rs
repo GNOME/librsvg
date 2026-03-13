@@ -406,12 +406,7 @@ fn path_from_use_referenced_from_clip_path(
     let _use_acquired = match acquired_nodes.acquire_ref(use_node) {
         Ok(n) => n,
 
-        Err(AcquireError::CircularReference(circular)) => {
-            rsvg_log!(session, "circular reference in element {}", circular);
-            return None;
-        }
-
-        _ => unreachable!(),
+        _ => return None,
     };
 
     let use_element = use_node.borrow_element();

@@ -678,12 +678,7 @@ impl DrawingCtx {
         let _mask_acquired = match acquired_nodes.acquire_ref(mask_node) {
             Ok(n) => n,
 
-            Err(AcquireError::CircularReference(_)) => {
-                rsvg_log!(self.session, "circular reference in element {}", mask_node);
-                return Ok(None);
-            }
-
-            _ => unreachable!(),
+            _ => return Ok(None),
         };
 
         let mask_element = mask_node.borrow_element();
@@ -1959,7 +1954,6 @@ impl DrawingCtx {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(circular)) => {
-                rsvg_log!(self.session, "circular reference in element {}", circular);
                 return Err(Box::new(InternalRenderingError::CircularReference(
                     circular,
                 )));
