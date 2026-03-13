@@ -990,10 +990,14 @@ impl<'i> AcquiredNodes<'i> {
     ///   its child elements that reference other paint servers will be able to detect circular
     ///   references to the pattern.
     pub fn acquire_ref(&mut self, node: &Node) -> Result<AcquiredNode, AcquireError> {
+        let session = &self.document.session;
+
         if self.nodes_with_cycles.contains(node) {
+            rsvg_log!(session, "circular reference for {node}");
             Err(AcquireError::CircularReference(node.clone()))
         } else if self.node_stack.borrow().contains(node) {
             self.nodes_with_cycles.push(node.clone());
+            rsvg_log!(session, "circular reference for {node}");
             Err(AcquireError::CircularReference(node.clone()))
         } else {
             self.node_stack.borrow_mut().push(node);
