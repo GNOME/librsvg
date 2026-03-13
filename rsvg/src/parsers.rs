@@ -46,7 +46,7 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
 ///
 /// Most of the code to parse an SVG element's attributes looks like this:
 ///
-/// ```ignore
+/// ```text
 ///         for (attr, value) in attrs.iter() {
 ///            match attr.expanded() {
 ///                expanded_name!("", "foo") => {
