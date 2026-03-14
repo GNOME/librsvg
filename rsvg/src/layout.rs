@@ -417,20 +417,7 @@ fn path_from_use_referenced_from_clip_path(
         match acquired_nodes.acquire(&use_element_name, &link) {
             Ok(acquired) => acquired,
 
-            Err(AcquireError::CircularReference(_)) => {
-                return None;
-            }
-
-            Err(AcquireError::MaxReferencesExceeded) => {
-                // FIXME: early exit with Err
-                return None;
-            }
-
-            Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
-
-            Err(AcquireError::LinkNotFound(_)) => {
-                return None;
-            }
+            _ => return None,
         }
     } else {
         return None;
