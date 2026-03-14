@@ -1126,4 +1126,82 @@ mod tests {
 
         assert_eq!(item.transform, Transform::new_translate(20.0, 20.0));
     }
+
+    #[test]
+    fn clip_path_handles_use_with_nonexistent_href() {
+        let document = Document::load_from_bytes(
+            br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <defs>
+    <clipPath id="clip1">
+      <use href="#nonexistent"/>
+    </clipPath>
+  </defs>
+
+  <rect width="100%" height="100%" fill="white"/>
+
+  <rect id="foo" x="20" y="20" width="60" height="60" fill="#00ff00" clip-path="url(#clip1)"/>
+</svg>
+"##,
+        );
+
+        let node = document.lookup_internal_node("foo").unwrap();
+        let elt = node.borrow_element();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let font_options = FontOptions::new(true);
+        let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
+        let clip_path = layout_clip_path(
+            &session,
+            &elt,
+            &font_options,
+            &mut acquired,
+            &params,
+            &viewport,
+        )
+        .expect("find a clipPath node");
+
+        assert!(clip_path.paths.is_empty());
+    }
+
+    #[test]
+    fn clip_path_handles_use_with_no_href() {
+        let document = Document::load_from_bytes(
+            br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <defs>
+    <clipPath id="clip1">
+      <use/>
+    </clipPath>
+  </defs>
+
+  <rect width="100%" height="100%" fill="white"/>
+
+  <rect id="foo" x="20" y="20" width="60" height="60" fill="#00ff00" clip-path="url(#clip1)"/>
+</svg>
+"##,
+        );
+
+        let node = document.lookup_internal_node("foo").unwrap();
+        let elt = node.borrow_element();
+
+        let mut acquired = AcquiredNodes::new(&document, None::<gio::Cancellable>);
+        let session = Session::default();
+        let font_options = FontOptions::new(true);
+        let params = NormalizeParams::from_dpi(Dpi::new(96.0, 96.0));
+        let viewport = Viewport::new(Dpi::new(96.0, 96.0), 1.0, 1.0);
+        let clip_path = layout_clip_path(
+            &session,
+            &elt,
+            &font_options,
+            &mut acquired,
+            &params,
+            &viewport,
+        )
+        .expect("find a clipPath node");
+
+        assert!(clip_path.paths.is_empty());
+    }
 }
