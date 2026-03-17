@@ -1,3 +1,15 @@
+Version 2.62.1
+==============
+
+librsvg crate version 2.62.1
+
+librsvg-rebind crate version 0.3.0
+
+- There are no changes from 2.62.0, just an update of the image-rs
+  crate to align it with the rest of GNOME 50's versions for
+  dependencies.
+
+
 Version 2.62.0
 ==============
 
