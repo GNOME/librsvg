@@ -1,8 +1,11 @@
 includes = files(
     'rsvg.h',
     'rsvg-cairo.h',
-    'rsvg-pixbuf.h'
 )
+
+if pixbuf_dep.found()
+    includes += files('rsvg-pixbuf.h')
+endif
 
 features_data = configuration_data()
 features_data.set10('LIBRSVG_HAVE_PIXBUF', pixbuf_dep.found())

@@ -34,7 +34,7 @@ means. But first, some history.
 ### Historical note: before librsvg supported viewports
 
 When librsvg was first written, its API basically consisted of only functions to
-load an [class@Rsvg.Handle], plus [method@Rsvg.Handle.get_pixbuf] to render it
+load an [class@Rsvg.Handle], plus `rsvg_handle_get_pixbuf()` to render it
 directly to a GdkPixbuf image. Internally the library used libart (a pre-Cairo
 2D rendering library), but did not expose it in the public API.
 
@@ -55,14 +55,14 @@ context for the surface. The context is what makes the drawing commands
 available.
 
 Being able to render SVG documents directly to PDF or PostScript was clearly
-attractive, so librsvg\'s API of [method@Rsvg.Handle.get_pixbuf] would clearly
+attractive, so librsvg\'s API of `rsvg_handle_get_pixbuf()` would clearly
 not be enough. It would be better to pass a [`cairo_t`][cairo_t] for an
 already-created surface, and have librsvg issue its drawing commands to it. Then
 the application would be in control of the surface type, or in the case of GTK
 widgets, they would already get a [`cairo_t`][cairo_t] passed to their drawing
 functions. Librsvg got modified to export a
 [`rsvg_handle_render_cairo(handle, cairo_t)`](method.Handle.render_cairo.html),
-and then it reimplemented the old [method@Rsvg.Handle.get_pixbuf] in terms of
+and then it reimplemented the old `rsvg_handle_get_pixbuf()` in terms of
 Cairo.
 
 At this point, librsvg still kept the notion of rendering SVG documents
