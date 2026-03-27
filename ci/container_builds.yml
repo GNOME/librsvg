@@ -8,7 +8,7 @@ include:
 # IMPORTANT: See
 # https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
 variables:
-  BASE_TAG: "2026-03-27.0-main"
+  BASE_TAG: "2026-03-27.1-main"
   RUST_STABLE: "1.92.0"
   RUST_MINIMUM: "1.92.0"
   RUST_NIGHTLY: "nightly"
@@ -128,7 +128,6 @@ opensuse-container@aarch64:
                               --stable ${RUST_STABLE} \
                               --arch x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
-      bash ci/install-grcov.sh &&
       rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
 
 .container.gnomeos.nightly@x86_64:
