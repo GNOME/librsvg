@@ -8,12 +8,12 @@ include:
 # IMPORTANT: See
 # https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/ci.html#container-image-version
 variables:
-  BASE_TAG: "2026-02-04.1-main"
+  BASE_TAG: "2026-03-27.2-main"
   RUST_STABLE: "1.92.0"
   RUST_MINIMUM: "1.92.0"
   RUST_NIGHTLY: "nightly"
   RUSTUP_VERSION: "1.28.0"
-  GNOMEOS_STABLE: "core-49"
+  GNOMEOS_STABLE: "core-50"
 
 # This bunch of packages are the system's C/C++ compilers, and the indirect dependencies needed
 # to build librsvg's direct dependencies.  E.g. we must build cairo from a git tag, but we don't
@@ -82,7 +82,8 @@ variables:
                               --minimum ${RUST_MINIMUM} \
                               --nightly ${RUST_NIGHTLY} \
                               --arch x86_64-unknown-linux-gnu &&
-      bash ci/install-rust-tools.sh &&
+      bash ci/install-cargo-cbuild.sh &&
+      bash ci/install-rust-linters.sh &&
       bash ci/install-grcov.sh &&
       mkdir -p /usr/local/librsvg &&
       bash ci/build-dependencies.sh --prefix /usr/local/librsvg --meson-flags "--buildtype=release" &&
@@ -120,16 +121,14 @@ opensuse-container@aarch64:
     - cat /etc/os-release
     - source ./ci/env.sh
   variables:
+    RUST_VERSION: "${RUST_STABLE}"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
     FDO_DISTRIBUTION_EXEC: >-
       bash ci/install-python-tools.sh &&
       bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
                               --stable ${RUST_STABLE} \
-                              --minimum ${RUST_MINIMUM} \
-                              --nightly ${RUST_NIGHTLY} \
                               --arch x86_64-unknown-linux-gnu &&
-      bash ci/install-rust-tools.sh &&
-      bash ci/install-grcov.sh &&
+      bash ci/install-cargo-cbuild.sh &&
       rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
 
 .container.gnomeos.nightly@x86_64:

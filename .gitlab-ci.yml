@@ -149,7 +149,7 @@ cargo_test:
       junit: _build/meson-logs/testlog.junit.xml
     expire_in: 1 day
 
-meson build - opensuse@x86_64.stable: 
+meson build - opensuse@x86_64.stable:
   stage: build
   extends:
     - '.container.opensuse@x86_64.stable'
@@ -256,12 +256,6 @@ cargo test - gnomeos.nightly.@x86_64:
       artifacts: false
     - job: check
       artifacts: false
-  parallel:
-    matrix:
-      - RUST_VERSION:
-        - "${RUST_STABLE}"
-        - "${RUST_MINIMUM}"
-        - "${RUST_NIGHTLY}"
 
 cargo test - gnomeos.stable@x86_64:
   extends:
@@ -273,12 +267,6 @@ cargo test - gnomeos.stable@x86_64:
       artifacts: false
     - job: check
       artifacts: false
-  parallel:
-    matrix:
-      - RUST_VERSION:
-        - "${RUST_STABLE}"
-        - "${RUST_MINIMUM}"
-        - "${RUST_NIGHTLY}"
 
 fmt:
   extends:
