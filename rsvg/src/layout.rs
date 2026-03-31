@@ -364,17 +364,16 @@ fn layout_clip_path(
 fn path_from_text(
     text: &crate::text::Text,
     node: &Node,
+    cascaded: &CascadedValues<'_>,
     session: &Session,
     font_options: &FontOptions,
     acquired_nodes: &mut AcquiredNodes<'_>,
     viewport: &Viewport,
 ) -> Result<CairoPath, Box<InternalRenderingError>> {
-    let cascaded = CascadedValues::new_from_node(node);
-
     let text_layout = text.layout_text_spans(
         node,
         acquired_nodes,
-        &cascaded,
+        cascaded,
         viewport,
         font_options.clone(),
         session,
@@ -484,8 +483,7 @@ fn path_from_use_referenced_from_clip_path(
                     e.make_path(&params, child_values).to_cairo_path(false)
                 }
                 ElementData::Text(ref e) => {
-                    // FIXME: do we need to pass the child_cascaded down here?
-                    path_from_text(e, child, session, font_options, acquired_nodes, viewport)
+                    path_from_text(e, child, &child_cascaded, session, font_options, acquired_nodes, viewport)
                         .ok()?
                 }
                 _ => unreachable!(
@@ -567,7 +565,8 @@ fn clip_path_item_from_node(
             ElementData::Circle(ref e) => e.make_path(params, values).to_cairo_path(false),
             ElementData::Ellipse(ref e) => e.make_path(params, values).to_cairo_path(false),
             ElementData::Text(ref e) => {
-                path_from_text(e, node, session, font_options, acquired_nodes, viewport).ok()?
+                let cascaded = CascadedValues::new_from_node(node);
+                path_from_text(e, node, &cascaded, session, font_options, acquired_nodes, viewport).ok()?
             }
 
             _ => return None,
