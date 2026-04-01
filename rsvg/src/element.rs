@@ -87,7 +87,6 @@ pub trait ElementTrait {
         _cascaded: &CascadedValues<'_>,
         _viewport: &Viewport,
         _draw_ctx: &mut DrawingCtx,
-        _clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         Ok(None)
     }
@@ -515,12 +514,11 @@ impl Element {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
         if values.is_displayed() {
             self.element_data
-                .layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+                .layout(node, acquired_nodes, cascaded, viewport, draw_ctx)
         } else {
             Ok(None)
         }
@@ -610,7 +608,6 @@ impl ElementData {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         use ElementData::*;
 
@@ -671,7 +668,7 @@ impl ElementData {
             FeTurbulence(d) =>         &**d,
         };
 
-        data.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+        data.layout(node, acquired_nodes, cascaded, viewport, draw_ctx)
     }
 }
 

@@ -53,7 +53,6 @@ impl ElementTrait for Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        _clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         if let Some(ref url) = self.href {
             self.layout_from_url(url, node, acquired_nodes, cascaded, viewport, draw_ctx)
@@ -71,7 +70,7 @@ impl ElementTrait for Image {
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
     ) -> DrawResult {
-        let layer = self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, false)?;
+        let layer = self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx)?;
 
         if let Some(layer) = layer {
             draw_ctx.draw_layer(&layer, acquired_nodes, false, viewport)

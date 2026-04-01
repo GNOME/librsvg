@@ -968,7 +968,6 @@ impl ElementTrait for Text {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        _clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let session = draw_ctx.session();
 
@@ -1011,7 +1010,7 @@ impl ElementTrait for Text {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> DrawResult {
-        self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, false)
+        self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx)
             .and_then(|layer| {
                 draw_ctx.draw_layer(layer.as_ref().unwrap(), acquired_nodes, clipping, viewport)
             })

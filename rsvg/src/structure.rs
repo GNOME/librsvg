@@ -64,7 +64,6 @@ impl ElementTrait for Group {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        _clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let mut child_layers = Vec::new();
 
@@ -77,7 +76,6 @@ impl ElementTrait for Group {
                 &CascadedValues::clone_with_node(cascaded, &child),
                 viewport,
                 draw_ctx,
-                false,
             )?;
 
             if let Some(layer) = layer {
@@ -440,7 +438,6 @@ impl ElementTrait for Svg {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        _clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let mut child_layers = Vec::new();
 
@@ -453,7 +450,6 @@ impl ElementTrait for Svg {
                 &CascadedValues::clone_with_node(cascaded, &child),
                 viewport,
                 draw_ctx,
-                false,
             )?;
 
             if let Some(layer) = layer {
@@ -850,14 +846,7 @@ mod tests {
 
         let mut draw_ctx = DrawingCtx::new(Session::default(), &cr, &viewport, config, Vec::new());
 
-        let layout = elt.layout(
-            &a,
-            &mut acquired_nodes,
-            &cascaded,
-            &viewport,
-            &mut draw_ctx,
-            false,
-        );
+        let layout = elt.layout(&a, &mut acquired_nodes, &cascaded, &viewport, &mut draw_ctx);
 
         match layout {
             Ok(Some(Layer {
