@@ -227,9 +227,7 @@ impl Marker {
             &content_viewport,
             None,
             clipping,
-            &mut |an, dc, new_viewport| {
-                node.draw_children(an, &cascaded, new_viewport, dc, clipping)
-            }, // content_viewport
+            &mut |an, dc, new_viewport| node.draw_children(an, &cascaded, new_viewport, dc), // content_viewport
         )
     }
 }

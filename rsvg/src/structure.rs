@@ -53,9 +53,7 @@ impl ElementTrait for Group {
             viewport,
             None,
             clipping,
-            &mut |an, dc, new_viewport| {
-                node.draw_children(an, cascaded, new_viewport, dc, clipping)
-            },
+            &mut |an, dc, new_viewport| node.draw_children(an, cascaded, new_viewport, dc),
         )
     }
 
@@ -431,9 +429,7 @@ impl ElementTrait for Svg {
             viewport,
             Some(layout_viewport),
             clipping,
-            &mut |an, dc, new_viewport| {
-                node.draw_children(an, cascaded, new_viewport, dc, clipping)
-            },
+            &mut |an, dc, new_viewport| node.draw_children(an, cascaded, new_viewport, dc),
         )
     }
 
@@ -800,9 +796,7 @@ impl ElementTrait for Link {
             viewport,
             None,
             clipping,
-            &mut |an, dc, new_viewport| {
-                node.draw_children(an, &cascaded, new_viewport, dc, clipping)
-            },
+            &mut |an, dc, new_viewport| node.draw_children(an, &cascaded, new_viewport, dc),
         )
     }
 }

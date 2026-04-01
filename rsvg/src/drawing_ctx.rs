@@ -748,7 +748,7 @@ impl DrawingCtx {
                 None,
                 false,
                 &mut |an, dc, new_viewport| {
-                    mask_node.draw_children(an, &cascaded, new_viewport, dc, false)
+                    mask_node.draw_children(an, &cascaded, new_viewport, dc)
                 },
             );
 
@@ -1355,13 +1355,7 @@ impl DrawingCtx {
                         None,
                         false,
                         &mut |an, dc, new_viewport| {
-                            pattern_node.draw_children(
-                                an,
-                                &pattern_cascaded,
-                                new_viewport,
-                                dc,
-                                false,
-                            )
+                            pattern_node.draw_children(an, &pattern_cascaded, new_viewport, dc)
                         },
                     )
                 })
@@ -2045,7 +2039,6 @@ impl DrawingCtx {
                         ),
                         new_viewport,
                         dc,
-                        clipping,
                     )
                 },
             )
