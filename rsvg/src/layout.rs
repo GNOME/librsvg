@@ -481,10 +481,16 @@ fn path_from_use_referenced_from_clip_path(
                 ElementData::Ellipse(ref e) => {
                     e.make_path(&params, child_values).to_cairo_path(false)
                 }
-                ElementData::Text(ref e) => {
-                    path_from_text(e, child, &child_cascaded, session, font_options, acquired_nodes, viewport)
-                        .ok()?
-                }
+                ElementData::Text(ref e) => path_from_text(
+                    e,
+                    child,
+                    &child_cascaded,
+                    session,
+                    font_options,
+                    acquired_nodes,
+                    viewport,
+                )
+                .ok()?,
                 _ => unreachable!(
                     "we already checked the allowed types of elements in <use> in <clipPath>"
                 ),
@@ -565,7 +571,16 @@ fn clip_path_item_from_node(
             ElementData::Ellipse(ref e) => e.make_path(params, values).to_cairo_path(false),
             ElementData::Text(ref e) => {
                 let cascaded = CascadedValues::new_from_node(node);
-                path_from_text(e, node, &cascaded, session, font_options, acquired_nodes, viewport).ok()?
+                path_from_text(
+                    e,
+                    node,
+                    &cascaded,
+                    session,
+                    font_options,
+                    acquired_nodes,
+                    viewport,
+                )
+                .ok()?
             }
 
             _ => return None,
