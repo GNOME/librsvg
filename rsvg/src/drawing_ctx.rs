@@ -316,13 +316,8 @@ pub fn draw_tree(
 
     let mut draw_ctx = DrawingCtx::new(session, cr, &initial_viewport, config, drawsub_stack);
 
-    let content_bbox = draw_ctx.draw_node_from_stack(
-        &node,
-        acquired_nodes,
-        &cascaded,
-        &initial_viewport,
-        false,
-    )?;
+    let content_bbox =
+        draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, &initial_viewport)?;
 
     user_bbox.insert(&content_bbox);
 
@@ -748,7 +743,7 @@ impl DrawingCtx {
                 None,
                 false,
                 &mut |an, dc, new_viewport| {
-                    mask_node.draw_children(an, &cascaded, new_viewport, dc, false)
+                    mask_node.draw_children(an, &cascaded, new_viewport, dc)
                 },
             );
 
@@ -1355,13 +1350,7 @@ impl DrawingCtx {
                         None,
                         false,
                         &mut |an, dc, new_viewport| {
-                            pattern_node.draw_children(
-                                an,
-                                &pattern_cascaded,
-                                new_viewport,
-                                dc,
-                                false,
-                            )
+                            pattern_node.draw_children(an, &pattern_cascaded, new_viewport, dc)
                         },
                     )
                 })
@@ -1460,20 +1449,12 @@ impl DrawingCtx {
                 clipping,
                 viewport,
             ),
-            LayerKind::Image(image) => self.draw_image(
-                image,
-                &layer.stacking_ctx,
-                acquired_nodes,
-                clipping,
-                viewport,
-            ),
-            LayerKind::Group(group) => self.draw_group(
-                group,
-                &layer.stacking_ctx,
-                acquired_nodes,
-                clipping,
-                viewport,
-            ),
+            LayerKind::Image(image) => {
+                self.draw_image(image, &layer.stacking_ctx, acquired_nodes, viewport)
+            }
+            LayerKind::Group(group) => {
+                self.draw_group(group, &layer.stacking_ctx, acquired_nodes, viewport)
+            }
         }
     }
 
@@ -1561,13 +1542,7 @@ impl DrawingCtx {
 
                     PaintTarget::Markers => {
                         path_helper.unset();
-                        marker::render_markers_for_shape(
-                            shape,
-                            viewport,
-                            self,
-                            acquired_nodes,
-                            clipping,
-                        )?;
+                        marker::render_markers_for_shape(shape, viewport, self, acquired_nodes)?;
                     }
                 }
             }
@@ -1616,12 +1591,11 @@ impl DrawingCtx {
         image: &Image,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        clipping: bool,
         viewport: &Viewport,
     ) -> DrawResult {
         let image_width = image.surface.width();
         let image_height = image.surface.height();
-        if clipping || image.rect.is_empty() || image_width == 0 || image_height == 0 {
+        if image.rect.is_empty() || image_width == 0 || image_height == 0 {
             return Ok(viewport.empty_bbox());
         }
 
@@ -1646,7 +1620,7 @@ impl DrawingCtx {
                 acquired_nodes,
                 viewport,
                 Some(layout_viewport),
-                clipping,
+                false,
                 &mut |_an, dc, new_viewport| {
                     dc.paint_surface_from_image(image, new_viewport)?;
 
@@ -1663,7 +1637,6 @@ impl DrawingCtx {
         _group: &Group,
         _stacking_ctx: &StackingContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
-        _clipping: bool,
         _viewport: &Viewport,
     ) -> DrawResult {
         unimplemented!();
@@ -1673,10 +1646,10 @@ impl DrawingCtx {
             acquired_nodes,
             viewport,
             group.establish_viewport,
-            clipping,
+            false,
             &mut |an, dc, new_viewport| {
                 for layer in &group.children {
-                    dc.draw_layer(layer, an, clipping, &new_viewport)?;
+                    dc.draw_layer(layer, an, false, &new_viewport)?;
                 }
             },
         )
@@ -1882,7 +1855,7 @@ impl DrawingCtx {
             };
 
             // FIXME: if this returns an error, we will not restore the self.cr as per below
-            let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, &viewport, false)?;
+            let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, &viewport)?;
         }
 
         self.cr = save_cr;
@@ -1896,7 +1869,6 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
-        clipping: bool,
     ) -> DrawResult {
         self.print_stack_depth("DrawingCtx::draw_node_from_stack");
 
@@ -1909,7 +1881,7 @@ impl DrawingCtx {
         };
 
         let res = if draw {
-            node.draw(acquired_nodes, cascaded, viewport, self, clipping)
+            node.draw(acquired_nodes, cascaded, viewport, self, false)
         } else {
             Ok(viewport.empty_bbox())
         };
@@ -2045,7 +2017,6 @@ impl DrawingCtx {
                         ),
                         new_viewport,
                         dc,
-                        clipping,
                     )
                 },
             )

@@ -321,7 +321,6 @@ pub trait NodeDraw {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
     ) -> DrawResult;
 }
 
@@ -379,7 +378,6 @@ impl NodeDraw for Node {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
     ) -> DrawResult {
         draw_ctx.print_stack_depth("Node::draw_children");
 
@@ -391,7 +389,6 @@ impl NodeDraw for Node {
                 acquired_nodes,
                 &CascadedValues::clone_with_node(cascaded, &child),
                 viewport,
-                clipping,
             )?;
             bbox.insert(&child_bbox);
         }

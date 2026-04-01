@@ -32,7 +32,7 @@ impl ElementTrait for Group {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
+        _clipping: bool,
     ) -> DrawResult {
         let values = cascaded.get();
 
@@ -52,10 +52,8 @@ impl ElementTrait for Group {
             acquired_nodes,
             viewport,
             None,
-            clipping,
-            &mut |an, dc, new_viewport| {
-                node.draw_children(an, cascaded, new_viewport, dc, clipping)
-            },
+            false,
+            &mut |an, dc, new_viewport| node.draw_children(an, cascaded, new_viewport, dc),
         )
     }
 
@@ -66,7 +64,6 @@ impl ElementTrait for Group {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let mut child_layers = Vec::new();
 
@@ -79,7 +76,6 @@ impl ElementTrait for Group {
                 &CascadedValues::clone_with_node(cascaded, &child),
                 viewport,
                 draw_ctx,
-                clipping,
             )?;
 
             if let Some(layer) = layer {
@@ -172,7 +168,7 @@ impl ElementTrait for Switch {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
+        _clipping: bool,
     ) -> DrawResult {
         let values = cascaded.get();
 
@@ -198,14 +194,14 @@ impl ElementTrait for Switch {
                 acquired_nodes,
                 viewport,
                 None,
-                clipping,
+                false,
                 &mut |an, dc, new_viewport| {
                     child.draw(
                         an,
                         &CascadedValues::clone_with_node(cascaded, &child),
                         new_viewport,
                         dc,
-                        clipping,
+                        false,
                     )
                 },
             )
@@ -408,7 +404,7 @@ impl ElementTrait for Svg {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
+        _clipping: bool,
     ) -> DrawResult {
         let values = cascaded.get();
 
@@ -430,10 +426,8 @@ impl ElementTrait for Svg {
             acquired_nodes,
             viewport,
             Some(layout_viewport),
-            clipping,
-            &mut |an, dc, new_viewport| {
-                node.draw_children(an, cascaded, new_viewport, dc, clipping)
-            },
+            false,
+            &mut |an, dc, new_viewport| node.draw_children(an, cascaded, new_viewport, dc),
         )
     }
 
@@ -444,7 +438,6 @@ impl ElementTrait for Svg {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let mut child_layers = Vec::new();
 
@@ -457,7 +450,6 @@ impl ElementTrait for Svg {
                 &CascadedValues::clone_with_node(cascaded, &child),
                 viewport,
                 draw_ctx,
-                clipping,
             )?;
 
             if let Some(layer) = layer {
@@ -761,7 +753,7 @@ impl ElementTrait for Link {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
+        _clipping: bool,
     ) -> DrawResult {
         // If this element is inside of <text>, do not draw it.
         // The <text> takes care of it.
@@ -799,10 +791,8 @@ impl ElementTrait for Link {
             acquired_nodes,
             viewport,
             None,
-            clipping,
-            &mut |an, dc, new_viewport| {
-                node.draw_children(an, &cascaded, new_viewport, dc, clipping)
-            },
+            false,
+            &mut |an, dc, new_viewport| node.draw_children(an, &cascaded, new_viewport, dc),
         )
     }
 }
@@ -856,14 +846,7 @@ mod tests {
 
         let mut draw_ctx = DrawingCtx::new(Session::default(), &cr, &viewport, config, Vec::new());
 
-        let layout = elt.layout(
-            &a,
-            &mut acquired_nodes,
-            &cascaded,
-            &viewport,
-            &mut draw_ctx,
-            false,
-        );
+        let layout = elt.layout(&a, &mut acquired_nodes, &cascaded, &viewport, &mut draw_ctx);
 
         match layout {
             Ok(Some(Layer {

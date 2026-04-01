@@ -193,7 +193,6 @@ macro_rules! impl_draw {
             cascaded: &CascadedValues<'_>,
             viewport: &Viewport,
             draw_ctx: &mut DrawingCtx,
-            _clipping: bool,
         ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
             draw_basic_shape(self, node, acquired_nodes, cascaded, viewport, draw_ctx)
         }
@@ -207,7 +206,7 @@ macro_rules! impl_draw {
             draw_ctx: &mut DrawingCtx,
             clipping: bool,
         ) -> DrawResult {
-            self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+            self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx)
                 .and_then(|layer| {
                     if let Some(layer) = layer {
                         draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
