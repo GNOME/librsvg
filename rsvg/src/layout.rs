@@ -55,7 +55,6 @@ pub struct StackingContext {
     pub opacity: Opacity,
     pub filter: Option<Filter>,
     pub clip_rect: Option<Rect>,
-    pub clip_in_user_space: Option<Node>,
     pub clip_in_object_space: Option<Node>,
     pub clip_path: Option<ClipPath>,
     pub mask: Option<Node>,
@@ -697,7 +696,7 @@ impl StackingContext {
 
         let element_name = format!("{element}");
 
-        let (clip_in_user_space, clip_in_object_space) =
+        let (_, clip_in_object_space) =
             resolve_clip_path(values, acquired_nodes, &element_name);
 
         let mask = values.mask().0.get().and_then(|mask_id| {
@@ -739,7 +738,6 @@ impl StackingContext {
             opacity,
             filter,
             clip_rect,
-            clip_in_user_space,
             clip_in_object_space,
             clip_path,
             mask,

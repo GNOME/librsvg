@@ -898,16 +898,6 @@ impl DrawingCtx {
                     self.apply_clip_path(&viewport, clip_path)?;
                 }
 
-                // Here we are clipping in user space, so the bbox doesn't matter
-                /*
-                    self.clip_to_node(
-                        &stacking_ctx.clip_in_user_space,
-                        acquired_nodes,
-                        &viewport,
-                        &viewport.empty_bbox(),
-                )?;
-                    */
-
                 let res = if stacking_ctx.should_isolate() {
                     self.print_stack_depth("DrawingCtx::draw_layer_internal should_isolate=true");
 
