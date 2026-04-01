@@ -389,7 +389,6 @@ impl NodeDraw for Node {
                 acquired_nodes,
                 &CascadedValues::clone_with_node(cascaded, &child),
                 viewport,
-                false,
             )?;
             bbox.insert(&child_bbox);
         }

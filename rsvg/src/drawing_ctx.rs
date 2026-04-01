@@ -316,13 +316,8 @@ pub fn draw_tree(
 
     let mut draw_ctx = DrawingCtx::new(session, cr, &initial_viewport, config, drawsub_stack);
 
-    let content_bbox = draw_ctx.draw_node_from_stack(
-        &node,
-        acquired_nodes,
-        &cascaded,
-        &initial_viewport,
-        false,
-    )?;
+    let content_bbox =
+        draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, &initial_viewport)?;
 
     user_bbox.insert(&content_bbox);
 
@@ -1860,7 +1855,7 @@ impl DrawingCtx {
             };
 
             // FIXME: if this returns an error, we will not restore the self.cr as per below
-            let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, &viewport, false)?;
+            let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, &viewport)?;
         }
 
         self.cr = save_cr;
@@ -1874,7 +1869,6 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
-        clipping: bool,
     ) -> DrawResult {
         self.print_stack_depth("DrawingCtx::draw_node_from_stack");
 
@@ -1887,7 +1881,7 @@ impl DrawingCtx {
         };
 
         let res = if draw {
-            node.draw(acquired_nodes, cascaded, viewport, self, clipping)
+            node.draw(acquired_nodes, cascaded, viewport, self, false)
         } else {
             Ok(viewport.empty_bbox())
         };
