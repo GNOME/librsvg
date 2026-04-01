@@ -612,15 +612,14 @@ fn layout_paths_for_clip_path(
         .collect()
 }
 
-/// Returns (clip_in_user_space, clip_in_object_space)
 fn resolve_object_space_clip_path(
     values: &ComputedValues,
     acquired_nodes: &mut AcquiredNodes<'_>,
     referencing_element_name: &str,
-) -> (Option<Node>, Option<Node>) {
+) -> Option<Node> {
     let clip_path = values.clip_path();
     let clip_uri = clip_path.0.get();
-    let (clip_in_user_space, clip_in_object_space) = clip_uri
+    clip_uri
         .and_then(|node_id| {
             acquired_nodes
                 .acquire(referencing_element_name, node_id)
@@ -633,13 +632,11 @@ fn resolve_object_space_clip_path(
             let units = borrow_element_as!(clip_node, ClipPath).get_units();
 
             match units {
-                CoordUnits::UserSpaceOnUse => (Some(clip_node), None),
-                CoordUnits::ObjectBoundingBox => (None, Some(clip_node)),
+                CoordUnits::UserSpaceOnUse => None,
+                CoordUnits::ObjectBoundingBox => Some(clip_node),
             }
         })
-        .unwrap_or((None, None));
-
-    (clip_in_user_space, clip_in_object_space)
+        .unwrap_or(None)
 }
 
 impl StackingContext {
@@ -696,7 +693,7 @@ impl StackingContext {
 
         let element_name = format!("{element}");
 
-        let (_, clip_in_object_space) =
+        let clip_in_object_space =
             resolve_object_space_clip_path(values, acquired_nodes, &element_name);
 
         let mask = values.mask().0.get().and_then(|mask_id| {
