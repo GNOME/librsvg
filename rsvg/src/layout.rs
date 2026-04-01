@@ -613,7 +613,7 @@ fn layout_paths_for_clip_path(
 }
 
 /// Returns (clip_in_user_space, clip_in_object_space)
-fn resolve_clip_path(
+fn resolve_object_space_clip_path(
     values: &ComputedValues,
     acquired_nodes: &mut AcquiredNodes<'_>,
     referencing_element_name: &str,
@@ -697,7 +697,7 @@ impl StackingContext {
         let element_name = format!("{element}");
 
         let (_, clip_in_object_space) =
-            resolve_clip_path(values, acquired_nodes, &element_name);
+            resolve_object_space_clip_path(values, acquired_nodes, &element_name);
 
         let mask = values.mask().0.get().and_then(|mask_id| {
             if let Ok(acquired) = acquired_nodes.acquire(&element_name, mask_id) {
