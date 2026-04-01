@@ -83,6 +83,7 @@ struct Span {
     dy: f64,
     _depth: usize,
     link_target: Option<String>,
+    span_element_name: Rc<String>,
 }
 
 struct MeasuredSpan {
@@ -93,6 +94,7 @@ struct MeasuredSpan {
     dx: f64,
     dy: f64,
     link_target: Option<String>,
+    span_element_name: Rc<String>,
 }
 
 struct PositionedSpan {
@@ -101,6 +103,7 @@ struct PositionedSpan {
     rendered_position: (f64, f64),
     next_span_position: (f64, f64),
     link_target: Option<String>,
+    span_element_name: Rc<String>,
 }
 
 /// A laid-out and resolved text span.
@@ -239,6 +242,7 @@ impl PositionedChunk {
                 rendered_position,
                 next_span_position: (x, y),
                 link_target: mspan.link_target.clone(),
+                span_element_name: mspan.span_element_name.clone(),
             };
 
             positioned.push(positioned_span);
@@ -385,6 +389,7 @@ fn text_anchor_offset(
 impl Span {
     fn new(
         text: &str,
+        span_element_name: Rc<String>,
         values: Rc<ComputedValues>,
         dx: f64,
         dy: f64,
@@ -398,6 +403,7 @@ impl Span {
             dy,
             _depth: depth,
             link_target,
+            span_element_name,
         }
     }
 }
@@ -453,6 +459,7 @@ impl MeasuredSpan {
                 dx: span.dx,
                 dy: span.dy,
                 link_target: span.link_target.clone(),
+                span_element_name: span.span_element_name.clone(),
             })
         } else {
             None
@@ -523,6 +530,7 @@ impl PositionedSpan {
 
         let stroke_paint = self.values.stroke().0.resolve(
             acquired_nodes,
+            &self.span_element_name,
             self.values.stroke_opacity().0,
             self.values.color().0,
             None,
@@ -532,6 +540,7 @@ impl PositionedSpan {
 
         let fill_paint = self.values.fill().0.resolve(
             acquired_nodes,
+            &self.span_element_name,
             self.values.fill_opacity().0,
             self.values.color().0,
             None,
@@ -577,11 +586,14 @@ fn children_to_chunks(
     let mut dx = dx;
     let mut dy = dy;
 
+    let node_name = Rc::new(format!("{node}"));
+
     for child in node.children() {
         if child.is_chars() {
             let values = cascaded.get();
             child.borrow_chars().to_chunks(
                 &child,
+                node_name.clone(),
                 Rc::new(values.clone()),
                 chunks,
                 dx,
@@ -720,6 +732,7 @@ impl Chars {
     fn make_span(
         &self,
         node: &Node,
+        span_element_name: Rc<String>,
         values: Rc<ComputedValues>,
         dx: f64,
         dy: f64,
@@ -730,6 +743,7 @@ impl Chars {
 
         Span::new(
             self.space_normalized.borrow().as_ref().unwrap(),
+            span_element_name,
             values,
             dx,
             dy,
@@ -741,6 +755,7 @@ impl Chars {
     fn to_chunks(
         &self,
         node: &Node,
+        span_element_name: Rc<String>,
         values: Rc<ComputedValues>,
         chunks: &mut [Chunk],
         dx: f64,
@@ -748,7 +763,7 @@ impl Chars {
         depth: usize,
         link_target: Option<String>,
     ) {
-        let span = self.make_span(node, values, dx, dy, depth, link_target);
+        let span = self.make_span(node, span_element_name, values, dx, dy, depth, link_target);
         let num_chunks = chunks.len();
         assert!(num_chunks > 0);
 
@@ -800,6 +815,106 @@ impl Text {
             None,
         );
         chunks
+    }
+
+    pub fn layout_text_spans(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        font_options: FontOptions,
+        session: &Session,
+    ) -> layout::Text {
+        let values = cascaded.get();
+        let params = NormalizeParams::new(values, viewport);
+
+        let layout_context = LayoutContext {
+            writing_mode: values.writing_mode(),
+            font_options,
+            viewport: *viewport,
+            session: session.clone(),
+        };
+
+        let mut x = self.x.to_user(&params);
+        let mut y = self.y.to_user(&params);
+
+        let chunks = self.make_chunks(node, acquired_nodes, cascaded, &layout_context, x, y);
+
+        let mut measured_chunks = Vec::new();
+        for chunk in &chunks {
+            measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk));
+        }
+
+        let mut positioned_chunks = Vec::new();
+        for chunk in &measured_chunks {
+            let chunk_x = chunk.x.unwrap_or(x);
+            let chunk_y = chunk.y.unwrap_or(y);
+
+            let positioned =
+                PositionedChunk::from_measured(&layout_context, chunk, chunk_x, chunk_y);
+
+            x = positioned.next_chunk_x;
+            y = positioned.next_chunk_y;
+
+            positioned_chunks.push(positioned);
+        }
+
+        let mut layout_spans = Vec::new();
+        for chunk in &positioned_chunks {
+            for span in &chunk.spans {
+                layout_spans.push(span.layout(&layout_context, acquired_nodes));
+            }
+        }
+
+        let text_extents: Option<Rect> = layout_spans
+            .iter()
+            .map(|span| span.extents)
+            .reduce(|a, b| match (a, b) {
+                (None, None) => None,
+                (None, Some(b)) => Some(b),
+                (Some(a), None) => Some(a),
+                (Some(a), Some(b)) => Some(a.union(&b)),
+            })
+            .flatten();
+
+        let mut text_spans = Vec::new();
+        for span in layout_spans {
+            let normalize_values = NormalizeValues::new(&span.values);
+
+            let stroke_paint = span.stroke_paint.to_user_space(
+                &text_extents,
+                &layout_context.viewport,
+                &normalize_values,
+            );
+            let fill_paint = span.fill_paint.to_user_space(
+                &text_extents,
+                &layout_context.viewport,
+                &normalize_values,
+            );
+
+            let text_span = TextSpan {
+                layout: span.layout,
+                gravity: span.gravity,
+                extents: span.extents,
+                is_visible: span.is_visible,
+                x: span.x,
+                y: span.y,
+                paint_order: span.paint_order,
+                stroke: span.stroke,
+                stroke_paint,
+                fill_paint,
+                text_rendering: span.text_rendering,
+                link_target: span.link_target,
+            };
+
+            text_spans.push(text_span);
+        }
+
+        layout::Text {
+            spans: text_spans,
+            extents: text_extents,
+        }
     }
 }
 
@@ -855,110 +970,31 @@ impl ElementTrait for Text {
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
+        let session = draw_ctx.session();
+
         let values = cascaded.get();
-        let params = NormalizeParams::new(values, viewport);
 
         let elt = node.borrow_element();
 
-        let session = draw_ctx.session().clone();
-
         let stacking_ctx = StackingContext::new(
-            &session,
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
             None,
             values,
+            viewport,
         );
 
-        let layout_text = {
-            let layout_context = LayoutContext {
-                writing_mode: values.writing_mode(),
-                font_options: draw_ctx.get_font_options(),
-                viewport: *viewport,
-                session: session.clone(),
-            };
-
-            let mut x = self.x.to_user(&params);
-            let mut y = self.y.to_user(&params);
-
-            let chunks = self.make_chunks(node, acquired_nodes, cascaded, &layout_context, x, y);
-
-            let mut measured_chunks = Vec::new();
-            for chunk in &chunks {
-                measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk));
-            }
-
-            let mut positioned_chunks = Vec::new();
-            for chunk in &measured_chunks {
-                let chunk_x = chunk.x.unwrap_or(x);
-                let chunk_y = chunk.y.unwrap_or(y);
-
-                let positioned =
-                    PositionedChunk::from_measured(&layout_context, chunk, chunk_x, chunk_y);
-
-                x = positioned.next_chunk_x;
-                y = positioned.next_chunk_y;
-
-                positioned_chunks.push(positioned);
-            }
-
-            let mut layout_spans = Vec::new();
-            for chunk in &positioned_chunks {
-                for span in &chunk.spans {
-                    layout_spans.push(span.layout(&layout_context, acquired_nodes));
-                }
-            }
-
-            let text_extents: Option<Rect> = layout_spans
-                .iter()
-                .map(|span| span.extents)
-                .reduce(|a, b| match (a, b) {
-                    (None, None) => None,
-                    (None, Some(b)) => Some(b),
-                    (Some(a), None) => Some(a),
-                    (Some(a), Some(b)) => Some(a.union(&b)),
-                })
-                .flatten();
-
-            let mut text_spans = Vec::new();
-            for span in layout_spans {
-                let normalize_values = NormalizeValues::new(&span.values);
-
-                let stroke_paint = span.stroke_paint.to_user_space(
-                    &text_extents,
-                    &layout_context.viewport,
-                    &normalize_values,
-                );
-                let fill_paint = span.fill_paint.to_user_space(
-                    &text_extents,
-                    &layout_context.viewport,
-                    &normalize_values,
-                );
-
-                let text_span = TextSpan {
-                    layout: span.layout,
-                    gravity: span.gravity,
-                    extents: span.extents,
-                    is_visible: span.is_visible,
-                    x: span.x,
-                    y: span.y,
-                    paint_order: span.paint_order,
-                    stroke: span.stroke,
-                    stroke_paint,
-                    fill_paint,
-                    text_rendering: span.text_rendering,
-                    link_target: span.link_target,
-                };
-
-                text_spans.push(text_span);
-            }
-
-            layout::Text {
-                spans: text_spans,
-                extents: text_extents,
-            }
-        };
+        let font_options = draw_ctx.get_font_options();
+        let layout_text = self.layout_text_spans(
+            node,
+            acquired_nodes,
+            cascaded,
+            viewport,
+            font_options,
+            session,
+        );
 
         Ok(Some(Layer {
             kind: LayerKind::Text(Box::new(layout_text)),
@@ -1008,7 +1044,9 @@ impl TRef {
             return;
         }
 
-        if let Ok(acquired) = acquired_nodes.acquire(link) {
+        let tref_element_name = format!("{node}");
+
+        if let Ok(acquired) = acquired_nodes.acquire(&tref_element_name, link) {
             let c = acquired.get();
             extract_chars_children_to_chunks_recursively(chunks, c, Rc::new(values.clone()), depth);
         } else {
@@ -1032,9 +1070,17 @@ fn extract_chars_children_to_chunks_recursively(
         let values = values.clone();
 
         if child.is_chars() {
-            child
-                .borrow_chars()
-                .to_chunks(&child, values, chunks, 0.0, 0.0, depth, None)
+            let span_element_name = Rc::new(format!("{node}"));
+            child.borrow_chars().to_chunks(
+                &child,
+                span_element_name,
+                values,
+                chunks,
+                0.0,
+                0.0,
+                depth,
+                None,
+            )
         } else {
             extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1)
         }

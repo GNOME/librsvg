@@ -125,7 +125,7 @@ impl FilterValue {
         current_color: Color,
         viewport: &Viewport,
         session: &Session,
-        node_being_filtered_name: &str,
+        element_being_filtered: &str,
     ) -> Result<FilterSpec, FilterResolveError> {
         match *self {
             FilterValue::Url(ref node_id) => filter_spec_from_filter_node(
@@ -133,7 +133,7 @@ impl FilterValue {
                 viewport,
                 session,
                 node_id,
-                node_being_filtered_name,
+                element_being_filtered,
             ),
 
             FilterValue::Function(ref func) => {
@@ -246,17 +246,17 @@ fn filter_spec_from_filter_node(
     viewport: &Viewport,
     session: &Session,
     node_id: &NodeId,
-    node_being_filtered_name: &str,
+    element_being_filtered: &str,
 ) -> Result<FilterSpec, FilterResolveError> {
     let filter_viewport = ViewportGen::new(viewport);
 
     acquired_nodes
-        .acquire(node_id)
+        .acquire(element_being_filtered, node_id)
         .map_err(|e| {
             rsvg_log!(
                 *session,
                 "element {} will not be filtered with \"{}\": {}",
-                node_being_filtered_name,
+                element_being_filtered,
                 node_id,
                 e
             );
@@ -274,7 +274,7 @@ fn filter_spec_from_filter_node(
                     rsvg_log!(
                         *session,
                         "element {} will not be filtered since \"{}\" is not a filter",
-                        node_being_filtered_name,
+                        element_being_filtered,
                         node_id,
                     );
                     Err(FilterResolveError::ReferenceToNonFilterElement)

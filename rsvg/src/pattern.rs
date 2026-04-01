@@ -467,7 +467,8 @@ impl Pattern {
 
         while !pattern.is_resolved() {
             if let Some(ref node_id) = fallback {
-                match acquired_nodes.acquire(node_id) {
+                let node_name = format!("{node}");
+                match acquired_nodes.acquire(&node_name, node_id) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -483,7 +484,10 @@ impl Pattern {
 
                                 stack.push(acquired_node);
                             }
-                            _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),
+                            _ => {
+                                rsvg_log!(session, "{acquired_node} is not a pattern; ignoring");
+                                return Err(AcquireError::InvalidLinkType(node_id.clone()));
+                            }
                         }
                     }
 

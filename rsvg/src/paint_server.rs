@@ -135,6 +135,7 @@ impl PaintServer {
     pub fn resolve(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        referencing_element_name: &str,
         opacity: UnitInterval,
         current_color: Color,
         context_fill: Option<Rc<PaintSource>>,
@@ -143,14 +144,14 @@ impl PaintServer {
     ) -> Rc<PaintSource> {
         match self {
             PaintServer::Iri { iri, alternate } => acquired_nodes
-                .acquire(iri)
+                .acquire(referencing_element_name, iri)
                 .and_then(|acquired| {
                     let node = acquired.get();
                     assert!(node.is_element());
 
                     match *node.borrow_element_data() {
                         ElementData::LinearGradient(ref g) => {
-                            g.resolve(node, acquired_nodes, opacity).map(|g| {
+                            g.resolve(node, acquired_nodes, opacity, session).map(|g| {
                                 Rc::new(PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, &current_color)),
@@ -166,14 +167,17 @@ impl PaintServer {
                             })
                         }
                         ElementData::RadialGradient(ref g) => {
-                            g.resolve(node, acquired_nodes, opacity).map(|g| {
+                            g.resolve(node, acquired_nodes, opacity, session).map(|g| {
                                 Rc::new(PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, &current_color)),
                                 ))
                             })
                         }
-                        _ => Err(AcquireError::InvalidLinkType(iri.as_ref().clone())),
+                        _ => {
+                            rsvg_log!(session, "{node} is not a gradient or pattern, ignoring");
+                            Err(AcquireError::InvalidLinkType(iri.as_ref().clone()))
+                        }
                     }
                 })
                 .unwrap_or_else(|_| match alternate {

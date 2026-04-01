@@ -22,8 +22,8 @@ use crate::filters::{self, FilterPlan, FilterSpec, InputRequirements};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
-    Filter, Group, Image, Layer, LayerKind, LayoutViewport, Shape, StackingContext, Stroke, Text,
-    TextSpan,
+    ClipPath, Filter, Group, Image, Layer, LayerKind, LayoutViewport, Shape, StackingContext,
+    Stroke, Text, TextSpan, element_can_be_used_inside_use_inside_clip_path,
 };
 use crate::length::*;
 use crate::limits;
@@ -49,8 +49,23 @@ use crate::{borrow_element_as, is_element_of_type};
 /// Opaque font options for a DrawingCtx.
 ///
 /// This is used for DrawingCtx::create_pango_context.
+#[derive(Clone)]
 pub struct FontOptions {
     options: cairo::FontOptions,
+}
+
+impl FontOptions {
+    pub fn new(testing: bool) -> FontOptions {
+        let mut options = cairo::FontOptions::new().unwrap();
+        if testing {
+            options.set_antialias(cairo::Antialias::Gray);
+        }
+
+        options.set_hint_style(cairo::HintStyle::None);
+        options.set_hint_metrics(cairo::HintMetrics::Off);
+
+        FontOptions { options }
+    }
 }
 
 /// Set path on the cairo context, or clear it.
@@ -597,6 +612,55 @@ impl DrawingCtx {
         Ok(())
     }
 
+    /// Sets up the `self.cr` with a clipping path.
+    ///
+    /// This composes all the clipping paths in a `clipPath` element and eventually calls
+    /// `self.cr.clip()`.  Note that this is not enough to represent SVG clip paths, which
+    /// can be added together; Cairo can only shrink clip paths, not take their union.
+    fn apply_clip_path(
+        &mut self,
+        viewport: &Viewport,
+        clip_path: &ClipPath,
+    ) -> Result<(), Box<InternalRenderingError>> {
+        // For every path in the ClipPath, we:
+        //   - apply the path's transform
+        //   - recursively clip the path against its own ClipPath
+        //   - apply the path
+        //
+        // At the end, we cr.clip().  Cairo cannot take the untion of clip-paths, just their
+        // intersections, so the following is not completely correct.  We'll unify clip paths
+        // and masks at some point by doing everything with alpha masks.
+
+        let orig_transform = self.cr.matrix();
+
+        let clip_path_transform = ValidTransform::try_from(clip_path.transform)?;
+        let viewport_for_clip_path = viewport.with_composed_transform(clip_path_transform)?;
+
+        if let Some(ref recursive_clip_path) = clip_path.clip_path {
+            self.apply_clip_path(&viewport_for_clip_path, recursive_clip_path)?;
+        }
+
+        for path_item in clip_path.paths.iter() {
+            let item_transform = ValidTransform::try_from(path_item.transform)?;
+            let viewport_for_item =
+                viewport_for_clip_path.with_composed_transform(item_transform)?;
+            self.cr.set_matrix(viewport_for_item.transform.into());
+
+            if let Some(ref recursive_clip_path) = path_item.clip_path {
+                self.apply_clip_path(&viewport_for_item, recursive_clip_path)?;
+            }
+
+            self.cr
+                .set_fill_rule(cairo::FillRule::from(path_item.clip_rule));
+            path_item.path.to_cairo_context(&self.cr)?;
+        }
+
+        self.cr.clip();
+        self.cr.set_matrix(orig_transform);
+
+        Ok(())
+    }
+
     fn generate_cairo_mask(
         &mut self,
         mask_node: &Node,
@@ -614,12 +678,7 @@ impl DrawingCtx {
         let _mask_acquired = match acquired_nodes.acquire_ref(mask_node) {
             Ok(n) => n,
 
-            Err(AcquireError::CircularReference(_)) => {
-                rsvg_log!(self.session, "circular reference in element {}", mask_node);
-                return Ok(None);
-            }
-
-            _ => unreachable!(),
+            _ => return Ok(None),
         };
 
         let mask_element = mask_node.borrow_element();
@@ -671,12 +730,13 @@ impl DrawingCtx {
             let mut mask_draw_ctx = self.nested(mask_cr);
 
             let stacking_ctx = Box::new(StackingContext::new(
-                self.session(),
+                self,
                 acquired_nodes,
                 &mask_element,
                 Transform::identity(),
                 None,
                 values,
+                viewport,
             ));
 
             rsvg_log!(self.session, "(mask {}", mask_element);
@@ -832,13 +892,11 @@ impl DrawingCtx {
                     clip_to_rectangle(&self.cr, &viewport.transform, rect);
                 }
 
-                // Here we are clipping in user space, so the bbox doesn't matter
-                self.clip_to_node(
-                    &stacking_ctx.clip_in_user_space,
-                    acquired_nodes,
-                    &viewport,
-                    &viewport.empty_bbox(),
-                )?;
+                if let Some(ref clip_path) = stacking_ctx.clip_path
+                    && clip_path.clip_units == CoordUnits::UserSpaceOnUse
+                {
+                    self.apply_clip_path(&viewport, clip_path)?;
+                }
 
                 let res = if stacking_ctx.should_isolate() {
                     self.print_stack_depth("DrawingCtx::draw_layer_internal should_isolate=true");
@@ -916,7 +974,19 @@ impl DrawingCtx {
                         .set_matrix(ValidTransform::try_from(affines.compositing)?.into());
                     self.cr.set_source_surface(&source_surface, 0.0, 0.0)?;
 
-                    // Clip
+                    // Clip in object space
+                    /*
+                        if let Some(ref clip_path) = stacking_ctx.clip_path {
+                            if clip_path.clip_units == CoordUnits::ObjectBoundingBox {
+                                let transform_for_clip =
+                                    ValidTransform::try_from(affines.outside_temporary_surface)?;
+
+                                let viewport_for_clip = viewport.with_explicit_transform(transform_for_clip);
+
+                                self.apply_clip_path(&viewport_for_clip, clip_path)?;
+                            }
+                    }
+                        */
 
                     let transform_for_clip =
                         ValidTransform::try_from(affines.outside_temporary_surface)?;
@@ -1267,12 +1337,13 @@ impl DrawingCtx {
             let elt = pattern_node.borrow_element();
 
             let stacking_ctx = Box::new(StackingContext::new(
-                self.session(),
+                self,
                 acquired_nodes,
                 &elt,
                 Transform::identity(),
                 None,
                 pattern_values,
+                viewport,
             ));
 
             pattern_draw_ctx
@@ -1869,11 +1940,10 @@ impl DrawingCtx {
         // another <use> which references the first one, etc.).  So,
         // we acquire the <use> element itself so that circular
         // references can be caught.
-        let _self_acquired = match acquired_nodes.acquire_ref(node) {
+        let _use_acquired = match acquired_nodes.acquire_ref(node) {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(circular)) => {
-                rsvg_log!(self.session, "circular reference in element {}", circular);
                 return Err(Box::new(InternalRenderingError::CircularReference(
                     circular,
                 )));
@@ -1882,16 +1952,13 @@ impl DrawingCtx {
             _ => unreachable!(),
         };
 
-        let acquired = match acquired_nodes.acquire(link) {
+        let use_element = node.borrow_element();
+        let use_element_name = format!("{use_element}");
+
+        let acquired = match acquired_nodes.acquire(&use_element_name, link) {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(circular)) => {
-                rsvg_log!(
-                    self.session,
-                    "circular reference from {} to element {}",
-                    node,
-                    circular
-                );
                 return Err(Box::new(InternalRenderingError::CircularReference(
                     circular,
                 )));
@@ -1905,13 +1972,7 @@ impl DrawingCtx {
 
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
 
-            Err(AcquireError::LinkNotFound(node_id)) => {
-                rsvg_log!(
-                    self.session,
-                    "element {} references nonexistent \"{}\"",
-                    node,
-                    node_id
-                );
+            Err(AcquireError::LinkNotFound(_)) => {
                 return Ok(viewport.empty_bbox());
             }
         };
@@ -1930,8 +1991,6 @@ impl DrawingCtx {
 
         let use_transform = ValidTransform::try_from(values.transform())?;
         let use_viewport = viewport.with_composed_transform(use_transform)?;
-
-        let use_element = node.borrow_element();
 
         let defines_a_viewport = if is_element_of_type!(child, Symbol) {
             let symbol = borrow_element_as!(child, Symbol);
@@ -1953,12 +2012,13 @@ impl DrawingCtx {
             let child_values = elt.get_computed_values();
 
             let stacking_ctx = Box::new(StackingContext::new(
-                self.session(),
+                self,
                 acquired_nodes,
                 &use_element,
                 Transform::identity(),
                 None,
                 values,
+                viewport,
             ));
 
             let layout_viewport = LayoutViewport {
@@ -1993,12 +2053,13 @@ impl DrawingCtx {
             // otherwise the referenced node is not a <symbol>; process it generically
 
             let stacking_ctx = Box::new(StackingContext::new(
-                self.session(),
+                self,
                 acquired_nodes,
                 &use_element,
                 Transform::new_translate(use_rect.x0, use_rect.y0),
                 None,
                 values,
+                viewport,
             ));
 
             self.with_discrete_layer(
@@ -2037,15 +2098,7 @@ impl DrawingCtx {
     ///
     /// You can use the font options later with create_pango_context().
     pub fn get_font_options(&self) -> FontOptions {
-        let mut options = cairo::FontOptions::new().unwrap();
-        if self.config.testing {
-            options.set_antialias(cairo::Antialias::Gray);
-        }
-
-        options.set_hint_style(cairo::HintStyle::None);
-        options.set_hint_metrics(cairo::HintMetrics::Off);
-
-        FontOptions { options }
+        FontOptions::new(self.config.testing)
     }
 }
 
@@ -2173,7 +2226,7 @@ fn pango_layout_to_cairo(
 }
 
 /// Converts a Pango layout to a CairoPath starting at (x, y).
-fn pango_layout_to_cairo_path(
+pub fn pango_layout_to_cairo_path(
     x: f64,
     y: f64,
     layout: &pango::Layout,
@@ -2203,16 +2256,6 @@ fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
             | Rect(_)
             | Text(_)
             | Use(_)
-    )
-}
-
-// https://www.w3.org/TR/css-masking-1/#ClipPathElement
-fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
-    use ElementData::*;
-
-    matches!(
-        element.element_data,
-        Circle(_) | Ellipse(_) | Line(_) | Path(_) | Polygon(_) | Polyline(_) | Rect(_) | Text(_)
     )
 }
 

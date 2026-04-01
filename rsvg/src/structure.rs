@@ -38,12 +38,13 @@ impl ElementTrait for Group {
 
         let elt = node.borrow_element();
         let stacking_ctx = Box::new(StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
             None,
             values,
+            viewport,
         ));
 
         draw_ctx.with_discrete_layer(
@@ -87,11 +88,12 @@ impl ElementTrait for Group {
         }
 
         self.layout_with_children(
-            draw_ctx.session(),
+            draw_ctx,
             node,
             acquired_nodes,
             cascaded,
             child_layers,
+            viewport,
         )
     }
 }
@@ -114,11 +116,12 @@ fn extents_of_transformed_children(layers: &[Layer]) -> Option<Rect> {
 impl Group {
     fn layout_with_children(
         &self,
-        session: &Session,
+        draw_ctx: &DrawingCtx,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         child_layers: Vec<Layer>,
+        viewport: &Viewport,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
         let values = cascaded.get();
 
@@ -132,12 +135,13 @@ impl Group {
 
         let elt = node.borrow_element();
         let stacking_ctx = StackingContext::new(
-            session,
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
             None,
             values,
+            viewport,
         );
 
         Ok(Some(Layer {
@@ -180,12 +184,13 @@ impl ElementTrait for Switch {
 
         if let Some(child) = child_that_matches {
             let stacking_ctx = Box::new(StackingContext::new(
-                draw_ctx.session(),
+                draw_ctx,
                 acquired_nodes,
                 &switch_elt,
                 values.transform(),
                 None,
                 values,
+                viewport,
             ));
 
             draw_ctx.with_discrete_layer(
@@ -409,12 +414,13 @@ impl ElementTrait for Svg {
 
         let elt = node.borrow_element();
         let stacking_ctx = Box::new(StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
             None,
             values,
+            viewport,
         ));
 
         let layout_viewport = self.make_svg_viewport(node, cascaded, viewport, draw_ctx);
@@ -472,12 +478,13 @@ impl ElementTrait for Svg {
 
         let elt = node.borrow_element();
         let stacking_ctx = StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
             None,
             values,
+            viewport,
         );
 
         Ok(Some(Layer {
@@ -497,13 +504,17 @@ pub struct Use {
 }
 
 impl Use {
-    fn get_rect(&self, params: &NormalizeParams) -> Rect {
+    pub fn get_rect(&self, params: &NormalizeParams) -> Rect {
         let x = self.x.to_user(params);
         let y = self.y.to_user(params);
         let w = self.width.to_user(params);
         let h = self.height.to_user(params);
 
         Rect::new(x, y, x + w, y + h)
+    }
+
+    pub fn get_link(&self) -> Option<NodeId> {
+        self.link.clone()
     }
 }
 
@@ -559,8 +570,11 @@ impl ElementTrait for Use {
             let params = NormalizeParams::new(values, viewport);
             let rect = self.get_rect(&params);
 
+            let use_node_name = format!("{node}");
+
             let stroke_paint = values.stroke().0.resolve(
                 acquired_nodes,
+                &use_node_name,
                 values.stroke_opacity().0,
                 values.color().0,
                 cascaded.context_fill.clone(),
@@ -570,6 +584,7 @@ impl ElementTrait for Use {
 
             let fill_paint = values.fill().0.resolve(
                 acquired_nodes,
+                &use_node_name,
                 values.fill_opacity().0,
                 values.color().0,
                 cascaded.context_fill.clone(),
@@ -770,11 +785,12 @@ impl ElementTrait for Link {
         };
 
         let stacking_ctx = Box::new(StackingContext::new_with_link(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             values.transform(),
             values,
+            viewport,
             link_target,
         ));
 

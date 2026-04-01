@@ -16,6 +16,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
 use crate::rect::{Rect, rect_to_transform};
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
@@ -575,6 +576,7 @@ macro_rules! impl_gradient {
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 opacity: UnitInterval,
+                session: &Session,
             ) -> Result<ResolvedGradient, AcquireError> {
                 let Unresolved {
                     mut gradient,
@@ -585,7 +587,8 @@ macro_rules! impl_gradient {
 
                 while !gradient.is_resolved() {
                     if let Some(node_id) = fallback {
-                        let acquired = acquired_nodes.acquire(&node_id)?;
+                        let node_name = format!("{node}");
+                        let acquired = acquired_nodes.acquire(&node_name, &node_id)?;
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
@@ -599,7 +602,10 @@ macro_rules! impl_gradient {
                             ElementData::$other_type(ref g) => {
                                 g.get_unresolved(&acquired_node, opacity)
                             }
-                            _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),
+                            _ => {
+                                rsvg_log!(session, "{acquired_node} is not a gradient; ignoring");
+                                return Err(AcquireError::InvalidLinkType(node_id.clone()));
+                            }
                         };
 
                         gradient = gradient.resolve_from_fallback(&unresolved.gradient);

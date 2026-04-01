@@ -297,8 +297,10 @@ impl FilterEffect for FeImage {
 
             Some(ref s) => {
                 if let Ok(node_id) = NodeId::parse(s) {
+                    let feimage_element_name = format!("{node}");
+
                     acquired_nodes
-                        .acquire(&node_id)
+                        .acquire(&feimage_element_name, &node_id)
                         .map(|acquired| Source::Node(acquired.get().clone(), s.clone()))
                         .unwrap_or(Source::None)
                 } else {

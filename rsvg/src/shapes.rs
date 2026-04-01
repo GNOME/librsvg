@@ -41,6 +41,11 @@ impl ShapeDef {
 }
 
 trait BasicShape {
+    /// Creates a complete shape definition.
+    ///
+    /// This function can simply call `ShapeDef::new(self.make_path(params, values), Markers::*)`
+    /// with the `Markers` being set to the appropriate value, depending on whether the shape
+    /// produces markers or not.
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef;
 }
 
@@ -50,8 +55,10 @@ fn draw_basic_shape(
     acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
     viewport: &Viewport,
-    session: &Session,
+    draw_ctx: &DrawingCtx,
 ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
+    let session = draw_ctx.session();
+
     let values = cascaded.get();
     let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
@@ -67,9 +74,11 @@ fn draw_basic_shape(
     };
 
     let paint_order = values.paint_order();
+    let shape_element_name = format!("{node}");
 
     let stroke_paint = values.stroke().0.resolve(
         acquired_nodes,
+        &shape_element_name,
         values.stroke_opacity().0,
         values.color().0,
         cascaded.context_fill.clone(),
@@ -79,6 +88,7 @@ fn draw_basic_shape(
 
     let fill_paint = values.fill().0.resolve(
         acquired_nodes,
+        &shape_element_name,
         values.fill_opacity().0,
         values.color().0,
         cascaded.context_fill.clone(),
@@ -95,9 +105,24 @@ fn draw_basic_shape(
     let marker_end_node;
 
     if shape_def.markers == Markers::Yes {
-        marker_start_node = acquire_marker(session, acquired_nodes, &values.marker_start().0);
-        marker_mid_node = acquire_marker(session, acquired_nodes, &values.marker_mid().0);
-        marker_end_node = acquire_marker(session, acquired_nodes, &values.marker_end().0);
+        marker_start_node = acquire_marker(
+            session,
+            &shape_element_name,
+            acquired_nodes,
+            &values.marker_start().0,
+        );
+        marker_mid_node = acquire_marker(
+            session,
+            &shape_element_name,
+            acquired_nodes,
+            &values.marker_mid().0,
+        );
+        marker_end_node = acquire_marker(
+            session,
+            &shape_element_name,
+            acquired_nodes,
+            &values.marker_end().0,
+        );
     } else {
         marker_start_node = None;
         marker_mid_node = None;
@@ -144,12 +169,13 @@ fn draw_basic_shape(
 
     let elt = node.borrow_element();
     let stacking_ctx = StackingContext::new(
-        session,
+        draw_ctx,
         acquired_nodes,
         &elt,
         values.transform(),
         None,
         values,
+        viewport,
     );
 
     Ok(Some(Layer {
@@ -169,14 +195,7 @@ macro_rules! impl_draw {
             draw_ctx: &mut DrawingCtx,
             _clipping: bool,
         ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
-            draw_basic_shape(
-                self,
-                node,
-                acquired_nodes,
-                cascaded,
-                viewport,
-                &draw_ctx.session().clone(),
-            )
+            draw_basic_shape(self, node, acquired_nodes, cascaded, viewport, draw_ctx)
         }
 
         fn draw(
@@ -202,12 +221,13 @@ macro_rules! impl_draw {
 
 fn acquire_marker(
     session: &Session,
+    referencing_element_name: &str,
     acquired_nodes: &mut AcquiredNodes<'_>,
     iri: &Iri,
 ) -> Option<Node> {
     iri.get().and_then(|id| {
         acquired_nodes
-            .acquire(id)
+            .acquire(referencing_element_name, id)
             .map_err(|e| {
                 rsvg_log!(session, "cannot render marker: {}", e);
             })
@@ -306,8 +326,14 @@ impl ElementTrait for Path {
 }
 
 impl BasicShape for Path {
-    fn make_shape(&self, _params: &NormalizeParams, _values: &ComputedValues) -> ShapeDef {
-        ShapeDef::new(self.path.clone(), Markers::Yes)
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::Yes)
+    }
+}
+
+impl Path {
+    pub fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
+        self.path.clone()
     }
 }
 
@@ -388,8 +414,14 @@ impl ElementTrait for Polygon {
 }
 
 impl BasicShape for Polygon {
-    fn make_shape(&self, _params: &NormalizeParams, _values: &ComputedValues) -> ShapeDef {
-        ShapeDef::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::Yes)
+    }
+}
+
+impl Polygon {
+    pub fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
+        Rc::new(make_poly(&self.points, true))
     }
 }
 
@@ -411,8 +443,14 @@ impl ElementTrait for Polyline {
 }
 
 impl BasicShape for Polyline {
-    fn make_shape(&self, _params: &NormalizeParams, _values: &ComputedValues) -> ShapeDef {
-        ShapeDef::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::Yes)
+    }
+}
+
+impl Polyline {
+    pub fn make_path(&self, _params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
+        Rc::new(make_poly(&self.points, false))
     }
 }
 
@@ -441,7 +479,13 @@ impl ElementTrait for Line {
 }
 
 impl BasicShape for Line {
-    fn make_shape(&self, params: &NormalizeParams, _values: &ComputedValues) -> ShapeDef {
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::Yes)
+    }
+}
+
+impl Line {
+    pub fn make_path(&self, params: &NormalizeParams, _values: &ComputedValues) -> Rc<SvgPath> {
         let mut builder = PathBuilder::default();
 
         let x1 = self.x1.to_user(params);
@@ -452,7 +496,7 @@ impl BasicShape for Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        ShapeDef::new(Rc::new(builder.into_path()), Markers::Yes)
+        Rc::new(builder.into_path())
     }
 }
 
@@ -468,8 +512,14 @@ impl ElementTrait for Rect {
 }
 
 impl BasicShape for Rect {
-    #[allow(clippy::many_single_char_names)]
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::No)
+    }
+}
+
+impl Rect {
+    #[allow(clippy::many_single_char_names)]
+    pub fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
         let x = values.x().0.to_user(params);
         let y = values.y().0.to_user(params);
 
@@ -520,7 +570,7 @@ impl BasicShape for Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return ShapeDef::new(Rc::new(builder.into_path()), Markers::No);
+            return Rc::new(builder.into_path());
         }
 
         let half_w = w / 2.0;
@@ -645,7 +695,7 @@ impl BasicShape for Rect {
 
         builder.close_path();
 
-        ShapeDef::new(Rc::new(builder.into_path()), Markers::No)
+        Rc::new(builder.into_path())
     }
 }
 
@@ -662,11 +712,17 @@ impl ElementTrait for Circle {
 
 impl BasicShape for Circle {
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::No)
+    }
+}
+
+impl Circle {
+    pub fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
         let cx = values.cx().0.to_user(params);
         let cy = values.cy().0.to_user(params);
         let r = values.r().0.to_user(params);
 
-        ShapeDef::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
+        Rc::new(make_ellipse(cx, cy, r, r))
     }
 }
 
@@ -683,6 +739,12 @@ impl ElementTrait for Ellipse {
 
 impl BasicShape for Ellipse {
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        ShapeDef::new(self.make_path(params, values), Markers::No)
+    }
+}
+
+impl Ellipse {
+    pub fn make_path(&self, params: &NormalizeParams, values: &ComputedValues) -> Rc<SvgPath> {
         let cx = values.cx().0.to_user(params);
         let cy = values.cy().0.to_user(params);
         let norm_rx = match values.rx().0 {
@@ -719,7 +781,7 @@ impl BasicShape for Ellipse {
             }
         }
 
-        ShapeDef::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
+        Rc::new(make_ellipse(cx, cy, rx, ry))
     }
 }
 

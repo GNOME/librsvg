@@ -1220,3 +1220,39 @@ test_svg_reference!(
     "tests/fixtures/reftests/filter-conv-target.svg",
     "tests/fixtures/reftests/filter-conv-target-ref.svg"
 );
+
+test_svg_reference!(
+    clip_path_simple,
+    "tests/fixtures/reftests/clip-path-simple.svg",
+    "tests/fixtures/reftests/clip-path-simple-ref.svg"
+);
+
+test_svg_reference!(
+    clip_path_transformed_elt,
+    "tests/fixtures/reftests/clip-path-transformed-elt.svg",
+    "tests/fixtures/reftests/clip-path-transformed-elt-ref.svg"
+);
+
+test_svg_reference!(
+    clip_path_use_element_transform,
+    "tests/fixtures/reftests/clip-path-use-element-transform.svg",
+    "tests/fixtures/reftests/clip-path-use-element-transform-ref.svg"
+);
+
+test_svg_reference!(
+    clip_path_use_transform_element_transform,
+    "tests/fixtures/reftests/clip-path-use-transform-element-transform.svg",
+    "tests/fixtures/reftests/clip-path-use-transform-element-transform-ref.svg"
+);
+
+test_svg_reference!(
+    clip_path_use_x_y_transform_element_transform,
+    "tests/fixtures/reftests/clip-path-use-x-y-transform-element-transform.svg",
+    "tests/fixtures/reftests/clip-path-use-x-y-transform-element-transform-ref.svg"
+);
+
+test_svg_reference!(
+    clip_path_use_text,
+    "tests/fixtures/reftests/clip-path-use-text.svg",
+    "tests/fixtures/reftests/clip-path-use-text-ref.svg"
+);

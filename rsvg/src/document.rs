@@ -920,12 +920,25 @@ impl<'i> AcquiredNodes<'i> {
     ///
     /// This is typically used during an "early resolution" stage, when XML `id`s are being
     /// resolved to node references.
-    pub fn acquire(&mut self, node_id: &NodeId) -> Result<AcquiredNode, AcquireError> {
+    ///
+    /// The `referencing_element_name` is just used for logging error messages, to identify
+    /// where the `node_id` is being referenced from.
+    pub fn acquire(
+        &mut self,
+        referencing_element_name: &str,
+        node_id: &NodeId,
+    ) -> Result<AcquiredNode, AcquireError> {
+        let session = &self.document.session;
+
         self.num_elements_acquired += 1;
 
         // This is a mitigation for SVG files that try to instance a huge number of
         // elements via <use>, recursive patterns, etc.  See limits.rs for details.
         if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            rsvg_log!(
+                session,
+                "maximum number of referenced elements exceeded in {referencing_element_name}"
+            );
             return Err(AcquireError::MaxReferencesExceeded);
         }
 
@@ -939,9 +952,21 @@ impl<'i> AcquiredNodes<'i> {
         let node = self
             .document
             .lookup_node(node_id, self.cancellable.as_ref())
-            .ok_or_else(|| AcquireError::LinkNotFound(node_id.clone()))?;
+            .ok_or_else(|| {
+                rsvg_log!(
+                    session,
+                    "reference \"{}\" does not exist, referenced from {referencing_element_name}",
+                    node_id
+                );
+
+                AcquireError::LinkNotFound(node_id.clone())
+            })?;
 
         if self.nodes_with_cycles.contains(&node) {
+            rsvg_log!(
+                session,
+                "circular reference from {referencing_element_name} to element {node}",
+            );
             return Err(AcquireError::CircularReference(node.clone()));
         }
 
@@ -965,10 +990,14 @@ impl<'i> AcquiredNodes<'i> {
     ///   its child elements that reference other paint servers will be able to detect circular
     ///   references to the pattern.
     pub fn acquire_ref(&mut self, node: &Node) -> Result<AcquiredNode, AcquireError> {
+        let session = &self.document.session;
+
         if self.nodes_with_cycles.contains(node) {
+            rsvg_log!(session, "circular reference for {node}");
             Err(AcquireError::CircularReference(node.clone()))
         } else if self.node_stack.borrow().contains(node) {
             self.nodes_with_cycles.push(node.clone());
+            rsvg_log!(session, "circular reference for {node}");
             Err(AcquireError::CircularReference(node.clone()))
         } else {
             self.node_stack.borrow_mut().push(node);

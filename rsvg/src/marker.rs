@@ -212,12 +212,13 @@ impl Marker {
 
         let elt = node.borrow_element();
         let stacking_ctx = Box::new(StackingContext::new(
-            draw_ctx.session(),
+            draw_ctx,
             acquired_nodes,
             &elt,
             transform,
             clip_rect,
             values,
+            &content_viewport,
         ));
 
         draw_ctx.with_discrete_layer(

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <!-- Test that a <text> element referenced from <use> in a <clipPath>
+       will in fact inherit the properties defined by the <use>.
+
+       We take big L shape from a path, and clip it with a small
+       square produced from the Ahem font.  The result is a small L shape.
+  -->
+
+  <defs>
+    <clipPath id="clip1">
+      <use href="#text1" font-family="Ahem"/>
+    </clipPath>
+    <!-- with font-size=20, the ascent is 16 pixels (4/5 * 20), so place it at y=(40+16) -->
+    <text id="text1" x="40" y="56" font-size="20">A</text>
+  </defs>
+
+  <rect width="100%" height="100%" fill="white"/>
+
+  <path d="M20 20 h30 v30 h30 v30 h-60 Z" fill="#00ff00" clip-path="url(#clip1)"/>
+</svg>
