@@ -332,3 +332,21 @@ Status
 
   We can actually start defining ``layout::Group`` now, or rather, the
   implementation for ``DrawingCtx::draw_group()``.
+
+* 2026/Mar/31 - clipping paths (from the ``clip-path`` property) are
+  now resolved into a :internals:struct:`rsvg::layout::ClipPath`
+  struct that lives inside
+  :internals:struct:`rsvg::layout::StackingContext`.  This is just
+  used for ``clipPathUnits=userSpaceOnUse``, since the other case,
+  ``clipPathUnits=objectBoundingBox``, depends on the layout system
+  being able to handle all the structural elements, which it does not
+  yet do.  When all elements like `<svg>`, `<switch>`, etc. are able
+  to generate a :internals:struct:`rsvg::layout::Group` with a known
+  bounding box, the clipping code will be able to use the bounding box
+  for ``objectBoundingBox``.
+
+  Next steps: :issue:`271`.  Instead of using ``cr.clip()``, actually
+  render clipping paths as alpha masks.  This will let us perform
+  arithmetic on them (union, intersection) to handle all the cases
+  that the ``clipPath`` element supports (librsvg does not support
+  proper unions of clipping paths right now).
