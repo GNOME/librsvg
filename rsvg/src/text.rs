@@ -1011,7 +1011,7 @@ impl ElementTrait for Text {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> DrawResult {
-        self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+        self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, false)
             .and_then(|layer| {
                 draw_ctx.draw_layer(layer.as_ref().unwrap(), acquired_nodes, clipping, viewport)
             })

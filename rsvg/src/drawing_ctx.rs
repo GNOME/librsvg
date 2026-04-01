@@ -1454,20 +1454,12 @@ impl DrawingCtx {
                 clipping,
                 viewport,
             ),
-            LayerKind::Image(image) => self.draw_image(
-                image,
-                &layer.stacking_ctx,
-                acquired_nodes,
-                clipping,
-                viewport,
-            ),
-            LayerKind::Group(group) => self.draw_group(
-                group,
-                &layer.stacking_ctx,
-                acquired_nodes,
-                clipping,
-                viewport,
-            ),
+            LayerKind::Image(image) => {
+                self.draw_image(image, &layer.stacking_ctx, acquired_nodes, viewport)
+            }
+            LayerKind::Group(group) => {
+                self.draw_group(group, &layer.stacking_ctx, acquired_nodes, viewport)
+            }
         }
     }
 
@@ -1560,7 +1552,7 @@ impl DrawingCtx {
                             viewport,
                             self,
                             acquired_nodes,
-                            clipping,
+                            false,
                         )?;
                     }
                 }
@@ -1610,12 +1602,11 @@ impl DrawingCtx {
         image: &Image,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        clipping: bool,
         viewport: &Viewport,
     ) -> DrawResult {
         let image_width = image.surface.width();
         let image_height = image.surface.height();
-        if clipping || image.rect.is_empty() || image_width == 0 || image_height == 0 {
+        if image.rect.is_empty() || image_width == 0 || image_height == 0 {
             return Ok(viewport.empty_bbox());
         }
 
@@ -1640,7 +1631,7 @@ impl DrawingCtx {
                 acquired_nodes,
                 viewport,
                 Some(layout_viewport),
-                clipping,
+                false,
                 &mut |_an, dc, new_viewport| {
                     dc.paint_surface_from_image(image, new_viewport)?;
 
@@ -1657,7 +1648,6 @@ impl DrawingCtx {
         _group: &Group,
         _stacking_ctx: &StackingContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
-        _clipping: bool,
         _viewport: &Viewport,
     ) -> DrawResult {
         unimplemented!();
@@ -1667,10 +1657,10 @@ impl DrawingCtx {
             acquired_nodes,
             viewport,
             group.establish_viewport,
-            clipping,
+            false,
             &mut |an, dc, new_viewport| {
                 for layer in &group.children {
-                    dc.draw_layer(layer, an, clipping, &new_viewport)?;
+                    dc.draw_layer(layer, an, false, &new_viewport)?;
                 }
             },
         )

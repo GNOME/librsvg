@@ -207,7 +207,7 @@ macro_rules! impl_draw {
             draw_ctx: &mut DrawingCtx,
             clipping: bool,
         ) -> DrawResult {
-            self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+            self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, false)
                 .and_then(|layer| {
                     if let Some(layer) = layer {
                         draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
