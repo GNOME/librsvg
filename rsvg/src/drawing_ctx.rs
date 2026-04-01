@@ -1547,13 +1547,7 @@ impl DrawingCtx {
 
                     PaintTarget::Markers => {
                         path_helper.unset();
-                        marker::render_markers_for_shape(
-                            shape,
-                            viewport,
-                            self,
-                            acquired_nodes,
-                            false,
-                        )?;
+                        marker::render_markers_for_shape(shape, viewport, self, acquired_nodes)?;
                     }
                 }
             }
