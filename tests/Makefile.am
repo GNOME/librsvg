@@ -48,6 +48,7 @@ LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 
 INCLUDES = -I$(srcdir) 							\
 	   -I$(top_srcdir)						\
+	   -I$(top_srcdir)/librsvg					\
 	   -DTEST_DATA_DIR="\"$(srcdir)\""				\
 	   -DTEST_SRC_DIR="\"$(PWD)\""					\
 	   -DTOP_SRC_DIR="\"$(top_srcdir)\""				\
