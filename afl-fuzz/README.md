@@ -15,10 +15,9 @@ cargo afl build --release
 AFL_SKIP_CPUFREQ=1 cargo afl fuzz -i input/ -o out -S f0 target/release/rsvg-afl-fuzz
 ```
 
-For each CPU core, change `-S f0` for `-S f1`, `-S f2`, etc.  To use
-multiple CPU cores, run that command with a different `-S` option for
-each core; see [the multicore
-documentation](https://github.com/AFLplusplus/AFLplusplus/blob/stable/docs/fuzzing_in_depth.md#c-using-multiple-cores)
+For each CPU core, change `-S f0` for `-S f1`, `-S f2`, etc. To use multiple CPU
+cores, run that command with a different `-S` option for each core; see
+[the multicore documentation](https://github.com/AFLplusplus/AFLplusplus/blob/stable/docs/fuzzing_in_depth.md#c-using-multiple-cores)
 for details on changing the fuzz configuration for each job.
 
 AFL complained when my kernel's configuration for corefiles was this:

@@ -90,8 +90,8 @@ icon and render it, they do something like this:
 3. Divide the dimensions by the GUI\'s preferred size for icons.
 
 4. Translate a Cairo context so the icon will appear at the desired location.
-    Scale the Cairo context by the result of the previous step to obtain the
-    desired dimensions.
+   Scale the Cairo context by the result of the previous step to obtain the
+   desired dimensions.
 
 5. Render the [class@Rsvg.Handle] in that Cairo context.
 
