@@ -32,8 +32,10 @@ reporting bugs or missing features.
 
 See the [policy for supported versions][versions] for more details.
 
-* [Release archive](https://gitlab.gnome.org/GNOME/librsvg/-/releases) in gitlab.gnome.org
-* [Source tarballs for download](https://download.gnome.org/sources/librsvg/) at download.gnome.org
+* [Release archive](https://gitlab.gnome.org/GNOME/librsvg/-/releases)
+  in gitlab.gnome.org
+* [Source tarballs for download](https://download.gnome.org/sources/librsvg/)
+  at download.gnome.org
 
 ## Stable release series
 
