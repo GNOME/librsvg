@@ -1,5 +1,6 @@
 import re
 
+
 def get_project_version_str():
     regex = re.compile(r" +version: '(\d+\.\d+\.\d+)',")
     with open("meson.build") as f:

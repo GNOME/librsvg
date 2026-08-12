@@ -2,7 +2,9 @@
 # dependencies that librsvg uses during compilation.
 
 import sys
+
 import toml
+
 
 # Looks for a crate version in the 'dependencies' section of a TOML document, either of these:
 #
