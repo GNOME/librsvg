@@ -411,14 +411,13 @@ fn path_from_use_referenced_from_clip_path(
     let use_element_name = format!("{use_element}");
     let use_element_data = borrow_element_as!(use_node, Use);
 
-    let acquired = if let Some(link) = use_element_data.get_link() {
+    let acquired = {
+        let link = use_element_data.get_link()?;
         match acquired_nodes.acquire(&use_element_name, &link) {
             Ok(acquired) => acquired,
 
             _ => return None,
         }
-    } else {
-        return None;
     };
 
     let use_values = use_element.get_computed_values();

@@ -2,7 +2,9 @@
 # dependencies that librsvg uses during compilation.
 
 import sys
+
 import toml
+
 
 # Looks for a crate version in the 'dependencies' section of a TOML document, either of these:
 #
@@ -72,35 +74,35 @@ def check():
     cargo_toml = toml.load('rsvg/Cargo.toml')
     librsvg_version = cargo_toml['package']['version']
 
-    example_file = open('rsvg/src/lib.rs')
-    example_contents = example_file.readlines()
-    example_toml_str = find_toml_in_rust_toplevel_docs(example_contents)
-    example_toml = toml.loads(example_toml_str)
+    with open('rsvg/src/lib.rs') as example_file:
+        example_contents = example_file.readlines()
+        example_toml_str = find_toml_in_rust_toplevel_docs(example_contents)
+        example_toml = toml.loads(example_toml_str)
 
-    example_version = get_crate_version(example_toml, 'librsvg')
+        example_version = get_crate_version(example_toml, 'librsvg')
 
-    if librsvg_version != example_version:
-        raise Exception(
-            f"""librsvg version in rsvg/Cargo.toml is {librsvg_version} but is referenced as
-            {example_version} in rsvg/src/lib.rs"""
-        )
+        if librsvg_version != example_version:
+            raise Exception(
+                f"""librsvg version in rsvg/Cargo.toml is {librsvg_version} but is referenced as
+                {example_version} in rsvg/src/lib.rs"""
+            )
 
-    DEPENDENCIES = [
-        'cairo-rs',
-        'gio',
-    ]
+        DEPENDENCIES = [
+            'cairo-rs',
+            'gio',
+        ]
 
-    cargo_toml = toml.load('Cargo.toml')
-    for dependency_name in DEPENDENCIES:
-        check_dependency_version(
-            'Cargo.toml',
-            cargo_toml,
-            'rsvg/src/lib.rs',
-            example_toml,
-            dependency_name
-        )
+        cargo_toml = toml.load('Cargo.toml')
+        for dependency_name in DEPENDENCIES:
+            check_dependency_version(
+                'Cargo.toml',
+                cargo_toml,
+                'rsvg/src/lib.rs',
+                example_toml,
+                dependency_name
+            )
 
-    print("Dependency versions match in rsvg/src/lib.rs.  All good!", file=sys.stderr)
+        print("Dependency versions match in rsvg/src/lib.rs.  All good!", file=sys.stderr)
 
 if __name__ == '__main__':
     check()

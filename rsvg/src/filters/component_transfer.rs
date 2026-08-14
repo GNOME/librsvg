@@ -235,10 +235,8 @@ impl FeFuncCommon {
         // The table function type with empty table_values is considered
         // an identity function.
         match self.function_type {
-            FunctionType::Table | FunctionType::Discrete => {
-                if self.table_values.is_empty() {
-                    self.function_type = FunctionType::Identity;
-                }
+            FunctionType::Table | FunctionType::Discrete if self.table_values.is_empty() => {
+                self.function_type = FunctionType::Identity;
             }
             _ => (),
         }

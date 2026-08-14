@@ -20,7 +20,6 @@
 
 use tinyvec::TinyVec;
 
-use std::f64;
 use std::f64::consts::*;
 use std::slice;
 
