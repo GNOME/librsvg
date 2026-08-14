@@ -715,7 +715,6 @@ fn parse_skew_y_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Parse
 mod tests {
     use super::*;
     use float_cmp::ApproxEq;
-    use std::f64;
 
     fn rotation_transform(deg: f64, tx: f64, ty: f64) -> Transform {
         Transform::new_translate(tx, ty)
