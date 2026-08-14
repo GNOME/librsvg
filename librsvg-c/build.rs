@@ -40,22 +40,19 @@ fn read_version() -> Result<Version> {
         let regex = Regex::new(r#"^\s+version: '(\d+\.\d+\.\d+)'"#).unwrap();
 
         for line in BufReader::new(file).lines() {
-            match line {
-                Ok(line) => {
-                    if let Some(caps) = regex.captures(&line) {
-                        let version_str = &caps[1];
-                        let mut components = version_str.split('.');
-                        let major = components.next().unwrap().to_string();
-                        let minor = components.next().unwrap().to_string();
-                        let micro = components.next().unwrap().to_string();
-                        return Ok(Version {
-                            major,
-                            minor,
-                            micro,
-                        });
-                    }
-                }
-                Err(e) => return Err(e),
+            let line = line?;
+
+            if let Some(caps) = regex.captures(&line) {
+                let version_str = &caps[1];
+                let mut components = version_str.split('.');
+                let major = components.next().unwrap().to_string();
+                let minor = components.next().unwrap().to_string();
+                let micro = components.next().unwrap().to_string();
+                return Ok(Version {
+                    major,
+                    minor,
+                    micro,
+                });
             }
         }
     }
