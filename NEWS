@@ -1,3 +1,17 @@
+Version 2.62.91
+===============
+
+librsvg crate version 2.63.0-beta.1
+
+librsvg-rebind crate version 0.3.0
+
+- #1237: Update test suite for change in how Pango renders underline/overline.
+
+- Update Rust dependencies.
+
+- Update C dependencies in the CI.
+
+
 Version 2.62.90
 ===============
 
