@@ -53,9 +53,13 @@ off items while making a release.
    - ☐ ``cargo publish -p librsvg-rebind``
 - ☐ If this is a development release, create a signed tag for the crate's version - ``git tag -s x.y.z-beta.w``.
 - ☐ Create a signed tag for the merge commit - ``git tag -s x.y.z`` with the version number.
-- ☐ If this is a development release ``git push`` the signed tag for the crate's version to gitlab.gnome.org/GNOME/librsvg
-- ☐ ``git push`` the signed tag for the GNOME version to gitlab.gnome.org/GNOME/librsvg
-- ☐ Optionally edit the `release page ing Gitlab <https://gitlab.gnome.org/GNOME/librsvg/-/releases>`_.
+- ☐ If this is a development release ``git push`` the signed tag for
+  the crate's version to gitlab.gnome.org/GNOME/librsvg
+- ☐ ``git push`` the signed tag for the GNOME version to
+  gitlab.gnome.org/GNOME/librsvg.  This will create a release via the
+  `Release Service
+  <https://gitlab.gnome.org/Infrastructure/openshift-images/gnome-release-service>`__.
+- ☐ Optionally edit the `release page in Gitlab <https://gitlab.gnome.org/GNOME/librsvg/-/releases>`_.
 
 For ``x.y.0`` releases, do the following:
 
@@ -263,13 +267,9 @@ Don't make a tarball by hand.  Let the CI system do it.  Look for
 ``distcheck`` in the checklist above.  That job in the CI pipelines
 has the release tarball which you can download.
 
-Copying the tarball to master.gnome.org
----------------------------------------
-
-If you don’t have a maintainer account there, ask federico@gnome.org to
-do it or `ask the release
-team <https://gitlab.gnome.org/GNOME/releng/-/issues>`__ to do it by
-filing an issue on their ``GNOME/releng`` project.
+This release tarball is also uploaded to the `GNOME Release Service
+<https://gitlab.gnome.org/Infrastructure/openshift-images/gnome-release-service>`__
+machinery when a tag gets pushed to librsvg's repository.
 
 Rust dependencies
 -----------------
