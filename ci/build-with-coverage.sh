@@ -22,8 +22,8 @@ export LLVM_PROFILE_FILE
 export RUSTC_BOOTSTRAP="1"   # hack to make unstable options work on the non-nightly compiler
 export RUSTFLAGS="-C instrument-coverage -Z coverage-options=condition -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off"
 
-# meson setup _build -Db_coverage=true -Dauto_features=disabled -Dpixbuf{,-loader}=enabled --buildtype=debugoptimized
-# meson compile -C _build
-# meson test -C _build --maxfail 0 --print-errorlogs
+meson setup _build -Db_coverage=true -Dauto_features=disabled -Dpixbuf{,-loader}=enabled --buildtype=debugoptimized
+meson compile -C _build
+meson test -C _build --maxfail 0 --print-errorlogs
 
-cargo test -- --include-ignored
+# cargo test -- --include-ignored

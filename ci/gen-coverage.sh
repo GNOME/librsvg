@@ -23,11 +23,11 @@ call_grcov() {
     #       --output-path $output_path
 
     grcov coverage-profiles                      \
-          --binary-path ./target/debug/          \
+          --binary-path ./_build/                \
           --source-dir .                         \
           --branch                               \
           --ignore 'cargo_cache/*'               \
-          --ignore 'target/*'                    \
+          --ignore '_build/*'                    \
           --excl-line 'unreachable!|panic!'      \
           --output-type "$output_type"           \
           --output-path "$output_path"
