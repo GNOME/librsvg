@@ -69,7 +69,7 @@ typedef enum {
  * Returns: The error domain
  */
 RSVG_API
-GQuark rsvg_error_quark (void) G_GNUC_CONST;
+GQuark rsvg_error_quark (void);
 
 RSVG_API
 GType rsvg_error_get_type (void);
