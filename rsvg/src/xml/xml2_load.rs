@@ -154,18 +154,10 @@ unsafe extern "C" fn sax_entity_decl_cb(
         return;
     }
 
-    let entity = xmlNewEntity(
-        ptr::null_mut(),
-        name,
-        type_,
-        ptr::null(),
-        ptr::null(),
-        content,
-    );
-    assert!(!entity.is_null());
-
-    let name = utf8_cstr(name);
-    xml2_parser.state.entity_insert(name, entity);
+    let str_name = utf8_cstr(name);
+    xml2_parser
+        .state
+        .entity_insert(str_name, name, type_, content);
 }
 
 unsafe extern "C" fn sax_unparsed_entity_decl_cb(
