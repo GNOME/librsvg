@@ -10,7 +10,8 @@ use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName,
 };
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Entry};
+use std::ptr;
 use std::rc::Rc;
 use std::str;
 use std::sync::Arc;
@@ -31,6 +32,7 @@ use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
+use xml2::xmlNewEntity;
 use xml2_load::Xml2Parser;
 
 mod attributes;
@@ -337,19 +339,42 @@ impl XmlState {
             .push(Context::FatalError(e));
     }
 
-    pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
-        self.inner.borrow().entities.get(entity_name).copied()
+    pub fn entity_lookup(&self, entity_name: &str) -> Option<xmlEntityPtr> {
+        self.inner
+            .borrow()
+            .entities
+            .get(entity_name)
+            .map(|entity| entity.0)
     }
 
-    pub fn entity_insert(&self, entity_name: &str, entity: XmlEntityPtr) {
+    pub fn entity_insert(
+        &self,
+        entity_name: &str,
+        xml_entity_name: *const libc::c_char,
+        type_: libc::c_int,
+        content: *const libc::c_char,
+    ) {
         let mut inner = self.inner.borrow_mut();
 
-        let old_value = inner.entities.insert(entity_name.to_string(), entity);
-
-        if let Some(v) = old_value {
-            unsafe {
-                xmlFreeNode(v);
+        match inner.entities.entry(entity_name.to_string()) {
+            Entry::Occupied(_) => {
+                // Ignore the case where an entity is declared twice with the
+                // same name.
             }
+
+            Entry::Vacant(v) => unsafe {
+                let entity = xmlNewEntity(
+                    ptr::null_mut(),
+                    xml_entity_name,
+                    type_,
+                    ptr::null(),
+                    ptr::null(),
+                    content,
+                );
+                assert!(!entity.is_null());
+
+                v.insert(XmlEntity(entity));
+            },
         }
     }
 
@@ -643,15 +668,7 @@ impl XmlState {
         // consume self, then consume inner, then consume document_builder by calling .build()
 
         let XmlState { inner, .. } = self;
-        let mut inner = inner.into_inner();
-
-        // Free the hash of XmlEntityPtr.  We cannot do this in Drop because we will
-        // consume inner by destructuring it after the for() loop.
-        for (_key, entity) in inner.entities.drain() {
-            unsafe {
-                xmlFreeNode(entity);
-            }
-        }
+        let inner = inner.into_inner();
 
         let XmlStateInner {
             document_builder, ..
