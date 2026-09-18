@@ -33,14 +33,12 @@ use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
-use xml2::xmlNewEntity;
-use xml2_load::Xml2Parser;
+use xml2::{xmlEntityPtr, xmlNewEntity};
+use xml2_load::{Xml2Parser, XmlEntity};
 
 mod attributes;
 mod xml2;
 mod xml2_load;
-
-use xml2::xmlEntityPtr;
 
 pub use attributes::Attributes;
 
@@ -74,31 +72,6 @@ enum Context {
 #[derive(Clone)]
 struct XIncludeContext {
     need_fallback: bool,
-}
-
-unsafe extern "C" {
-    // The original function takes an xmlNodePtr, but that is compatible
-    // with xmlEntityPtr for the purposes of this function.
-    fn xmlFreeNode(node: xmlEntityPtr);
-}
-
-/// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
-/// that is freed in impl Drop.
-struct XmlEntity(xmlEntityPtr);
-
-impl Drop for XmlEntity {
-    fn drop(&mut self) {
-        unsafe {
-            // Even though we are freeing an xmlEntityPtr, historically the code has always
-            // used xmlFreeNode() because that function actually does allow freeing entities.
-            //
-            // See https://gitlab.gnome.org/GNOME/libxml2/-/issues/731
-            // for a possible memory leak on older versions of libxml2 when using
-            // xmlFreeNode() instead of xmlFreeEntity() - the latter just became public
-            // in librsvg-2.12.0.
-            xmlFreeNode(self.0);
-        }
-    }
 }
 
 // Creates an ExpandedName from the XInclude namespace and a local_name
