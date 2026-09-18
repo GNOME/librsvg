@@ -129,14 +129,6 @@ struct XmlStateInner {
     load_limiter: LoadingDepthLimiter,
     context_stack: Vec<Context>,
     current_node: Option<Node>,
-
-    // Note that neither XmlStateInner nor Xmlstate implement Drop.
-    //
-    // An XmlState is finally consumed in XmlState::build_document(), and that
-    // function is responsible for freeing all the XmlEntityPtr from this field.
-    //
-    // (The structs cannot impl Drop because build_document()
-    // destructures and consumes them at the same time.)
     entities: HashMap<String, XmlEntity>,
 }
 
