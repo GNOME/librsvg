@@ -154,6 +154,41 @@ impl Drop for XmlEntity {
     }
 }
 
+/// Temporary wrapper for libxml2 entity data, which can be turned into an actual XmlEntity later.
+pub struct EntityData {
+    name: *const libc::c_char,
+    type_: libc::c_int,
+    content: *const libc::c_char,
+}
+
+impl EntityData {
+    pub fn into_xml_entity(self) -> XmlEntity {
+        let EntityData {
+            name,
+            type_,
+            content,
+        } = self;
+
+        let entity = unsafe {
+            xmlNewEntity(
+                ptr::null_mut(),
+                name,
+                type_,
+                ptr::null(),
+                ptr::null(),
+                content,
+            )
+        };
+        assert!(!entity.is_null());
+
+        XmlEntity(entity)
+    }
+
+    pub fn name(&self) -> &str {
+        unsafe { utf8_cstr(self.name) }
+    }
+}
+
 unsafe extern "C" fn sax_entity_decl_cb(
     user_data: *mut libc::c_void,
     name: *const libc::c_char,
@@ -173,10 +208,13 @@ unsafe extern "C" fn sax_entity_decl_cb(
         return;
     }
 
-    let str_name = utf8_cstr(name);
-    xml2_parser
-        .state
-        .entity_insert(str_name, name, type_, content);
+    let entity_data = EntityData {
+        name,
+        type_,
+        content,
+    };
+
+    xml2_parser.state.entity_insert(entity_data);
 }
 
 unsafe extern "C" fn sax_unparsed_entity_decl_cb(

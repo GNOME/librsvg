@@ -9,7 +9,6 @@ use glib::object::Cast;
 use markup5ever::{ExpandedName, LocalName, Namespace, QualName, expanded_name, local_name, ns};
 use std::cell::RefCell;
 use std::collections::{HashMap, hash_map::Entry};
-use std::ptr;
 use std::rc::Rc;
 use std::str;
 use std::string::ToString;
@@ -33,8 +32,8 @@ use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
-use xml2::{xmlEntityPtr, xmlNewEntity};
-use xml2_load::{Xml2Parser, XmlEntity};
+use xml2::xmlEntityPtr;
+use xml2_load::{EntityData, Xml2Parser, XmlEntity};
 
 mod attributes;
 mod xml2;
@@ -330,34 +329,20 @@ impl XmlState {
             .map(|entity| entity.0)
     }
 
-    pub fn entity_insert(
-        &self,
-        entity_name: &str,
-        xml_entity_name: *const libc::c_char,
-        type_: libc::c_int,
-        content: *const libc::c_char,
-    ) {
+    pub fn entity_insert(&self, entity_data: EntityData) {
         let mut inner = self.inner.borrow_mut();
 
-        match inner.entities.entry(entity_name.to_string()) {
+        let name = entity_data.name();
+
+        match inner.entities.entry(name.to_string()) {
             Entry::Occupied(_) => {
                 // Ignore the case where an entity is declared twice with the
                 // same name.
             }
 
-            Entry::Vacant(v) => unsafe {
-                let entity = xmlNewEntity(
-                    ptr::null_mut(),
-                    xml_entity_name,
-                    type_,
-                    ptr::null(),
-                    ptr::null(),
-                    content,
-                );
-                assert!(!entity.is_null());
-
-                v.insert(XmlEntity(entity));
-            },
+            Entry::Vacant(v) => {
+                v.insert(entity_data.into_xml_entity());
+            }
         }
     }
 
