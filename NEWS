@@ -1,3 +1,15 @@
+Version 2.63.1
+==============
+
+librsvg crate version 2.63.1
+
+librsvg-rebind crate version 0.3.0
+
+- #1241: Fix use-after-free when there are duplicate XML entities in
+  nested Xinclude documents.  Thanks to Rafael B. Dias for reporting
+  this in detail.
+
+
 Version 2.63.0
 ==============
 
