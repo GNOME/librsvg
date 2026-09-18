@@ -8,7 +8,7 @@ use gio::{
 use glib::object::Cast;
 use markup5ever::{ExpandedName, LocalName, Namespace, QualName, expanded_name, local_name, ns};
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Entry};
 use std::rc::Rc;
 use std::str;
 use std::string::ToString;
@@ -32,13 +32,12 @@ use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
-use xml2_load::Xml2Parser;
+use xml2::xmlEntityPtr;
+use xml2_load::{EntityData, Xml2Parser, XmlEntity};
 
 mod attributes;
 mod xml2;
 mod xml2_load;
-
-use xml2::xmlEntityPtr;
 
 pub use attributes::Attributes;
 
@@ -74,31 +73,6 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-unsafe extern "C" {
-    // The original function takes an xmlNodePtr, but that is compatible
-    // with xmlEntityPtr for the purposes of this function.
-    fn xmlFreeNode(node: xmlEntityPtr);
-}
-
-/// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
-/// that is freed in impl Drop.
-struct XmlEntity(xmlEntityPtr);
-
-impl Drop for XmlEntity {
-    fn drop(&mut self) {
-        unsafe {
-            // Even though we are freeing an xmlEntityPtr, historically the code has always
-            // used xmlFreeNode() because that function actually does allow freeing entities.
-            //
-            // See https://gitlab.gnome.org/GNOME/libxml2/-/issues/731
-            // for a possible memory leak on older versions of libxml2 when using
-            // xmlFreeNode() instead of xmlFreeEntity() - the latter just became public
-            // in librsvg-2.12.0.
-            xmlFreeNode(self.0);
-        }
-    }
-}
-
 // Creates an ExpandedName from the XInclude namespace and a local_name
 //
 // The markup5ever crate doesn't have built-in namespaces for XInclude,
@@ -127,14 +101,6 @@ struct XmlStateInner {
     load_limiter: LoadingDepthLimiter,
     context_stack: Vec<Context>,
     current_node: Option<Node>,
-
-    // Note that neither XmlStateInner nor Xmlstate implement Drop.
-    //
-    // An XmlState is finally consumed in XmlState::build_document(), and that
-    // function is responsible for freeing all the XmlEntityPtr from this field.
-    //
-    // (The structs cannot impl Drop because build_document()
-    // destructures and consumes them at the same time.)
     entities: HashMap<String, XmlEntity>,
 }
 
@@ -367,12 +333,21 @@ impl XmlState {
             .map(|entity| entity.0)
     }
 
-    pub fn entity_insert(&self, entity_name: &str, entity: xmlEntityPtr) {
+    pub fn entity_insert(&self, entity_data: EntityData) {
         let mut inner = self.inner.borrow_mut();
 
-        inner
-            .entities
-            .insert(entity_name.to_string(), XmlEntity(entity));
+        let name = entity_data.name();
+
+        match inner.entities.entry(name.to_string()) {
+            Entry::Occupied(_) => {
+                // Ignore the case where an entity is declared twice with the
+                // same name.
+            }
+
+            Entry::Vacant(v) => {
+                v.insert(entity_data.into_xml_entity());
+            }
+        }
     }
 
     fn element_creation_start_element(&self, name: &QualName, attrs: Attributes) -> Context {
