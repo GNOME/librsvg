@@ -32,8 +32,8 @@ use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
-use xml2::xmlNewEntity;
-use xml2_load::Xml2Parser;
+use xml2::{xmlEntityPtr, xmlNewEntity};
+use xml2_load::{Xml2Parser, XmlEntity};
 
 mod attributes;
 mod xml2;
@@ -71,16 +71,6 @@ enum Context {
 #[derive(Clone)]
 struct XIncludeContext {
     need_fallback: bool,
-}
-
-// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
-// that is freed in impl Drop for XmlState
-type XmlEntityPtr = *mut libc::c_void;
-
-extern "C" {
-    // The original function takes an xmlNodePtr, but that is compatible
-    // with xmlEntityPtr for the purposes of this function.
-    fn xmlFreeNode(node: XmlEntityPtr);
 }
 
 // Creates an ExpandedName from the XInclude namespace and a local_name
