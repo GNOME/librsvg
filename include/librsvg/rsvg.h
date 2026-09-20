@@ -951,10 +951,11 @@ gboolean rsvg_handle_get_intrinsic_size_in_pixels (RsvgHandle *handle,
 /**
  * RsvgHandleFlags:
  * @RSVG_HANDLE_FLAGS_NONE: No flags are set.
- * @RSVG_HANDLE_FLAG_UNLIMITED: Disable safety limits in the XML parser.  Libxml2 has
+ * @RSVG_HANDLE_FLAG_UNLIMITED: Disable safety limits in the XML parser and on embedded images.  Libxml2 has
  * [several limits](https://gitlab.gnome.org/GNOME/libxml2/blob/master/include/libxml/parserInternals.h)
- * designed to keep malicious XML content from consuming too much memory while parsing.
- * For security reasons, this should only be used for trusted input!  Since: 2.40.3
+ * designed to keep malicious XML content from consuming too much memory while parsing.  The image crate
+ * also limits per-image allocations to 512 MB by default.  For security reasons, this should only be used
+ * for trusted input!  Since: 2.40.3
  * @RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: Use this if the Cairo surface to which you are
  * rendering is a PDF, PostScript, SVG, or Win32 Printing surface.  This will make librsvg
  * and Cairo use the original, compressed data for images in the final output, instead of
