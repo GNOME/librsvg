@@ -831,6 +831,15 @@ fn load_image_resource_from_bytes(
         return Err(LoadingError::Other(String::from("no image data")));
     }
 
+    // The image crate is fuzzed separately by its own OSS-Fuzz project.  When librsvg
+    // itself is being fuzzed (`cfg(fuzzing)` is set by `cargo fuzz`), don't decode images,
+    // so the fuzzer spends its time on librsvg's code instead of on the decoders.
+    if cfg!(fuzzing) {
+        return Err(LoadingError::Other(String::from(
+            "images are not decoded while fuzzing",
+        )));
+    }
+
     load_image_with_image_rs(aurl, bytes, format, load_options)
 }
 
