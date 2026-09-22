@@ -559,12 +559,12 @@ MISCELLANEOUS
    If not specified, all objects will be exported.
 
 ``-u``, ``--unlimited``
-   Turn off the XML parser's guards.
+   Turn off safety limits in the XML parser and for embedded images.
    The XML parser has some guards designed to mitigate large CPU or
-   memory consumption in the face of malicious documents. It may also
-   refuse to resolve ``data:`` URIs used to embed image data in SVG
-   documents. If you are running into such issues when converting a
-   SVG, this option allows to turn off these guards.
+   memory consumption in the face of malicious documents. The image
+   crate also limits per-image allocations to 512 MB by default. If
+   you are running into such issues when converting a SVG, this option
+   allows to turn off these safety limits.
 
 ``--testing``
    For developers only: render images for librsvg's test suite.

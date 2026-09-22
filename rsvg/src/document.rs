@@ -78,7 +78,7 @@ pub struct LoadOptions {
     /// Load url resolver; all references will be resolved with respect to this.
     pub url_resolver: UrlResolver,
 
-    /// Whether to turn off size limits in libxml2.
+    /// Whether to turn off size limits in libxml2 and the image crate.
     pub unlimited_size: bool,
 
     /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces.
@@ -95,7 +95,7 @@ impl LoadOptions {
         }
     }
 
-    /// Sets whether libxml2's limits on memory usage should be turned off.
+    /// Sets whether libxml2's and the image crate's memory usage limits should be turned off.
     ///
     /// This should only be done for trusted data.
     pub fn with_unlimited_size(mut self, unlimited: bool) -> Self {
@@ -890,7 +890,9 @@ fn load_image_with_image_rs(
         let cursor = Cursor::new(&bytes);
 
         let mut reader = image::ImageReader::with_format(cursor, format);
-        reader.no_limits();
+        if load_options.unlimited_size {
+            reader.no_limits();
+        }
 
         let image = reader
             .decode()
