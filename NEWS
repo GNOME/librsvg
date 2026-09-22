@@ -1,3 +1,18 @@
+Version 2.62.4
+==============
+
+librsvg crate version 2.62.4
+
+librsvg-rebind crate version 0.3.0
+
+- #1241: Fix use-after-free when there are duplicate XML entities in
+  nested Xinclude documents.  Thanks to Rafael B. Dias for reporting
+  this in detail.
+
+- Dependency updates: lopdf for RUSTSEC-2026-0187, crossbeam-epoch for
+  RUSTSEC-2026-0204.
+
+
 Version 2.62.3
 ==============
 
