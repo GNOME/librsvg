@@ -5,6 +5,8 @@ librsvg crate version 2.62.4
 
 librsvg-rebind crate version 0.3.0
 
+This is a security release for bug #1241, RUSTSEC-2026-0305:
+
 - #1241: Fix use-after-free when there are duplicate XML entities in
   nested Xinclude documents.  Thanks to Rafael B. Dias for reporting
   this in detail.
