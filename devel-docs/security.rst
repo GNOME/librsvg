@@ -25,6 +25,25 @@ Development and beta versions have a micro version starting at 90
 
 The following list is only for stable release streams.
 
+2.63.2
+~~~~~~
+
+:rustsec:`2026-0305` - Use-after-free when XML includes have
+duplicated entities.
+
+2.62.4
+~~~~~~
+
+:rustsec:`2026-0305` - Use-after-free when XML includes have
+duplicated entities.
+
+:rustsec:`2026-0187` - Stack overflow in lopdf via deeply nested PDF
+objects
+
+:rustsec:`2026-0204` - crossbeam-epoch, invalid pointer dereference in
+fmt::Pointer impl for Atomic and Shared when the underlying
+pointer is invalid
+
 2.57.4
 ~~~~~~
 
