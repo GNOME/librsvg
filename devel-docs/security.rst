@@ -25,16 +25,24 @@ Development and beta versions have a micro version starting at 90
 
 The following list is only for stable release streams.
 
+.. When referencing a CVE in a single place, you can use Sphinx's own :cve:`xxxx-yyyyy` syntax.
+   If you need to reference the CVE more than once, use a "replace" definition like below, 
+   and use |CVE-XXXX-YYYY| to reference it.
+
 2.63.2
 ~~~~~~
 
-:rustsec:`2026-0305` - Use-after-free when XML includes have
+.. |CVE-2026-96889| replace::
+
+   `CVE-2026-96889 <https://www.cve.org/CVERecord?id=CVE-2026-96889>`__
+
+:rustsec:`2026-0305` - |CVE-2026-96889| - Use-after-free when XML includes have
 duplicated entities.
 
 2.62.4
 ~~~~~~
 
-:rustsec:`2026-0305` - Use-after-free when XML includes have
+:rustsec:`2026-0305` - |CVE-2026-96889| - Use-after-free when XML includes have
 duplicated entities.
 
 :rustsec:`2026-0187` - Stack overflow in lopdf via deeply nested PDF
