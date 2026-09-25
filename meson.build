@@ -1,6 +1,6 @@
 project('librsvg',
         'c',
-        version: '2.61.4', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
+        version: '2.61.5', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
         meson_version: '>= 1.3.0',
         default_options: [
         ]
@@ -21,7 +21,7 @@ cc = meson.get_compiler('c')
 #   - the "rust-version" value in Cargo.toml
 #   - the "Compilers and build tools" section of devel-docs/_build_dependencies.rst
 #   - the "RUST_MINIMUM" variable in ci/container_builds.yml
-msrv = '1.88.0'
+msrv = '1.89.0'
 cargo_cbuild_version = '0.10.10'
 cargo = find_program('cargo', version:'>= @0@'.format(msrv))
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)

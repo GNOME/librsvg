@@ -211,4 +211,8 @@ extern "C" {
         system_id: *const libc::c_char,
         content: *const libc::c_char,
     ) -> xmlEntityPtr;
+
+    // The original function takes an xmlNodePtr, but that is compatible
+    // with xmlEntityPtr for the purposes of this function.
+    pub fn xmlFreeNode(node: xmlEntityPtr);
 }
