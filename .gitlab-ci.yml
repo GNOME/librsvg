@@ -214,17 +214,6 @@ cargo test - opensuse@aarch64:
   cache:
     policy: pull-push
 
-meson build - gnomeos.nightly@x86_64:
-  extends:
-    - ".container.gnomeos.nightly@x86_64"
-    - .fdo.distribution-image@gnomeos
-    - ".meson build"
-  needs:
-    - job: gnomeos-container.nightly@x86_64
-      artifacts: false
-    - job: check
-      artifacts: false
-
 meson build - gnomeos.stable@x86_64:
   extends:
     - ".container.gnomeos.stable@x86_64"
@@ -235,22 +224,6 @@ meson build - gnomeos.stable@x86_64:
       artifacts: false
     - job: check
       artifacts: false
-
-cargo test - gnomeos.nightly.@x86_64:
-  extends:
-    - ".container.gnomeos.nightly@x86_64"
-    - .fdo.distribution-image@gnomeos
-    - .cargo-test
-  needs:
-    - job: gnomeos-container.nightly@x86_64
-      artifacts: false
-    - job: check
-      artifacts: false
-  parallel:
-    matrix:
-      - RUST_VERSION:
-        - "${RUST_STABLE}"
-        - "${RUST_MINIMUM}"
 
 cargo test - gnomeos.stable@x86_64:
   extends:
