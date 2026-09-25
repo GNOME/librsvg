@@ -175,7 +175,6 @@ cargo test - opensuse@x86_64:
         # job in the check stage
         # - "${RUST_STABLE}"
         - "${RUST_MINIMUM}"
-        - "${RUST_NIGHTLY}"
 
 cargo test - opensuse@aarch64:
   extends:
@@ -252,7 +251,6 @@ cargo test - gnomeos.nightly.@x86_64:
       - RUST_VERSION:
         - "${RUST_STABLE}"
         - "${RUST_MINIMUM}"
-        - "${RUST_NIGHTLY}"
 
 cargo test - gnomeos.stable@x86_64:
   extends:
@@ -269,7 +267,6 @@ cargo test - gnomeos.stable@x86_64:
       - RUST_VERSION:
         - "${RUST_STABLE}"
         - "${RUST_MINIMUM}"
-        - "${RUST_NIGHTLY}"
 
 fmt:
   extends:
