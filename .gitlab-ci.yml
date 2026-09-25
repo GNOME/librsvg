@@ -268,17 +268,6 @@ cargo test - gnomeos.stable@x86_64:
         - "${RUST_STABLE}"
         - "${RUST_MINIMUM}"
 
-fmt:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: lint
-  needs:
-    - job: check
-  script:
-    - cargo fmt --all -- --check
-
 clippy:
   extends:
     - '.container.opensuse@x86_64.stable'
