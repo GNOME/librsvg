@@ -130,6 +130,25 @@ unsafe extern "C" fn sax_get_entity_cb(
         .unwrap_or(ptr::null_mut())
 }
 
+/// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
+/// that is freed in impl Drop.
+pub struct XmlEntity(pub xmlEntityPtr);
+
+impl Drop for XmlEntity {
+    fn drop(&mut self) {
+        unsafe {
+            // Even though we are freeing an xmlEntityPtr, historically the code has always
+            // used xmlFreeNode() because that function actually does allow freeing entities.
+            //
+            // See https://gitlab.gnome.org/GNOME/libxml2/-/issues/731
+            // for a possible memory leak on older versions of libxml2 when using
+            // xmlFreeNode() instead of xmlFreeEntity() - the latter just became public
+            // in librsvg-2.12.0.
+            xmlFreeNode(self.0);
+        }
+    }
+}
+
 unsafe extern "C" fn sax_entity_decl_cb(
     user_data: *mut libc::c_void,
     name: *const libc::c_char,
@@ -149,18 +168,10 @@ unsafe extern "C" fn sax_entity_decl_cb(
         return;
     }
 
-    let entity = xmlNewEntity(
-        ptr::null_mut(),
-        name,
-        type_,
-        ptr::null(),
-        ptr::null(),
-        content,
-    );
-    assert!(!entity.is_null());
-
-    let name = utf8_cstr(name);
-    xml2_parser.state.entity_insert(name, entity);
+    let str_name = utf8_cstr(name);
+    xml2_parser
+        .state
+        .entity_insert(str_name, name, type_, content);
 }
 
 unsafe extern "C" fn sax_unparsed_entity_decl_cb(
