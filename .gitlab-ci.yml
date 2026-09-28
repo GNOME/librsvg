@@ -329,25 +329,6 @@ devel-docs:
       - public
     expire_in: 1 day
 
-cargo-doc:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: docs
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-  variables:
-    PREFIX: "/usr/local/librsvg"
-  script:
-    - source ./ci/setup-dependencies-env.sh
-    - bash -x ./ci/gen-rust-docs.sh
-  artifacts:
-    paths:
-      - public
-    expire_in: 1 day
-
 pages:
   stage: docs
   extends:
@@ -357,7 +338,6 @@ pages:
   needs:
     - job: reference
     - job: devel-docs
-    - job: cargo-doc
   script:
     - echo ""
   artifacts:
