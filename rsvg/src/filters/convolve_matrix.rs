@@ -32,12 +32,15 @@ pub struct FeConvolveMatrix {
     params: ConvolveMatrix,
 }
 
+// #691: Limit kernelMatrix list length to 400 (20x20) to mitigate malicious SVGs
+const MAX_NUMBERS_IN_MATRIX: usize = 400;
+
 /// Resolved `feConvolveMatrix` primitive for rendering.
 #[derive(Clone)]
 pub struct ConvolveMatrix {
     in1: Input,
     order: NumberOptionalNumber<u32>,
-    kernel_matrix: CommaSeparatedList<f64, 0, 400>, // #691: Limit list to 400 (20x20) to mitigate malicious SVGs
+    kernel_matrix: CommaSeparatedList<f64, 0, MAX_NUMBERS_IN_MATRIX>,
     divisor: f64,
     bias: f64,
     target_x: Option<u32>,
@@ -190,9 +193,21 @@ impl ConvolveMatrix {
         let cols = self.order.0 as usize;
         let rows = self.order.1 as usize;
         let number_of_elements = cols * rows;
+
+        if number_of_elements > MAX_NUMBERS_IN_MATRIX {
+            rsvg_log!(
+                ctx.session(),
+                "feConvolveMatrix order ({cols}x{rows}) exceeds maximum of {MAX_NUMBERS_IN_MATRIX}; ignoring filter",
+            );
+            return Ok(FilterOutput {
+                surface: input_1.surface().clone(),
+                bounds: original_bounds,
+            });
+        }
+
         let numbers = self.kernel_matrix.0.clone();
 
-        if numbers.len() != number_of_elements && numbers.len() != 400 {
+        if numbers.len() != number_of_elements {
             // "If the result of orderX * orderY is not equal to the the number of entries
             // in the value list, the filter primitive acts as a pass through filter."
             //
