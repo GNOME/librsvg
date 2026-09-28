@@ -130,23 +130,11 @@ opensuse-container@aarch64:
       bash ci/install-grcov.sh &&
       rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
 
-.container.gnomeos.nightly@x86_64:
-  extends: .container.gnomeos@common
-  variables:
-    FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
-    FDO_DISTRIBUTION_VERSION: "core-nightly"
-
 .container.gnomeos.stable@x86_64:
   extends: .container.gnomeos@common
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_VERSION: "$GNOMEOS_STABLE"
-
-gnomeos-container.nightly@x86_64:
-  extends:
-    - .fdo.container-build@gnomeos@x86_64
-    - .container.gnomeos.nightly@x86_64
-  stage: "container-build"
 
 gnomeos-container.stable@x86_64:
   extends:
