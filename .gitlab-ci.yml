@@ -164,17 +164,6 @@ cargo test - opensuse@x86_64.minimum:
   cache:
     policy: pull-push
 
-fmt:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: lint
-  needs:
-    - job: check
-  script:
-    - cargo fmt --all -- --check
-
 deny:
   extends:
     - '.container.opensuse@x86_64.stable'
