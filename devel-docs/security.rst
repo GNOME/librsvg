@@ -65,6 +65,21 @@ objects
 fmt::Pointer impl for Atomic and Shared when the underlying
 pointer is invalid
 
+2.60.3
+~~~~~~
+
+:rustsec:`2026-0305` - |CVE-2026-96889| - Use-after-free when XML includes have
+duplicated entities.
+
+:rustsec:`2026-0187` - Stack overflow in lopdf via deeply nested PDF
+objects
+
+:rustsec:`2026-0204` - crossbeam-epoch, invalid pointer dereference in
+fmt::Pointer impl for Atomic and Shared when the underlying
+pointer is invalid
+
+:rustsec:`2026-0009` - time crate, Denial of Service via Stack Exhaustion
+
 2.57.4
 ~~~~~~
 
