@@ -12,9 +12,9 @@
 //! expected geometries.  The tests check that librsvg computes the same geometries every
 //! time.
 
-use anyhow::{Context, Result};
 use rsvg::{CairoRenderer, LengthUnit, Loader, Rect};
 use serde::Deserialize;
+use serde_json;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
@@ -44,9 +44,15 @@ impl From<Rectangle> for Rect {
 #[derive(Deserialize)]
 struct Geometries(BTreeMap<String, Rectangle>);
 
-fn read_geometries(path: &Path) -> Result<Geometries> {
-    let contents = fs::read_to_string(path).context(format!("could not read {:?}", path))?;
-    Ok(serde_json::from_str(&contents).context(format!("could not parse JSON from {:?}", path))?)
+#[derive(Debug)]
+enum ReadError {
+    Io,
+    Parse,
+}
+
+fn read_geometries(path: &Path) -> Result<Geometries, ReadError> {
+    let contents = fs::read_to_string(path).map_err(|_| ReadError::Io)?;
+    serde_json::from_str(&contents).map_err(|_| ReadError::Parse)
 }
 
 // We create a struct with the id and geometry so that

@@ -1244,7 +1244,6 @@ dependencies = [
 name = "librsvg"
 version = "2.56.5"
 dependencies = [
- "anyhow",
  "assert_cmd",
  "byteorder",
  "cairo-rs",
@@ -1285,7 +1284,6 @@ dependencies = [
  "string_cache",
  "system-deps",
  "tempfile",
- "thiserror 1.0.69",
  "tinyvec",
  "url",
  "xml5ever",
