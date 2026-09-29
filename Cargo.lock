@@ -1267,7 +1267,7 @@ dependencies = [
 
 [[package]]
 name = "librsvg"
-version = "2.56.5"
+version = "2.56.6"
 dependencies = [
  "assert_cmd",
  "byteorder",
