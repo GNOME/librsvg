@@ -46,6 +46,7 @@ Development guide for librsvg
    custom_properties
    building_deps_in_ci
    xml_parser
+   fuzzing_parsers
 
 .. toctree::
    :caption: Info for Maintainers
