@@ -2,12 +2,12 @@
 
 set -o errexit -o pipefail -o noclobber -o nounset
 
-FREETYPE2_TAG="VER-2-12-1"
+FREETYPE2_TAG="VER-2-13-3"
 FONTCONFIG_TAG="2.14.2"
-CAIRO_TAG="1.16.6"
-HARFBUZZ_TAG="5.2.0"
+CAIRO_TAG="1.18.6"
+HARFBUZZ_TAG="9.0.0"
 PANGO_TAG="1.50.14"
-LIBXML2_TAG="v2.11.5"
+LIBXML2_TAG="v2.13.3"
 GDK_PIXBUF_TAG="2.42.10"
 
 PARSED=$(getopt --options '' --longoptions 'prefix:,meson-flags:' --name "$0" -- "$@")

@@ -26,7 +26,6 @@
 //! Any number of element_ids may appear in the file.  For each of those, the `test()` function will
 //! call `CairoRenderer::get_layer_geometry()` and compare its result against the provided rectangles.
 
-use anyhow::{Context, Result};
 use cairo;
 use rsvg::{CairoRenderer, LengthUnit, Loader, Rect};
 use serde::Deserialize;
@@ -64,9 +63,15 @@ struct ElementGeometry {
 #[derive(Deserialize)]
 struct Geometries(BTreeMap<String, ElementGeometry>);
 
-fn read_geometries(path: &str) -> Result<Geometries> {
-    let contents = fs::read_to_string(path).context(format!("could not read {:?}", path))?;
-    Ok(serde_json::from_str(&contents).context(format!("could not parse JSON from {:?}", path))?)
+#[derive(Debug)]
+enum ReadError {
+    Io,
+    Parse,
+}
+
+fn read_geometries(path: &str) -> Result<Geometries, ReadError> {
+    let contents = fs::read_to_string(path).map_err(|_| ReadError::Io)?;
+    serde_json::from_str(&contents).map_err(|_| ReadError::Parse)
 }
 
 // We create a struct with the id and geometry so that

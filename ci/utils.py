@@ -1,5 +1,6 @@
 import re
 
+
 def get_first_group(regex, line):
     matches = regex.search(line)
     if matches is None:
@@ -17,7 +18,7 @@ def get_configure_ac_version_components():
     minor = None
 
     with open("configure.ac") as f:
-        for line in f.readlines():
+        for line in f:
             if major is None:
                 major = get_first_group(major_regex, line)
 
