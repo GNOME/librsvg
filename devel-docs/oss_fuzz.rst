@@ -75,6 +75,8 @@ coverage data for all targets (click on the "TOTAL COVERAGE" link for the combin
 The combined coverage data is helpful for identifying coverage gaps, insufficient corpus data, and
 potential candidates for future fuzz targets.
 
+* `Total coverage report <https://storage.googleapis.com/oss-fuzz-coverage/librsvg/reports/20260928/linux/src/librsvg/rsvg/src/report.html>`__
+
 Bug reports
 ^^^^^^^^^^^
 
