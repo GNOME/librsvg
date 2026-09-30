@@ -233,42 +233,6 @@ cargo_bench:
       - target/criterion
     expire_in: 1 week
 
-msys2-mingw64:
-  stage: acceptance test
-  tags:
-    - win32-ps
-  needs:
-    - job: check
-  variables:
-    MSYSTEM: "MINGW64"
-    CHERE_INVOKING: "yes"
-  script:
-    - C:\msys64\usr\bin\pacman --noconfirm -Syyuu
-    - C:\msys64\usr\bin\bash -lc "bash -x ./ci/test-msys2.sh"
-  artifacts:
-    when: 'on_failure'
-    paths:
-      - _build\tests\*.log
-      - _build\tests\output
-    expire_in: 1 day
-  allow_failure: true
-
-vs2017-x64:
-  # TODO: Uncomment this when ready to merge.
-  # rules:
-  #   - if: $CI_PROJECT_NAMESPACE == "GNOME"
-  stage: build
-  tags:
-    - win32-ps
-  needs: []
-  script:
-    - ci/test-msvc.bat
-  artifacts:
-    when: always
-    paths:
-      - "${CI_PROJECT_DIR}/_build/meson-logs"
-  allow_failure: true
-
 distcheck:
   stage: acceptance test
   extends:
