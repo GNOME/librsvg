@@ -10,7 +10,7 @@ use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName,
 };
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Entry};
 use std::rc::Rc;
 use std::str;
 use std::sync::Arc;
@@ -31,7 +31,8 @@ use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
-use xml2_load::Xml2Parser;
+use xml2::xmlEntityPtr;
+use xml2_load::{EntityData, Xml2Parser, XmlEntity};
 
 mod attributes;
 mod xml2;
@@ -71,16 +72,6 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
-// that is freed in impl Drop for XmlState
-type XmlEntityPtr = *mut libc::c_void;
-
-extern "C" {
-    // The original function takes an xmlNodePtr, but that is compatible
-    // with xmlEntityPtr for the purposes of this function.
-    fn xmlFreeNode(node: XmlEntityPtr);
-}
-
 // Creates an ExpandedName from the XInclude namespace and a local_name
 //
 // The markup5ever crate doesn't have built-in namespaces for XInclude,
@@ -109,15 +100,7 @@ struct XmlStateInner {
     xinclude_depth: usize,
     context_stack: Vec<Context>,
     current_node: Option<Node>,
-
-    // Note that neither XmlStateInner nor Xmlstate implement Drop.
-    //
-    // An XmlState is finally consumed in XmlState::build_document(), and that
-    // function is responsible for freeing all the XmlEntityPtr from this field.
-    //
-    // (The structs cannot impl Drop because build_document()
-    // destructures and consumes them at the same time.)
-    entities: HashMap<String, XmlEntityPtr>,
+    entities: HashMap<String, XmlEntity>,
 }
 
 pub struct XmlState {
@@ -337,18 +320,27 @@ impl XmlState {
             .push(Context::FatalError(e));
     }
 
-    pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
-        self.inner.borrow().entities.get(entity_name).copied()
+    pub fn entity_lookup(&self, entity_name: &str) -> Option<xmlEntityPtr> {
+        self.inner
+            .borrow()
+            .entities
+            .get(entity_name)
+            .map(|entity| entity.0)
     }
 
-    pub fn entity_insert(&self, entity_name: &str, entity: XmlEntityPtr) {
+    pub fn entity_insert(&self, entity_data: EntityData) {
         let mut inner = self.inner.borrow_mut();
 
-        let old_value = inner.entities.insert(entity_name.to_string(), entity);
+        let name = entity_data.name();
 
-        if let Some(v) = old_value {
-            unsafe {
-                xmlFreeNode(v);
+        match inner.entities.entry(name.to_string()) {
+            Entry::Occupied(_) => {
+                // Ignore the case where an entity is declared twice with the
+                // same name.
+            }
+
+            Entry::Vacant(v) => {
+                v.insert(entity_data.into_xml_entity());
             }
         }
     }
@@ -643,15 +635,7 @@ impl XmlState {
         // consume self, then consume inner, then consume document_builder by calling .build()
 
         let XmlState { inner, .. } = self;
-        let mut inner = inner.into_inner();
-
-        // Free the hash of XmlEntityPtr.  We cannot do this in Drop because we will
-        // consume inner by destructuring it after the for() loop.
-        for (_key, entity) in inner.entities.drain() {
-            unsafe {
-                xmlFreeNode(entity);
-            }
-        }
+        let inner = inner.into_inner();
 
         let XmlStateInner {
             document_builder, ..

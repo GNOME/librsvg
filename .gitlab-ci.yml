@@ -173,17 +173,6 @@ cargo test - opensuse@x86_64.minimum:
   cache:
     policy: pull-push
 
-fmt:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: lint
-  needs:
-    - job: check
-  script:
-    - cargo fmt --all -- --check
-
 deny:
   extends:
     - '.container.opensuse@x86_64.stable'
@@ -244,42 +233,6 @@ cargo_bench:
       - target/criterion
     expire_in: 1 week
 
-msys2-mingw64:
-  stage: acceptance test
-  tags:
-    - win32-ps
-  needs:
-    - job: check
-  variables:
-    MSYSTEM: "MINGW64"
-    CHERE_INVOKING: "yes"
-  script:
-    - C:\msys64\usr\bin\pacman --noconfirm -Syyuu
-    - C:\msys64\usr\bin\bash -lc "bash -x ./ci/test-msys2.sh"
-  artifacts:
-    when: 'on_failure'
-    paths:
-      - _build\tests\*.log
-      - _build\tests\output
-    expire_in: 1 day
-  allow_failure: true
-
-vs2017-x64:
-  # TODO: Uncomment this when ready to merge.
-  # rules:
-  #   - if: $CI_PROJECT_NAMESPACE == "GNOME"
-  stage: build
-  tags:
-    - win32-ps
-  needs: []
-  script:
-    - ci/test-msvc.bat
-  artifacts:
-    when: always
-    paths:
-      - "${CI_PROJECT_DIR}/_build/meson-logs"
-  allow_failure: true
-
 distcheck:
   stage: acceptance test
   extends:
@@ -303,88 +256,3 @@ distcheck:
       - librsvg-*.tar.xz
     expire_in: 1 week
 
-reference:
-  stage: docs
-  needs:
-    - job: autotools build - opensuse@x86_64.stable
-      artifacts: true
-  script:
-    - mkdir -p public/
-    - mv _build/doc/Rsvg-2.0 public/
-  artifacts:
-    paths:
-      - public
-    expire_in: 1 day
-
-check devel-docs links:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: docs
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-  script:
-    - bash -x ./ci/check_docs_links.sh
-  artifacts:
-    paths:
-      - public/devel-docs-check
-    expire_in: 1 day
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
-      allow_failure: true
-
-devel-docs:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: docs
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-  script:
-    - bash -x ./ci/gen-devel-docs.sh
-  artifacts:
-    paths:
-      - public
-    expire_in: 1 day
-
-cargo-doc:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  stage: docs
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-  variables:
-    PREFIX: "/usr/local/librsvg"
-  script:
-    - source ./ci/setup-dependencies-env.sh
-    - bash -x ./ci/gen-rust-docs.sh
-  artifacts:
-    paths:
-      - public
-    expire_in: 1 day
-
-pages:
-  stage: docs
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
-  needs:
-    - job: reference
-    - job: devel-docs
-    - job: cargo-doc
-  script:
-    - echo ""
-  artifacts:
-    paths:
-      - public
-    expire_in: 1 day
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'

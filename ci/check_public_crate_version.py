@@ -8,11 +8,13 @@
 #   - GNOME: 2.57.90
 #   - crate: 2.58.0-beta.0
 
-import semver
 import sys
+
+import semver
 import toml
 
 from utils import get_configure_ac_version
+
 
 def gen_crate_version_from_configure_ac_version(v):
     if v.patch < 90:
