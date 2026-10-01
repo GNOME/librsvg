@@ -89,12 +89,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.75"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
-
-[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1072,7 +1066,6 @@ checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 name = "librsvg"
 version = "2.57.4"
 dependencies = [
- "anyhow",
  "cairo-rs",
  "cast",
  "chrono",
@@ -1926,11 +1919,9 @@ dependencies = [
 name = "rsvg-bench"
 version = "2.57.4"
 dependencies = [
- "anyhow",
  "cairo-rs",
  "clap",
  "librsvg",
- "thiserror",
 ]
 
 [[package]]

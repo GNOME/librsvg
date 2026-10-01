@@ -2,14 +2,14 @@
 #![deny(clippy)]
 #![warn(unused)]
 
-use anyhow::Result;
 use clap::{crate_version, value_parser};
+use std::fmt;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::thread;
 use std::time::Duration;
-use thiserror::Error;
 
 #[derive(Debug)]
 /// Command-line options for `rsvg-bench`.
@@ -36,18 +36,41 @@ enum LoadingError {
     Rsvg(rsvg::LoadingError),
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 enum ProcessingError {
-    #[error("Cairo error: {error:?}")]
+    Rsvg(rsvg::LoadingError),
+
     CairoError { error: cairo::Error },
 
-    #[error("Rendering error")]
     RenderingError,
+}
+
+impl From<io::Error> for ProcessingError {
+    fn from(error: io::Error) -> ProcessingError {
+        ProcessingError::Rsvg(rsvg::LoadingError::Io(format!("{error}")))
+    }
 }
 
 impl From<cairo::Error> for ProcessingError {
     fn from(error: cairo::Error) -> ProcessingError {
         ProcessingError::CairoError { error }
+    }
+}
+
+impl From<rsvg::LoadingError> for ProcessingError {
+    fn from(error: rsvg::LoadingError) -> ProcessingError {
+        ProcessingError::Rsvg(error)
+    }
+}
+
+impl From<LoadingError> for ProcessingError {
+    fn from(error: LoadingError) -> ProcessingError {
+        match error {
+            LoadingError::Skipped => {
+                unreachable!("calling code should have caught a LoadingError::Skipped")
+            }
+            LoadingError::Rsvg(e) => ProcessingError::Rsvg(e),
+        }
     }
 }
 
@@ -57,7 +80,17 @@ impl From<rsvg::RenderingError> for ProcessingError {
     }
 }
 
-fn process_path<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
+impl fmt::Display for ProcessingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ProcessingError::Rsvg(e) => write!(f, "{e}"),
+            ProcessingError::CairoError { error } => write!(f, "{error}"),
+            ProcessingError::RenderingError => write!(f, "rendering error"),
+        }
+    }
+}
+
+fn process_path<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<(), ProcessingError> {
     let meta = fs::metadata(&path)?;
 
     if meta.is_dir() {
@@ -71,7 +104,7 @@ fn process_path<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
     Ok(())
 }
 
-fn process_directory<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
+fn process_directory<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<(), ProcessingError> {
     println!("Processing {:?}", path.as_ref());
 
     for entry in fs::read_dir(path)? {
@@ -97,7 +130,7 @@ fn read_svg(opt: &Opt, path: &Path) -> Result<rsvg::SvgHandle, LoadingError> {
     }
 }
 
-fn process_file<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
+fn process_file<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<(), ProcessingError> {
     println!("Processing {:?}", path.as_ref());
 
     assert!(opt.num_parse > 0);
@@ -159,7 +192,7 @@ fn print_options(opt: &Opt) {
     );
 }
 
-fn run(opt: &Opt) -> Result<()> {
+fn run(opt: &Opt) -> Result<(), ProcessingError> {
     print_options(opt);
 
     sleep(opt.sleep_secs);
