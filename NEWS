@@ -1,3 +1,20 @@
+Version 2.57.5
+==============
+
+librsvg crate version 2.57.5
+
+This is a security release for bug #1241, RUSTSEC-2026-0305 / CVE-2026-96889:
+
+- #1241: Fix use-after-free when there are duplicate XML entities in
+  nested Xinclude documents.  Thanks to Rafael B. Dias for reporting
+  this in detail.
+
+- Dependency updates: lopdf for RUSTSEC-2026-0187, crossbeam-epoch for
+  RUSTSEC-2026-0204, time for RUSTSEC-2026-0009.
+
+- The minimum supported Rust version (MSRV) is 1.89.0.
+
+
 Version 2.57.4
 ==============
 
