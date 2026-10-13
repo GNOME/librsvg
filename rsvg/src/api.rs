@@ -163,12 +163,15 @@ impl Loader {
         }
     }
 
-    /// Controls safety limits used in the XML parser.
+    /// Controls built-in limits in the XML parser and image loaders.
     ///
     /// Internally, librsvg uses libxml2, which has set limits for things like the
     /// maximum length of XML element names, the size of accumulated buffers
     /// using during parsing of deeply-nested XML files, and the maximum size
     /// of embedded XML entities.
+    ///
+    /// Also, librsvg uses the `image` crate to load raster images,
+    /// which limits per-image allocations to 512 MB by default.
     ///
     /// Set this to `true` only if loading a trusted SVG fails due to size limits.
     ///
