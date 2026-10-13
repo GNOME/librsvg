@@ -564,7 +564,10 @@ MISCELLANEOUS
    memory consumption in the face of malicious documents. The image
    crate also limits per-image allocations to 512 MB by default. If
    you are running into such issues when converting a SVG, this option
-   allows to turn off these safety limits.
+   allows to turn off these safety limits.  See the "built-in limits"
+   sections of
+   https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html
+   for details.
 
 ``--testing``
    For developers only: render images for librsvg's test suite.
