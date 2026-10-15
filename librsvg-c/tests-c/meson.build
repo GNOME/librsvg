@@ -24,7 +24,7 @@ api_test = executable(
 )
 
 test(
-  'C API tests',
+  'librsvg-c-api',
   api_test,
 
   # the following incantation is for glib's gtestutils

@@ -38,7 +38,7 @@ rsvg_convert = custom_target(
 
 if build_tests
   test(
-    'Rust tests (rsvg_convert)',
+    'rsvg-convert',
     cargo_wrapper,
     timeout: -1, # no timeout
     args: [
