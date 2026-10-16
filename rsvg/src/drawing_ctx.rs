@@ -1671,6 +1671,10 @@ impl DrawingCtx {
             return Ok(viewport.empty_bbox());
         }
 
+        if path.has_unsuitable_coordinates(&viewport.transform) {
+            return Ok(viewport.empty_bbox());
+        }
+
         // #851 - We can't just render all text as paths for PDF; it
         // needs the actual text content so text is selectable by PDF
         // viewers.
