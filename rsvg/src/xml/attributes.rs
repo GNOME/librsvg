@@ -82,7 +82,10 @@ impl Attributes {
         }
 
         if n_attributes > 0 && !attrs.is_null() {
-            for attr in slice::from_raw_parts(attrs, n_attributes * 5).chunks_exact(5) {
+            for attr in slice::from_raw_parts(attrs, n_attributes * 5)
+                .as_chunks::<5>()
+                .0
+            {
                 let localname = attr[0];
                 let prefix = attr[1];
                 let uri = attr[2];
