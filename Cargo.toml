@@ -1,5 +1,5 @@
 [workspace.package]
-version = "2.63.2"
+version = "2.63.3"
 authors = ["Federico Mena Quintero <federico@gnome.org>", "Many others"]
 description = """
 A library to render SVG images to Cairo surfaces. GNOME uses this to
@@ -89,7 +89,7 @@ serde = "1.0"
 serde_json = "1.0"
 shell-words = "1.1"
 string_cache = "0.10.0"
-system-deps = "7.0.0"
+system-deps = "9.0.0"
 tempfile = "3"
 tinyvec = "1.2.0"
 url = "2"

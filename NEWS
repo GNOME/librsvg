@@ -1,3 +1,23 @@
+Version 2.63.3
+==============
+
+librsvg crate version 2.63.3
+
+librsvg-rebind crate version 0.3.0
+
+- Let the image-rs crate enforce its default limit of 512 MB for
+  allocated memory for each decoded image.  The `--unlimited` flag in
+  rsvg-convert (or the corresponding flags in the C and Rust APIs) now
+  control whether the limits are enforced or not (Kleis Auke
+  Wolthuizen).
+
+- #1215 - Fix panic when a feConvolveMatrix declaration has an invalid
+  size.
+
+- #1238 - When fuzzing, don't decode raster images from data: URIs to
+  avoid sinking fuzz time in the image-rs crate (Adetoye Anointing).
+
+
 Version 2.63.2
 ==============
 
