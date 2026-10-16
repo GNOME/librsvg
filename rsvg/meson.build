@@ -398,7 +398,7 @@ if build_tests
   )
 
   test(
-    'Rust tests (rsvg)',
+    'librsvg',
     cargo_wrapper,
     timeout: -1, # no timeout
     args: [
@@ -413,7 +413,7 @@ if build_tests
   )
 
   test(
-    'Rust tests (librsvg)',
+    'librsvg-c',
     cargo_wrapper,
     timeout: -1, # no timeout
     args: [

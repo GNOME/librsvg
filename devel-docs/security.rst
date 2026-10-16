@@ -407,7 +407,32 @@ librsvg 2.56.90 (development), or librsvg 2.57.0 (stable).
 Security considerations for librsvg
 -----------------------------------
 
-**Built-in limits:** Librsvg has built-in limits for the following:
+**Resource consumption:** Librsvg has some built-in limits as
+safeguards for unbounded consumption of memory and CPU time.  However,
+librsvg does not actually try to impose an upper bound on the amount
+of memory consumed per document, either while loading or rendering.
+
+See the sections on built-in limits below.
+
+**Processing external files:** Librsvg processes references to
+external files by itself: XML XInclude, ``xlink:href`` attributes,
+etc. Please see the section "`Security and locations of referenced
+files
+<https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/class.Handle.html#security-and-locations-of-referenced-files>`_"
+in the reference documentation to see what criteria are used to accept
+or reject a file based on its location. If your application has more
+stringent requirements, it may need to sandbox its use of librsvg.
+
+**SVG features:** Librsvg ignores animations, scripts, and events
+declared in SVG documents. It always handles referenced images, similar
+to SVG’s `static processing
+mode <https://www.w3.org/TR/SVG2/conform.html#static-mode>`__.
+
+
+Built-in limits that cannot be changed
+--------------------------------------
+
+Librsvg has built-in limits for the following:
 
 - Limit on the maximum number of loaded XML elements, set to 1,000,000
   (one million). SVG documents with more than this number of elements
@@ -431,23 +456,44 @@ Security considerations for librsvg
   ``MAX_XINCLUDE_DEPTH`` constant.
 
 - Limit on the depth of nested groups and layers, to avoid unbounded
-  recursion.  This is set in the file ``rsvg/src/limits.rs`` in the
-  ``MAX_LAYER_NESTING_DEPTH`` constant.
+  recursion which could cause stack exhaustion.  This is set in the
+  file ``rsvg/src/limits.rs`` in the ``MAX_LAYER_NESTING_DEPTH``
+  constant.  Note that the built-in limit is different for musl and
+  glibc systems, since musl's default stack size for threads is much
+  smaller than glibc's.
 
 Librsvg has no built-in limits on the total amount of memory or CPU time
 consumed to process a document. Your application may want to place
 limits on this, especially if it processes untrusted SVG documents.
 
-**Processing external files:** Librsvg processes references to
-external files by itself: XML XInclude, ``xlink:href`` attributes,
-etc. Please see the section "`Security and locations of referenced
-files
-<https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/class.Handle.html#security-and-locations-of-referenced-files>`_"
-in the reference documentation to see what criteria are used to accept
-or reject a file based on its location. If your application has more
-stringent requirements, it may need to sandbox its use of librsvg.
 
-**SVG features:** Librsvg ignores animations, scripts, and events
-declared in SVG documents. It always handles referenced images, similar
-to SVG’s `static processing
-mode <https://www.w3.org/TR/SVG2/conform.html#static-mode>`__.
+Built-in limits that can be overriden
+-------------------------------------
+
+Librsvg has a single flag to control some internal limits; they can be
+either on or off.  The flag can be set in the following ways; all are equivalent:
+
+- The ``--unlimited`` flag for ``rsvg-convert``.
+
+- The `RSVG_HANDLE_FLAG_UNLIMITED
+  <https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/flags.HandleFlags.html#flag_unlimited>`__
+  flag in the C API.
+
+- The method `Loader::with_unlimited_size
+  <https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/struct.Loader.html#method.with_unlimited_size>`__
+  in the Rust API.
+
+This flag controls the following limits:
+
+- libxml2's own limits for the size of text nodes, the length of
+  markup identifiers, etc.  Look for ``XML_PARSE_HUGE`` in `this
+  source file from libxml2
+  <https://gitlab.gnome.org/GNOME/libxml2/blob/master/include/libxml/parserInternals.h>`__.
+  Files with especially big ``data:`` URLs that encode raster images may need
+  this option to parse correctly.
+
+- The default limits which the ``image`` crate imposes on the maximum
+  size of decoded images.  The default limit is 512 MB per image.
+  Note that an SVG document may include an arbitrary number of images,
+  up to the librsvg's own limit on the number of SVG elements, listed
+  above as ``MAX_LOADED_ELEMENTS``.

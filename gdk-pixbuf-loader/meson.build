@@ -61,7 +61,7 @@ meson.add_install_script(
 
 if build_tests
   test(
-    'Rust tests (pixbufloader-svg)',
+    'pixbufloader-svg',
     cargo_wrapper,
     timeout: -1, # no timeout
     args: [

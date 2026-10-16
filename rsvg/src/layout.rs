@@ -676,22 +676,16 @@ impl StackingContext {
 
         let is_visible = values.is_visible();
 
-        let opacity;
-        let filter;
-
-        match element.element_data {
+        let (opacity, filter) = match element.element_data {
             // "The opacity, filter and display properties do not apply to the mask element"
             // https://drafts.fxtf.org/css-masking-1/#MaskElement
-            ElementData::Mask(_) => {
-                opacity = Opacity(UnitInterval::clamp(1.0));
-                filter = None;
-            }
+            ElementData::Mask(_) => (Opacity(UnitInterval::clamp(1.0)), None),
 
-            _ => {
-                opacity = values.opacity();
-                filter = get_filter(values, acquired_nodes, &element_name, &session);
-            }
-        }
+            _ => (
+                values.opacity(),
+                get_filter(values, acquired_nodes, &element_name, &session),
+            ),
+        };
 
         // These are the params "outside" the stacking context, and they are used to normalize
         // lengths inside a clipPath's children (e.g. <clipPath> <rect x="10%"/> </clipPath>).

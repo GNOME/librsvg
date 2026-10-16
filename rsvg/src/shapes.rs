@@ -755,30 +755,15 @@ impl Ellipse {
             LengthOrAuto::Auto => None,
         };
 
-        let rx;
-        let ry;
+        let (rx, ry) = match (norm_rx, norm_ry) {
+            (None, None) => (0.0, 0.0),
 
-        match (norm_rx, norm_ry) {
-            (None, None) => {
-                rx = 0.0;
-                ry = 0.0;
-            }
+            (Some(_rx), None) => (_rx, _rx),
 
-            (Some(_rx), None) => {
-                rx = _rx;
-                ry = _rx;
-            }
+            (None, Some(_ry)) => (_ry, _ry),
 
-            (None, Some(_ry)) => {
-                rx = _ry;
-                ry = _ry;
-            }
-
-            (Some(_rx), Some(_ry)) => {
-                rx = _rx;
-                ry = _ry;
-            }
-        }
+            (Some(_rx), Some(_ry)) => (_rx, _ry),
+        };
 
         Rc::new(make_ellipse(cx, cy, rx, ry))
     }
