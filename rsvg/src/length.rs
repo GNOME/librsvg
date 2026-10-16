@@ -269,28 +269,18 @@ const PICA_PER_INCH: f64 = 6.0;
 
 impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<CssLength<N, V>, ParseError<'i>> {
-        let l_value;
-        let l_unit;
-
         let token = parser.next()?.clone();
 
-        match token {
-            Token::Number { value, .. } => {
-                l_value = value;
-                l_unit = LengthUnit::Px;
-            }
+        let (l_value, l_unit) = match token {
+            Token::Number { value, .. } => (value, LengthUnit::Px),
 
-            Token::Percentage { unit_value, .. } => {
-                l_value = unit_value;
-                l_unit = LengthUnit::Percent;
-            }
+            Token::Percentage { unit_value, .. } => (unit_value, LengthUnit::Percent),
 
             Token::Dimension {
                 value, ref unit, ..
-            } => {
-                l_value = value;
-
-                l_unit = match_ignore_ascii_case! {unit.as_ref(),
+            } => (
+                value,
+                match_ignore_ascii_case! {unit.as_ref(),
                     "px" => LengthUnit::Px,
                     "em" => LengthUnit::Em,
                     "ex" => LengthUnit::Ex,
@@ -302,11 +292,11 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
                     "ch" => LengthUnit::Ch,
 
                     _ => return Err(parser.new_unexpected_token_error(token)),
-                };
-            }
+                },
+            ),
 
             _ => return Err(parser.new_unexpected_token_error(token)),
-        }
+        };
 
         let l_value = f64::from(finite_f32(l_value).map_err(|e| parser.new_custom_error(e))?);
 
