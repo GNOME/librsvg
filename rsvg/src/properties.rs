@@ -495,6 +495,7 @@ make_properties! {
     }
     
     longhands_not_supported_by_markup5ever: {
+        "image-orientation"           => (PresentationAttr::No,  image_orientation           : ImageOrientation),
         "isolation"                   => (PresentationAttr::No,  isolation                   : Isolation),
         "line-height"                 => (PresentationAttr::No,  line_height                 : LineHeight),
         "mask-type"                   => (PresentationAttr::Yes, mask_type                   : MaskType),
@@ -721,6 +722,7 @@ impl SpecifiedValues {
         compute!(FontWeight, font_weight);
         compute!(GlyphOrientationVertical, glyph_orientation_vertical);
         compute!(Height, height);
+        compute!(ImageOrientation, image_orientation);
         compute!(ImageRendering, image_rendering);
         compute!(Isolation, isolation);
         compute!(LetterSpacing, letter_spacing);
