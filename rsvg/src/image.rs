@@ -90,7 +90,7 @@ impl Image {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
-        match acquired_nodes.lookup_resource(url) {
+        match acquired_nodes.lookup_image_resource(url) {
             Ok(Resource::Image(surface)) => self.layout_from_surface(
                 &surface,
                 node,

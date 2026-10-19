@@ -276,7 +276,7 @@ impl Document {
     }
 
     /// Loads a resource by URL, or returns a pre-loaded one.
-    fn lookup_resource(
+    fn lookup_image_resource(
         &self,
         url: &str,
         cancellable: Option<&gio::Cancellable>,
@@ -287,7 +287,7 @@ impl Document {
             .resolve_href(url)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        self.resources.borrow_mut().lookup_resource(
+        self.resources.borrow_mut().lookup_image_resource(
             &self.session,
             &self.load_options,
             &aurl,
@@ -630,7 +630,7 @@ impl Resources {
             .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        let resource = self.lookup_resource(session, load_options, &aurl, cancellable)?;
+        let resource = self.lookup_image_resource(session, load_options, &aurl, cancellable)?;
 
         match resource {
             Resource::Document(_) => Ok(resource),
@@ -641,7 +641,7 @@ impl Resources {
     }
 
     /// Loads a resource (an SVG document or a raster image), or returns an already-loaded one.
-    fn lookup_resource(
+    fn lookup_image_resource(
         &mut self,
         session: &Session,
         load_options: &LoadOptions,
@@ -1011,9 +1011,9 @@ impl<'i> AcquiredNodes<'i> {
         }
     }
 
-    pub fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
+    pub fn lookup_image_resource(&self, url: &str) -> Result<Resource, LoadingError> {
         self.document
-            .lookup_resource(url, self.cancellable.as_ref())
+            .lookup_image_resource(url, self.cancellable.as_ref())
     }
 
     /// Acquires a node by its id.
