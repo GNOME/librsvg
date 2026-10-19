@@ -913,8 +913,11 @@ fn load_image_with_image_rs(
             reader.no_limits();
         }
 
-        let image = reader
-            .decode()
+        let decoder = reader
+            .into_decoder()
+            .map_err(|e| LoadingError::Other(format!("could not create image decoder: {e}")))?;
+
+        let image = image::DynamicImage::from_decoder(decoder)
             .map_err(|e| LoadingError::Other(format!("error decoding image: {e}")))?;
 
         let bytes = if load_options.keep_image_data {
