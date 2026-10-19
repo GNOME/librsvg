@@ -29,6 +29,7 @@ use crate::io::{self, BinaryData};
 use crate::is_element_of_type;
 use crate::limits;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeData};
+use crate::properties::ImageOrientation;
 use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
@@ -577,6 +578,7 @@ fn unit_rectangle() -> Rect {
 #[derive(Eq, Hash, PartialEq)]
 struct ResourceKey {
     aurl: AllowedUrl,
+    image_orientation: ImageOrientation,
 }
 
 /// Any kind of resource loaded while processing an SVG document: images, or SVGs themselves.
@@ -658,7 +660,12 @@ impl Resources {
         aurl: &AllowedUrl,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Resource, LoadingError> {
-        let key = ResourceKey { aurl: aurl.clone() };
+        let image_orientation = ImageOrientation::default();
+
+        let key = ResourceKey {
+            aurl: aurl.clone(),
+            image_orientation,
+        };
 
         match self.resources.entry(key) {
             Entry::Occupied(e) => e.get().clone(),

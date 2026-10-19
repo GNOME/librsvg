@@ -581,6 +581,7 @@ make_property!(
     /// <https://drafts.csswg.org/css-images/#the-image-orientation>
     ///
     /// We only support from-image and none; angles are not handled.
+    #[derive(Eq, Hash)]
     ImageOrientation,
     default: FromImage,
     inherits_automatically: true,
