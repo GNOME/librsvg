@@ -569,6 +569,16 @@ fn unit_rectangle() -> Rect {
     Rect::from_size(1.0, 1.0)
 }
 
+/// Key used for the hash table of resources.
+///
+/// An image resource is stored as a pair (url, orientation), since we
+/// decode raster images into a surface when loading them, *and* we
+/// apply the image-orientation at that time.
+#[derive(Eq, Hash, PartialEq)]
+struct ResourceKey {
+    aurl: AllowedUrl,
+}
+
 /// Any kind of resource loaded while processing an SVG document: images, or SVGs themselves.
 #[derive(Clone)]
 pub enum Resource {
@@ -581,7 +591,7 @@ pub enum Resource {
 /// For example, a PNG image in `<image href="foo.png"/>` gets decoded
 /// and stored here, referenced by its URL.
 struct Resources {
-    resources: HashMap<AllowedUrl, Result<Resource, LoadingError>>,
+    resources: HashMap<ResourceKey, Result<Resource, LoadingError>>,
     load_limiter: LoadingDepthLimiter,
 }
 
@@ -648,7 +658,9 @@ impl Resources {
         aurl: &AllowedUrl,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Resource, LoadingError> {
-        match self.resources.entry(aurl.clone()) {
+        let key = ResourceKey { aurl: aurl.clone() };
+
+        match self.resources.entry(key) {
             Entry::Occupied(e) => e.get().clone(),
 
             Entry::Vacant(e) => {
