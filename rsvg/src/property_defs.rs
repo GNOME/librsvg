@@ -576,6 +576,22 @@ make_property!(
 );
 
 make_property!(
+    /// `image-orientation` property
+    ///
+    /// <https://drafts.csswg.org/css-images/#the-image-orientation>
+    ///
+    /// We only support from-image and none; angles are not handled.
+    #[derive(Eq, Hash)]
+    ImageOrientation,
+    default: FromImage,
+    inherits_automatically: true,
+
+    identifiers:
+    "from-image" => FromImage,
+    "none" => None,
+);
+
+make_property!(
     /// `image-rendering` property.
     ///
     /// CSS Images Module Level 3: <https://www.w3.org/TR/css-images-3/#the-image-rendering>

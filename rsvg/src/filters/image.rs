@@ -169,7 +169,7 @@ impl Image {
         bounds: &Bounds,
         url: &str,
     ) -> Result<SharedImageSurface, FilterError> {
-        match acquired_nodes.lookup_resource(url) {
+        match acquired_nodes.lookup_image_resource(url, self.feimage_values.image_orientation()) {
             Ok(Resource::Image(surface)) => {
                 self.render_surface_from_raster_image(&surface, ctx, bounds)
             }

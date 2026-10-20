@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="336" height="132">
+  <!-- Test for the image-orientation property -->
+
+  <rect width="100%" height="100%" fill="white"/>
+
+  <!-- Test initial value, from-image -->
+
+  <image href="exif-orientations/or=1.jpg" x="0" y="0"/>
+  <image href="exif-orientations/or=2.jpg" x="84" y="0"/>
+  <image href="exif-orientations/or=3.jpg" x="168" y="0"/>
+  <image href="exif-orientations/or=4.jpg" x="252" y="0"/>
+
+  <!-- Test explicit value, from-image.  Note that image-orientation
+       is not available as a presentation attribute, so we specify it
+       as a style property.
+  -->
+
+  <g style="image-orientation: from-image;">
+    <image href="exif-orientations/or=5.jpg" x="0" y="48"/>
+    <image href="exif-orientations/or=6.jpg" x="48" y="48"/>
+    <image href="exif-orientations/or=7.jpg" x="96" y="48"/>
+    <image href="exif-orientations/or=8.jpg" x="144" y="48"/>
+  </g>
+
+  <!-- Test explicit value, none -->
+
+  <g style="image-orientation: none;">
+    <image href="exif-orientations/or=8.jpg" x="192" y="48"/>
+  </g>
+
+</svg>

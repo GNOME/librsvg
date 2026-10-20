@@ -90,7 +90,10 @@ impl Image {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<Option<Layer>, Box<InternalRenderingError>> {
-        match acquired_nodes.lookup_resource(url) {
+        let values = cascaded.get();
+        let image_orientation = values.image_orientation();
+
+        match acquired_nodes.lookup_image_resource(url, image_orientation) {
             Ok(Resource::Image(surface)) => self.layout_from_surface(
                 &surface,
                 node,
