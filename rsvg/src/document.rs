@@ -2,6 +2,7 @@
 
 use data_url::mime::Mime;
 use glib::prelude::*;
+use image::ImageDecoder;
 use markup5ever::QualName;
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -280,6 +281,7 @@ impl Document {
     fn lookup_image_resource(
         &self,
         url: &str,
+        image_orientation: ImageOrientation,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Resource, LoadingError> {
         let aurl = self
@@ -292,6 +294,7 @@ impl Document {
             &self.session,
             &self.load_options,
             &aurl,
+            image_orientation,
             cancellable,
         )
     }
@@ -642,7 +645,17 @@ impl Resources {
             .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        let resource = self.lookup_image_resource(session, load_options, &aurl, cancellable)?;
+        // Here we will check that the URL points to an SVG document, not a raster image,
+        // so the value we pass for image_orientation does not matter.
+        let image_orientation = ImageOrientation::default();
+
+        let resource = self.lookup_image_resource(
+            session,
+            load_options,
+            &aurl,
+            image_orientation,
+            cancellable,
+        )?;
 
         match resource {
             Resource::Document(_) => Ok(resource),
@@ -658,10 +671,9 @@ impl Resources {
         session: &Session,
         load_options: &LoadOptions,
         aurl: &AllowedUrl,
+        image_orientation: ImageOrientation,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Resource, LoadingError> {
-        let image_orientation = ImageOrientation::default();
-
         let key = ResourceKey {
             aurl: aurl.clone(),
             image_orientation,
@@ -676,6 +688,7 @@ impl Resources {
                     load_options,
                     self.load_limiter.clone(),
                     aurl,
+                    image_orientation,
                     cancellable,
                 );
                 e.insert(resource_result.clone());
@@ -760,6 +773,7 @@ fn load_resource(
     load_options: &LoadOptions,
     load_limiter: LoadingDepthLimiter,
     aurl: &AllowedUrl,
+    image_orientation: ImageOrientation,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Resource, LoadingError> {
     let data = io::acquire_data(aurl, cancellable)?;
@@ -777,7 +791,7 @@ fn load_resource(
         match resource_type {
             Png | Jpeg | Gif | WebP | Avif => {
                 let format = resource_type.to_image_format();
-                load_image_resource_from_bytes(load_options, aurl, bytes, format)
+                load_image_resource_from_bytes(load_options, aurl, image_orientation, bytes, format)
             }
             Svg => load_svg_resource_from_bytes(
                 session,
@@ -794,7 +808,7 @@ fn load_resource(
         // or else fall back to trying to load as an SVG.
 
         if let Ok(format) = image::guess_format(&bytes) {
-            load_image_resource_from_bytes(load_options, aurl, bytes, format)
+            load_image_resource_from_bytes(load_options, aurl, image_orientation, bytes, format)
         } else {
             load_svg_resource_from_bytes(
                 session,
@@ -843,6 +857,7 @@ fn load_svg_resource_from_bytes(
 fn load_image_resource_from_bytes(
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
+    image_orientation: ImageOrientation,
     bytes: Vec<u8>,
     format: image::ImageFormat,
 ) -> Result<Resource, LoadingError> {
@@ -859,7 +874,7 @@ fn load_image_resource_from_bytes(
         )));
     }
 
-    load_image_with_image_rs(aurl, bytes, format, load_options)
+    load_image_with_image_rs(aurl, image_orientation, bytes, format, load_options)
 }
 
 /// Decides whether the specified MIME type is supported as a raster image format.
@@ -901,6 +916,7 @@ fn image_format_to_content_type(format: image::ImageFormat) -> String {
 
 fn load_image_with_image_rs(
     aurl: &AllowedUrl,
+    image_orientation: ImageOrientation,
     bytes: Vec<u8>,
     format: image::ImageFormat,
     load_options: &LoadOptions,
@@ -913,12 +929,23 @@ fn load_image_with_image_rs(
             reader.no_limits();
         }
 
-        let decoder = reader
+        let mut decoder = reader
             .into_decoder()
             .map_err(|e| LoadingError::Other(format!("could not create image decoder: {e}")))?;
 
-        let image = image::DynamicImage::from_decoder(decoder)
+        let orientation_from_file = decoder
+            .orientation()
+            .map_err(|e| LoadingError::Other(format!("could not obtain image orientation: {e}")))?;
+
+        let mut image = image::DynamicImage::from_decoder(decoder)
             .map_err(|e| LoadingError::Other(format!("error decoding image: {e}")))?;
+
+        let orientation_to_apply = match image_orientation {
+            ImageOrientation::None => image::metadata::Orientation::NoTransforms,
+            ImageOrientation::FromImage => orientation_from_file,
+        };
+
+        image.apply_orientation(orientation_to_apply);
 
         let bytes = if load_options.keep_image_data {
             Some(bytes)
@@ -1033,9 +1060,13 @@ impl<'i> AcquiredNodes<'i> {
         }
     }
 
-    pub fn lookup_image_resource(&self, url: &str) -> Result<Resource, LoadingError> {
+    pub fn lookup_image_resource(
+        &self,
+        url: &str,
+        image_orientation: ImageOrientation,
+    ) -> Result<Resource, LoadingError> {
         self.document
-            .lookup_image_resource(url, self.cancellable.as_ref())
+            .lookup_image_resource(url, image_orientation, self.cancellable.as_ref())
     }
 
     /// Acquires a node by its id.
