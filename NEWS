@@ -1,3 +1,25 @@
+Version 2.63.4
+==============
+
+librsvg crate version 2.63.3
+
+librsvg-rebind crate version 0.3.0
+
+- #1233 - Handle EXIF orientation in images, and handle the
+  image-orientation property.  Note that the only values supported
+  for this property are 'from-image' (the default) and 'none'.
+
+  Note that this will change the rendering of SVG documents which
+  assume the images with EXIF orientation data are not auto-oriented
+  correctly.  In this case, please add the following attribute to the
+  corresponding image elemnts:
+
+    style="image-orientation: none;"
+
+  Special thanks to Mark de Does for providing the test files for this
+  feature.
+
+
 Version 2.63.3
 ==============
 
