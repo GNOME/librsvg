@@ -4,9 +4,9 @@ set -o errexit -o pipefail -o noclobber -o nounset
 
 FREETYPE2_TAG="VER-2-12-1"
 FONTCONFIG_TAG="2.14.2"
-CAIRO_TAG="1.18.2"
+CAIRO_TAG="1.18.6"
 HARFBUZZ_TAG="8.2.0"
-PANGO_TAG="1.48.11"
+PANGO_TAG="1.50.14"
 GDK_PIXBUF_TAG="2.42.10"
 
 PARSED=$(getopt --options '' --longoptions 'prefix:,meson-flags:' --name "$0" -- "$@")
