@@ -1,5 +1,6 @@
 import re
 
+
 def get_first_group(regex, line):
     matches = regex.search(line)
     if matches is None:
