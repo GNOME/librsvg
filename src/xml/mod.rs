@@ -7,14 +7,14 @@ use gio::{
 };
 use glib::Cast;
 use markup5ever::{
-    buffer_queue::BufferQueue, expanded_name, local_name, namespace_url, ns, ExpandedName,
-    LocalName, Namespace, QualName,
+    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::str;
 use std::string::ToString;
+use xml5ever::buffer_queue::BufferQueue;
 use xml5ever::tendril::format_tendril;
 use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
