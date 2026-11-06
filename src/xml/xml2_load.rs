@@ -130,6 +130,25 @@ unsafe extern "C" fn sax_get_entity_cb(
         .unwrap_or(ptr::null_mut())
 }
 
+/// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
+/// that is freed in impl Drop.
+pub struct XmlEntity(pub xmlEntityPtr);
+
+impl Drop for XmlEntity {
+    fn drop(&mut self) {
+        unsafe {
+            // Even though we are freeing an xmlEntityPtr, historically the code has always
+            // used xmlFreeNode() because that function actually does allow freeing entities.
+            //
+            // See https://gitlab.gnome.org/GNOME/libxml2/-/issues/731
+            // for a possible memory leak on older versions of libxml2 when using
+            // xmlFreeNode() instead of xmlFreeEntity() - the latter just became public
+            // in librsvg-2.12.0.
+            xmlFreeNode(self.0);
+        }
+    }
+}
+
 unsafe extern "C" fn sax_entity_decl_cb(
     user_data: *mut libc::c_void,
     name: *const libc::c_char,
@@ -149,18 +168,10 @@ unsafe extern "C" fn sax_entity_decl_cb(
         return;
     }
 
-    let entity = xmlNewEntity(
-        ptr::null_mut(),
-        name,
-        type_,
-        ptr::null(),
-        ptr::null(),
-        content,
-    );
-    assert!(!entity.is_null());
-
-    let name = utf8_cstr(name);
-    xml2_parser.state.entity_insert(name, entity);
+    let str_name = utf8_cstr(name);
+    xml2_parser
+        .state
+        .entity_insert(str_name, name, type_, content);
 }
 
 unsafe extern "C" fn sax_unparsed_entity_decl_cb(
@@ -460,8 +471,7 @@ impl Xml2Parser {
                 Err(LoadingError::from(io_error))
             } else if !xml_parse_success {
                 let xerr = xmlCtxtGetLastError(parser as *mut _);
-                let msg = xml2_error_to_string(xerr);
-                Err(LoadingError::XmlParseError(msg))
+                convert_last_xml2_error(xerr)
             } else {
                 Ok(())
             }
@@ -477,30 +487,47 @@ impl Drop for Xml2Parser {
     }
 }
 
-fn xml2_error_to_string(xerr: xmlErrorPtr) -> String {
+fn convert_last_xml2_error(xerr: xmlErrorPtr) -> Result<(), LoadingError> {
     unsafe {
         if !xerr.is_null() {
             let xerr = &*xerr;
 
-            let file = if xerr.file.is_null() {
-                "data".to_string()
+            if xerr.code == XML_ERR_USER_STOP {
+                // As of libxml2 2.15.0, if the its caller has called xmlStopParser(),
+                // then xmlParseDocument() will return an error code, and
+                // xmlCtxtGetLastError() will give back an error with code
+                // XML_ERR_USER_STOP.
+                //
+                // Version of libxml2 before that one don't return errors in that case.
+                // So, here we check the last error *and ignore it* if it is telling us
+                // that we stopped the parser ourselves.  The calling code already knows that it
+                // stopped the parser.
+                //
+                // See https://gitlab.gnome.org/GNOME/librsvg/-/issues/1201
+                Ok(())
             } else {
-                from_glib_none(xerr.file)
-            };
+                let file = if xerr.file.is_null() {
+                    "data".to_string()
+                } else {
+                    from_glib_none(xerr.file)
+                };
 
-            let message = if xerr.message.is_null() {
-                "-".to_string()
-            } else {
-                from_glib_none(xerr.message)
-            };
+                let message = if xerr.message.is_null() {
+                    "-".to_string()
+                } else {
+                    from_glib_none(xerr.message)
+                };
 
-            format!(
-                "Error domain {} code {} on line {} column {} of {}: {}",
-                xerr.domain, xerr.code, xerr.line, xerr.int2, file, message
-            )
+                Err(LoadingError::XmlParseError(format!(
+                    "Error domain {} code {} on line {} column {} of {}: {}",
+                    xerr.domain, xerr.code, xerr.line, xerr.int2, file, message
+                )))
+            }
         } else {
             // The error is not set?  Return a generic message :(
-            "Error parsing XML data".to_string()
+            Err(LoadingError::XmlParseError(
+                "Error parsing XML data".to_string(),
+            ))
         }
     }
 }

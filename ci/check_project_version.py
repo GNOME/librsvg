@@ -1,9 +1,11 @@
 # This script checks that the project's version is the same in a few files where it must appear.
 
 import sys
+
 import toml
 
 from utils import get_configure_ac_version
+
 
 def get_cargo_toml_version():
     doc = toml.load('Cargo.toml')

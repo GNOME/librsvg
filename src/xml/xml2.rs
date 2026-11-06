@@ -15,6 +15,8 @@ pub const XML_PARSE_BIG_LINES: libc::c_int = 1 << 22;
 
 pub const XML_SAX2_MAGIC: libc::c_uint = 0xDEEDBEAF;
 
+pub const XML_ERR_USER_STOP: libc::c_int = 111; /* xmlerror.h */
+
 pub type xmlDocPtr = gpointer;
 
 pub type xmlEntityPtr = gpointer;
@@ -209,4 +211,8 @@ extern "C" {
         system_id: *const libc::c_char,
         content: *const libc::c_char,
     ) -> xmlEntityPtr;
+
+    // The original function takes an xmlNodePtr, but that is compatible
+    // with xmlEntityPtr for the purposes of this function.
+    pub fn xmlFreeNode(node: xmlEntityPtr);
 }
