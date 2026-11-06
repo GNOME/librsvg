@@ -10,7 +10,8 @@ use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName,
 };
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Entry};
+use std::ptr;
 use std::rc::{Rc, Weak};
 use std::str;
 use std::string::ToString;
@@ -26,7 +27,8 @@ use crate::node::{Node, NodeBorrow};
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
-use xml2_load::Xml2Parser;
+use xml2::{xmlEntityPtr, xmlNewEntity};
+use xml2_load::{Xml2Parser, XmlEntity};
 
 mod attributes;
 mod xml2;
@@ -66,16 +68,6 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
-// that is freed in impl Drop for XmlState
-type XmlEntityPtr = *mut libc::c_void;
-
-extern "C" {
-    // The original function takes an xmlNodePtr, but that is compatible
-    // with xmlEntityPtr for the purposes of this function.
-    fn xmlFreeNode(node: XmlEntityPtr);
-}
-
 // Creates an ExpandedName from the XInclude namespace and a local_name
 //
 // The markup5ever crate doesn't have built-in namespaces for XInclude,
@@ -105,7 +97,7 @@ struct XmlStateInner {
     context_stack: Vec<Context>,
     current_node: Option<Node>,
 
-    entities: HashMap<String, XmlEntityPtr>,
+    entities: HashMap<String, XmlEntity>,
 }
 
 pub struct XmlState {
@@ -299,19 +291,42 @@ impl XmlState {
             .push(Context::FatalError(e));
     }
 
-    pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
-        self.inner.borrow().entities.get(entity_name).copied()
+    pub fn entity_lookup(&self, entity_name: &str) -> Option<xmlEntityPtr> {
+        self.inner
+            .borrow()
+            .entities
+            .get(entity_name)
+            .map(|entity| entity.0)
     }
 
-    pub fn entity_insert(&self, entity_name: &str, entity: XmlEntityPtr) {
+    pub fn entity_insert(
+        &self,
+        entity_name: &str,
+        xml_entity_name: *const libc::c_char,
+        type_: libc::c_int,
+        content: *const libc::c_char,
+    ) {
         let mut inner = self.inner.borrow_mut();
 
-        let old_value = inner.entities.insert(entity_name.to_string(), entity);
-
-        if let Some(v) = old_value {
-            unsafe {
-                xmlFreeNode(v);
+        match inner.entities.entry(entity_name.to_string()) {
+            Entry::Occupied(_) => {
+                // Ignore the case where an entity is declared twice with the
+                // same name.
             }
+
+            Entry::Vacant(v) => unsafe {
+                let entity = xmlNewEntity(
+                    ptr::null_mut(),
+                    xml_entity_name,
+                    type_,
+                    ptr::null(),
+                    ptr::null(),
+                    content,
+                );
+                assert!(!entity.is_null());
+
+                v.insert(XmlEntity(entity));
+            },
         }
     }
 
@@ -595,18 +610,6 @@ impl XmlState {
             .take()
             .unwrap()
             .build()
-    }
-}
-
-impl Drop for XmlState {
-    fn drop(&mut self) {
-        unsafe {
-            let mut inner = self.inner.borrow_mut();
-
-            for (_key, entity) in inner.entities.drain() {
-                xmlFreeNode(entity);
-            }
-        }
     }
 }
 
