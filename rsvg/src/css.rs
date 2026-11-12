@@ -208,6 +208,23 @@ pub struct QualifiedRule {
     declarations: Vec<Declaration>,
 }
 
+impl QualifiedRule {
+    fn has_effect_when_matching(&self) -> bool {
+        // Consider a rule like
+        //
+        //   some-selector { }
+        //
+        // that has no declarations inside the braces (e.g. like "fill: blue;"), so
+        // the rule is a no-op.  We only consider rules to have an effect if they actually
+        // have declarations.
+        //
+        // This should be revised in the future if we start supporting nested rules,
+        // or @media queries, etc.
+
+        !self.declarations.is_empty()
+    }
+}
+
 /// Prelude of at-rule used in the AtRuleParser.
 pub enum AtRulePrelude {
     Import(String),
@@ -1009,23 +1026,25 @@ impl Stylesheet {
         acc: &mut Vec<Match<'a>>,
     ) {
         for rule in &self.qualified_rules {
-            for selector in rule.selectors.slice() {
-                // This magic call is stolen from selectors::matching::matches_selector_list()
-                let matches = selectors::matching::matches_selector(
-                    selector,
-                    0,
-                    None,
-                    &RsvgElement(node.clone()),
-                    match_ctx,
-                );
+            if rule.has_effect_when_matching() {
+                for selector in rule.selectors.slice() {
+                    // This magic call is stolen from selectors::matching::matches_selector_list()
+                    let matches = selectors::matching::matches_selector(
+                        selector,
+                        0,
+                        None,
+                        &RsvgElement(node.clone()),
+                        match_ctx,
+                    );
 
-                if matches {
-                    for decl in rule.declarations.iter() {
-                        acc.push(Match {
-                            declaration: decl,
-                            specificity: selector.specificity(),
-                            origin: self.origin,
-                        });
+                    if matches {
+                        for decl in rule.declarations.iter() {
+                            acc.push(Match {
+                                declaration: decl,
+                                specificity: selector.specificity(),
+                                origin: self.origin,
+                            });
+                        }
                     }
                 }
             }
