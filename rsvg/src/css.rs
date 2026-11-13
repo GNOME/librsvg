@@ -1064,6 +1064,9 @@ pub fn cascade(
     let mut match_ctx = MatchingContext::new(
         MatchingMode::Normal,
         // FIXME: how the fuck does one set up a bloom filter here?
+        // We can pass a BloomFilter::new(), but it will only get used
+        // if the caller of matches_selector() passes it a Some(AncestorHashes), and currently
+        // it doesn't have one.
         None,
         &mut caches,
         QuirksMode::NoQuirks,
