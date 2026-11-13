@@ -208,6 +208,23 @@ pub struct QualifiedRule {
     declarations: Vec<Declaration>,
 }
 
+impl QualifiedRule {
+    fn has_effect_when_matching(&self) -> bool {
+        // Consider a rule like
+        //
+        //   some-selector { }
+        //
+        // that has no declarations inside the braces (e.g. like "fill: blue;"), so
+        // the rule is a no-op.  We only consider rules to have an effect if they actually
+        // have declarations.
+        //
+        // This should be revised in the future if we start supporting nested rules,
+        // or @media queries, etc.
+
+        !self.declarations.is_empty()
+    }
+}
+
 /// Prelude of at-rule used in the AtRuleParser.
 pub enum AtRulePrelude {
     Import(String),
@@ -1009,23 +1026,25 @@ impl Stylesheet {
         acc: &mut Vec<Match<'a>>,
     ) {
         for rule in &self.qualified_rules {
-            for selector in rule.selectors.slice() {
-                // This magic call is stolen from selectors::matching::matches_selector_list()
-                let matches = selectors::matching::matches_selector(
-                    selector,
-                    0,
-                    None,
-                    &RsvgElement(node.clone()),
-                    match_ctx,
-                );
+            if rule.has_effect_when_matching() {
+                for selector in rule.selectors.slice() {
+                    // This magic call is stolen from selectors::matching::matches_selector_list()
+                    let matches = selectors::matching::matches_selector(
+                        selector,
+                        0,
+                        None,
+                        &RsvgElement(node.clone()),
+                        match_ctx,
+                    );
 
-                if matches {
-                    for decl in rule.declarations.iter() {
-                        acc.push(Match {
-                            declaration: decl,
-                            specificity: selector.specificity(),
-                            origin: self.origin,
-                        });
+                    if matches {
+                        for decl in rule.declarations.iter() {
+                            acc.push(Match {
+                                declaration: decl,
+                                specificity: selector.specificity(),
+                                origin: self.origin,
+                            });
+                        }
                     }
                 }
             }
@@ -1041,6 +1060,20 @@ pub fn cascade(
     user_stylesheets: &[Stylesheet],
     session: &Session,
 ) {
+    let mut caches = SelectorCaches::default();
+    let mut match_ctx = MatchingContext::new(
+        MatchingMode::Normal,
+        // FIXME: how the fuck does one set up a bloom filter here?
+        // We can pass a BloomFilter::new(), but it will only get used
+        // if the caller of matches_selector() passes it a Some(AncestorHashes), and currently
+        // it doesn't have one.
+        None,
+        &mut caches,
+        QuirksMode::NoQuirks,
+        NeedsSelectorFlags::No,
+        MatchingForInvalidation::No,
+    );
+
     for mut node in root.descendants().filter(|n| n.is_element()) {
         let mut matches = Vec::new();
 
@@ -1049,18 +1082,6 @@ pub fn cascade(
         // which is called by cascade() and runs after matching.
         let parent = node.parent().clone();
         node.borrow_element_mut().inherit_xml_lang(parent);
-
-        let mut caches = SelectorCaches::default();
-        let mut match_ctx = MatchingContext::new(
-            MatchingMode::Normal,
-            // FIXME: how the fuck does one set up a bloom filter here?
-            None,
-            &mut caches,
-            QuirksMode::NoQuirks,
-            NeedsSelectorFlags::No,
-            MatchingForInvalidation::No,
-        );
-
         for s in ua_stylesheets
             .iter()
             .chain(author_stylesheets)
