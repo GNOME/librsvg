@@ -1271,14 +1271,14 @@ fn background_color_option_invalid_color_yields_error() {
 
 #[test]
 fn background_color_is_rendered() {
-    let mut rsvg_convert = RsvgConvert::new_with_input("tests/fixtures/gimp-wilber.svg");
+    let mut rsvg_convert = RsvgConvert::new_with_input("tests/fixtures/lime-square.svg");
 
     rsvg_convert
         .command
         .arg("--background-color=purple")
         .assert()
         .success()
-        .stdout(file::is_png().with_contents("tests/fixtures/gimp-wilber-ref.png"));
+        .stdout(file::is_png().with_contents("tests/fixtures/lime-square-background-ref.png"));
 }
 
 #[test]
