@@ -1060,6 +1060,17 @@ pub fn cascade(
     user_stylesheets: &[Stylesheet],
     session: &Session,
 ) {
+    let mut caches = SelectorCaches::default();
+    let mut match_ctx = MatchingContext::new(
+        MatchingMode::Normal,
+        // FIXME: how the fuck does one set up a bloom filter here?
+        None,
+        &mut caches,
+        QuirksMode::NoQuirks,
+        NeedsSelectorFlags::No,
+        MatchingForInvalidation::No,
+    );
+
     for mut node in root.descendants().filter(|n| n.is_element()) {
         let mut matches = Vec::new();
 
@@ -1068,18 +1079,6 @@ pub fn cascade(
         // which is called by cascade() and runs after matching.
         let parent = node.parent().clone();
         node.borrow_element_mut().inherit_xml_lang(parent);
-
-        let mut caches = SelectorCaches::default();
-        let mut match_ctx = MatchingContext::new(
-            MatchingMode::Normal,
-            // FIXME: how the fuck does one set up a bloom filter here?
-            None,
-            &mut caches,
-            QuirksMode::NoQuirks,
-            NeedsSelectorFlags::No,
-            MatchingForInvalidation::No,
-        );
-
         for s in ua_stylesheets
             .iter()
             .chain(author_stylesheets)
